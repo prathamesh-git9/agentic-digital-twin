@@ -1,0 +1,232 @@
+schema_version: 1
+person:
+  name: Prathamesh Kalamkar
+  location: Dublin, Ireland
+  email: prathameh7744yt@gmail.com
+  phone: "+353 876852047"
+summary:
+  - >-
+    Back-end engineer with 3.5+ years across Java, Spring Boot, Python, REST APIs,
+    and production support, with recent hands-on work in LLM integrations, agentic
+    workflows, and developer tools automation.
+  - >-
+    Strong at building reliable services, implementing tool execution layers,
+    handling retries and guardrails, and turning ambiguous AI workflow ideas into
+    maintainable back-end systems with clear communication, observability, and tests.
+experience:
+  - organisation: Freelance
+    title: Software Engineer, AI and Automation Systems
+    start: Jan 2025
+    end: Present
+    bullets:
+      - >-
+        Built LLM-powered back-end services in Python and Java-adjacent service patterns
+        for agentic workflows, including tool orchestration, structured outputs, retries,
+        validation, and safety checks.
+      - >-
+        Developed APIs and event driven workflow engines that assembled context, invoked
+        external tools, and returned reviewable outputs, focusing on reliable execution
+        instead of one-off prompting.
+      - >-
+        Integrated AI services such as OpenAI and Claude into developer-focused
+        automations, using function calling, prompt contracts, and failure handling to
+        keep agent behavior predictable.
+      - >-
+        Built internal automations and review bots around GitHub style workflows, pull
+        request checks, and issue handling, with strong attention to secrets, access
+        control, and least-privilege design.
+      - >-
+        Added logs, run metadata, and operational diagnostics so failures could be traced
+        quickly and service behavior could be improved through evidence rather than
+        guesswork.
+  - organisation: matriXploit Pvt. Ltd.
+    title: Software Engineer
+    start: Jun 2022
+    end: Jul 2024
+    bullets:
+      - >-
+        Built and maintained back-end applications using Java, Spring Boot, Python, SQL,
+        and REST APIs, contributing to new features, bug fixes, and service improvements
+        across shared production systems.
+      - >-
+        Refactored nearly 50% of a legacy authentication module, reducing duplicated logic
+        and improving flow design so changes became easier to test, review, and extend safely.
+      - >-
+        Investigated complex failures by tracing execution paths, isolating edge cases, and
+        rewriting unclear components into smaller modules, improving debugging speed and
+        service stability by about 30%.
+      - >-
+        Added diagnostics, health checks, and regression-focused checks around shared
+        services, reducing regressions by about 35% and improving visibility into abnormal
+        behavior.
+      - >-
+        Worked closely to collaborate with QA and support teams on code reviews, release
+        readiness, and production follow-up, helping keep software reliable while balancing
+        delivery pressure with maintainability.
+  - organisation: matriXploit Pvt. Ltd.
+    title: Technical Support Engineer
+    start: Jan 2022
+    end: Jun 2022
+    bullets:
+      - >-
+        Investigated application issues through SQL, logs, and structured questioning,
+        building strong habits in root cause analysis, debugging, and professional technical
+        communication.
+      - >-
+        Helped narrow production issues to specific flows and components, then escalated with
+        clear findings so engineering work could move faster and with better context.
+      - >-
+        Maintained troubleshooting notes and reusable resolution steps that improved
+        continuity and reduced repeated investigation effort across the team.
+  - organisation: Physics Wallah Pvt. Ltd.
+    title: Software Engineer Intern
+    start: Oct 2024
+    end: Dec 2024
+    bullets:
+      - >-
+        Implemented backend features in Java and Spring Boot, working on service logic, API
+        behavior, and issue investigation for high-usage product workflows.
+      - >-
+        Supported debugging, release readiness, and test preparation, helping reduce
+        avoidable issues before wider rollout.
+projects:
+  - name: Agentic Job Application Platform
+    year: 2026
+    technologies: [Python, FastAPI, SQL, Agent Workflows, Supabase Familiarity]
+    bullets:
+      - >-
+        Built a full stack platform to automate ATS workflows using agent-driven task
+        execution, persistent state, human review gates, and structured outputs.
+      - >-
+        Implemented tool execution layers, validation, retries, and workflow controls so
+        actions remained reliable and inspectable across longer-running task chains.
+      - >-
+        Used prompt contracts, task decomposition, and service boundaries to keep agent
+        logic maintainable as features expanded.
+  - name: AI Agent Evaluation Harness
+    year: 2025
+    technologies: [Python, Tool Calling, Structured Outputs, Prompt Evals]
+    bullets:
+      - >-
+        Built an evaluation harness to compare agent responses, surface failure modes, and
+        improve orchestration logic through reproducible runs instead of intuition alone.
+      - >-
+        Added scoring, parsing, and run metadata to support iterative tuning of prompts, tool
+        selection, and error handling for AI services.
+  - name: SAFECode
+    year: 2025
+    technologies: [Python, FastAPI, Security Analysis, AI Workflows]
+    bullets:
+      - >-
+        Built an AI-assisted code review tool that analyzed source code for vulnerabilities
+        and returned structured findings for triage and follow-up.
+      - >-
+        Focused on maintainable service design, clear input validation, predictable outputs,
+        and documentation so the system fit naturally into developer workflows.
+skills:
+  Languages:
+    - Java
+    - Python
+    - SQL
+    - Bash
+    - JavaScript
+    - Node.js familiarity
+    - GraphQL familiarity
+    - Ruby familiarity
+    - C++ familiarity
+  Back-End Engineering:
+    - Spring Boot
+    - REST APIs
+    - microservices
+    - data modeling
+    - authentication flows
+    - service contracts
+    - structured logging
+    - JVM basics
+  AI and Agent Systems:
+    - LLM integrations
+    - OpenAI APIs
+    - Claude integrations
+    - agentic workflows
+    - function calling
+    - tool orchestration
+    - retries
+    - guardrails
+    - prompt contracts
+    - MCP familiarity
+    - model serving patterns
+  Event and Data Systems:
+    - event driven pipelines
+    - Kafka familiarity
+    - SQS familiarity
+    - context assembly
+    - RAG concepts
+    - embeddings familiarity
+    - vector store familiarity
+    - caching and rate-limiting concepts
+  Developer Tools and Integrations:
+    - developer tools
+    - Git
+    - GitHub APIs familiarity
+    - GitHub Actions familiarity
+    - CI/CD
+    - Docker
+    - VS Code
+    - Cline familiarity
+    - developer-focused automation servers and clients
+  Observability and Reliability:
+    - logs
+    - metrics
+    - traces
+    - run metadata
+    - dashboards
+    - debugging
+    - performance tuning basics
+    - OpenTelemetry familiarity
+    - Datadog familiarity
+  Security and Operations:
+    - input validation
+    - prompt injection defenses
+    - secret management
+    - configuration management
+    - least-privilege design
+    - compliance awareness
+    - comprehensive testing
+    - integration testing
+    - documentation
+  Ways of Working:
+    - ownership mindset
+    - adapting to new models and frameworks
+    - writeing clear contracts and docs
+    - collaborating across platform, security, product, and front end teams
+education:
+  - institution: Dublin Business School
+    degree: MSc in Cybersecurity
+    result: "1:1 Class Honours"
+    start: Sep 2024
+    end: Sep 2025
+    coursework:
+      - Software Engineering
+      - Database Systems
+      - Distributed Systems
+      - Network Security
+      - Software Security
+  - institution: Savitribai Phule Pune University
+    degree: BSc in Computer Science
+    result: First Class
+    start: Aug 2021
+    end: May 2024
+    coursework:
+      - Data Structures and Algorithms
+      - Operating Systems
+      - Databases
+      - Object Oriented Programming
+      - core computer science fundamentals
+certifications:
+  - AWS Course
+  - Node.js Course
+  - Data Structures and Algorithms Course
+  - System Design Course
+source:
+  label: PrathameshK_CV.pdf
+  extracted: "2026-08-02"
