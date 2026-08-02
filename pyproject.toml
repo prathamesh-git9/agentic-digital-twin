@@ -23,6 +23,7 @@ dependencies = [
 dev = [
   "pytest>=8.3,<9",
   "pytest-asyncio>=0.25,<1",
+  "pytest-socket>=0.7,<1",
   "ruff>=0.9,<1",
 ]
 
@@ -33,7 +34,7 @@ digital-twin = "digital_twin.main:run"
 packages = ["src/digital_twin"]
 
 [tool.pytest.ini_options]
-addopts = "-ra"
+addopts = "-ra --disable-socket --allow-hosts=127.0.0.1,localhost"
 testpaths = ["tests"]
 asyncio_mode = "auto"
 
@@ -51,4 +52,3 @@ ignore = ["S101"]
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"
-
