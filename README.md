@@ -1,12 +1,13 @@
 # digital-twin
 
-> Research can propose context. Only the visitor can grant it authority.
+> Research can propose chat context. Only the visitor can grant that context authority.
 
 This is Prathamesh Kalamkar's recruiter-facing AI twin: a polished chat experience that
 answers from his CV and live metadata for ten allow-listed GitHub repositories. Its central
 engineering decision is an **authority gate**, not a clever prompt. A background search can
 find possible visitor profiles, but the context assembler has no code path that can include a
-candidate until the visitor explicitly confirms it.
+candidate until the visitor explicitly confirms it. Outreach is a separate, auditable effect
+boundary with an owner-configured count policy, suppression/caps, and delivery preflight.
 
 That is the same correctness pattern explored in
 [`effect-broker`](https://github.com/prathamesh-git9/effect-broker) and
@@ -23,10 +24,15 @@ authorised effect. Tests assert the boundary directly.
   numeric claims. Unsupported claims are removed; an empty answer becomes an honest refusal.
 - Optional-name onboarding with a real Skip path. Research runs in the background and never
   gates chat.
-- Live SSE research state, explainable confidence, multiple-candidate confirmation, initials
-  avatar fallback, and immediate stop-and-purge.
-- Pluggable public-search providers: DuckDuckGo HTML (no key), Tavily, Serper, and Brave. The
-  system never logs in to LinkedIn and only links to public search results.
+- Live SSE research progress, attributed person/company dossiers, rich identity cards, public
+  profile links, photo/Gravatar/initials fallback, and immediate stop-and-purge.
+- Pluggable public-search providers: DuckDuckGo HTML (no key), Tavily, Serper, and Brave.
+  Research never authenticates to LinkedIn and only uses observed public links.
+- Public ATS discovery for Greenhouse, Lever, Ashby, Workable, SmartRecruiters, and Recruitee,
+  with explainable role ranking and a careers-page fallback that never invents a requisition.
+- Published/pattern email discovery with honest `verified`/`inferred` labels, MX validation,
+  no SMTP mailbox probes, short referral-aware variants, a signed exact-body approval flow,
+  and count-based owner fanout with uncertainty-safe copy.
 - Deterministic JD-fit analysis that distinguishes “directly evidenced” from “not evidenced in
   this CV.” It never silently upgrades a gap into a match.
 - Live GitHub stats, topics, and three recent commits for `effect-broker`, `agent-runtime`,
@@ -34,8 +40,8 @@ authorised effect. Tests assert the boundary directly.
   `promise-ledger`, `reachable`, and `trustdesk`.
 - Layered prompt-injection defence for visitor text, pasted job descriptions, repository
   metadata, and poisoned search results.
-- An authenticated owner dashboard and CSV export. Raw IP addresses and unconfirmed research
-  payloads are deliberately unavailable.
+- An authenticated owner dashboard, CRM/replay, outreach audit and variant counts, and CSV
+  export. Raw IP addresses remain deliberately unavailable.
 - Per-IP/session sliding-window limits, a hard per-session token budget, maximum input sizes,
   safe external URLs, security headers, and an offline scripted provider.
 - A dependency-free, responsive interface with dark/light themes and a one-tag floating widget.
@@ -136,6 +142,14 @@ compatible provider.
 providers use `TWIN_SEARCH_API_KEY`; selecting one without a key safely falls back to
 DuckDuckGo.
 
+The retrieval stack is deliberately compositional: Scrapling provides the async network edge,
+Trafilatura extracts main article text, Selectolax extracts metadata/links, and the standard
+robots parser enforces `robots.txt` before page fetch. `tldextract` uses its bundled public
+suffix snapshot without a runtime list download, `email-validator` handles syntax, and
+dnspython handles async MX/TXT checks. HN Algolia, public GitHub organisation activity, and
+RSS/Atom are optional sources. Every source has an independent timeout and can fail without
+disrupting chat.
+
 Confidence is deterministic:
 
 | Observable signal | Maximum contribution |
@@ -148,8 +162,9 @@ Confidence is deterministic:
 
 Scores are capped at 100 and each result exposes the contributing reasons. The score is a match
 aid, never an identity claim. Search snippets containing prompt-injection patterns or sensitive
-categories are discarded. Candidate payloads remain in process memory and are purged on opt-out
-or session end; only a confirmed candidate can be persisted with that session.
+categories are discarded. Candidate/dossier payloads remain in process memory. Mutable outreach
+drafts may be persisted before selection by the owner policy; opt-out/session end removes those
+drafts and research, while an already attempted effect keeps its minimal append-only audit row.
 
 ## Embeddable widget
 
@@ -179,7 +194,40 @@ TWIN_OWNER_PASSWORD=a-long-random-password
 
 Then open `/owner` and use HTTP Basic authentication. The dashboard shows sessions, questions,
 explicitly confirmed candidates, message counts, and approximate token usage, with a CSV export.
-It never exposes raw IPs or unconfirmed search result bodies.
+It never exposes raw IPs. The authenticated CRM/replay endpoints expose research and outreach
+needed for owner review.
+
+## Outreach, Gmail, and owner notifications
+
+With `TWIN_FANOUT_UNSELECTED=true`, one to `TWIN_FANOUT_MAX` candidates are eligible for
+unattended outreach. A sole high-confidence match can use confident copy; every ambiguous
+candidate receives a distinct template that says they *may* have looked at the profile and can
+ignore it if not. A larger candidate set stays in review. This policy never bypasses suppression,
+once-only keys, `TWIN_DAILY_SEND_CAP`, or sender-domain SPF/DKIM/DMARC preflight.
+
+Real delivery additionally requires `TWIN_AUTOSEND=true` and Gmail credentials for
+`smtp.gmail.com:587` with STARTTLS. Test connectivity without sending a message:
+
+```bash
+digital-twin-smtp-check
+```
+
+Pushover notifications are background-only and rate-limited. With
+`TWIN_PUSHOVER_ENABLED=true`, short notices cover session/research activity, delivery decisions,
+LinkedIn actions, and errors. Notification failure never blocks chat.
+
+## LinkedIn automation warning
+
+Install the optional extra with `pip install -e ".[linkedin]"` and use only the owner’s own
+logged-in LinkedIn profile. The persistent browser data directory is local and gitignored; the
+application never accepts cookies or passwords. Actions are visible (no stealth), human-paced,
+capped, once-only, and individually approved unless `TWIN_LINKEDIN_AUTO=true`. Any account
+challenge stops for human handoff. There is no CAPTCHA bypass, proxy rotation, or alternate-user
+automation.
+
+LinkedIn can change its UI or restrict accounts for automation. The owner must review LinkedIn’s
+current terms and accept that account risk before enabling it. Keep
+`TWIN_LINKEDIN_KILL_SWITCH=true` whenever automation should stop immediately.
 
 ## Configuration
 
@@ -194,6 +242,12 @@ See [`.env.example`](.env.example) for the full set. Notable controls are:
 | `TWIN_SHOW_PHONE` | `false` | Phone publication privacy gate |
 | `TWIN_DATABASE_URL` | `sqlite:///./digital-twin.db` | SQLAlchemy 2 database URL |
 | `TWIN_HASH_SECRET` | development placeholder | HMAC key for non-reversible IP hashes |
+| `TWIN_AUTOSEND` | `false` | Enables real Gmail delivery after every policy/safety check |
+| `TWIN_FANOUT_UNSELECTED` | `false` | Enables the owner’s count-based unattended candidate flow |
+| `TWIN_FANOUT_MAX` | `3` | Maximum candidate set eligible for unattended fanout |
+| `TWIN_DAILY_SEND_CAP` | `20` | Hard global email cap checked before every send |
+| `TWIN_LINKEDIN_AUTO` | `false` | Allows unattended owner-profile actions; manual approval is default |
+| `TWIN_PUSHOVER_ENABLED` | `false` | Enables non-blocking owner activity notices |
 
 Use a strong `TWIN_HASH_SECRET`, HTTPS, a managed database/backup policy, and an explicit data
 retention policy in production. SQLite is intentionally the deployable single-instance default.
@@ -202,14 +256,8 @@ shared ephemeral broker while preserving the same authority check.
 
 ## API surface
 
-- `POST /api/sessions`, then optional `/identity` or `/skip`
-- `GET /api/sessions/{id}/events` for live research SSE
-- `POST /api/sessions/{id}/confirm` and `/research/opt-out`
-- `POST /api/sessions/{id}/chat` and `/jd-fit`
-- `DELETE /api/sessions/{id}` to purge the session
-- `GET /api/github`, `/api/health`, and `/api/contact`
-- Authenticated `/owner`, `/api/owner/visits`, and `/api/owner/export.csv`
-- Interactive OpenAPI documentation at `/docs`
+The complete request/response and SSE contract is in [`docs/API.md`](docs/API.md). Interactive
+OpenAPI documentation is at `/docs`.
 
 ## Evidence and end-to-end proof
 
@@ -219,8 +267,9 @@ shared ephemeral broker while preserving the same authority check.
 - [Research/authority-gate screenshot](artifacts/research-flow.png)
 
 The test suite runs without network access or API keys. It covers the context authority gate,
-optional-name skip, explainable confidence, provider failure, poisoned search content, chat
-injection, contractual refusal, grounding verification, rate limits, token caps, JD honesty,
+rich field attribution/no invented profiles, robots/timeouts, email confidence and MX, ATS
+detection/ranking, safe referral/fanout copy, exact-body tokens, DNS refusal, global/once-only
+caps, LinkedIn approval/challenge/caps, mocked Pushover, injection/grounding, rate/token limits,
 dashboard authentication, and session purge.
 
 ## Deployment

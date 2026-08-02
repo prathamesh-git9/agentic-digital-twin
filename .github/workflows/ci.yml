@@ -22,6 +22,10 @@ jobs:
       TWIN_ENVIRONMENT: test
       TWIN_DATABASE_URL: sqlite://
       TWIN_HASH_SECRET: ci-only-hash-secret
+      TWIN_AUTOSEND: "false"
+      TWIN_FANOUT_UNSELECTED: "false"
+      TWIN_LINKEDIN_AUTO: "false"
+      TWIN_PUSHOVER_ENABLED: "false"
     steps:
       - name: Check out repository
         uses: actions/checkout@v5

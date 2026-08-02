@@ -93,6 +93,6 @@ def test_widget_and_standalone_pages_ship_without_a_frontend_build(
 
     assert index.status_code == embed.status_code == widget.status_code == 200
     assert "Who am I speaking with?" in index.text
-    assert "completely optional" in index.text
+    assert "completely optional" in index.text.casefold()
     assert "__prathameshTwinWidget" in widget.text
     assert "frame-ancestors *" in index.headers["content-security-policy"]
