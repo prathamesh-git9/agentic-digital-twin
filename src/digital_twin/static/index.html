@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Talk to Prathamesh Kalamkar's evidence-grounded AI twin.">
+    <title>Prathamesh · Digital Twin</title>
+    <link rel="stylesheet" href="/static/styles.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#composer-input">Skip to chat</a>
+    <div class="aurora" aria-hidden="true">
+      <span class="aurora-one"></span><span class="aurora-two"></span>
+      <span class="noise"></span>
+    </div>
+
+    <div class="app-frame">
+      <header class="masthead">
+        <a class="brand" href="/" aria-label="Prathamesh digital twin home">
+          <span class="mini-core"><span>PK</span></span>
+          <span class="brand-copy">
+            <strong>PRATHAMESH<span class="brand-dot">.</span>TWIN</strong>
+            <small>Evidence, not improv</small>
+          </span>
+        </a>
+        <div class="header-status" title="Every answer passes a grounding check">
+          <span class="pulse-dot"></span>
+          <span>Grounding online</span>
+        </div>
+        <nav class="header-actions" aria-label="Product actions">
+          <button class="icon-button" id="projects-button" type="button" title="Live GitHub work">
+            <span aria-hidden="true">⌘</span><span class="button-label">Work</span>
+          </button>
+          <button class="icon-button" id="jd-button" type="button" title="Analyse a job description">
+            <span aria-hidden="true">◇</span><span class="button-label">JD fit</span>
+          </button>
+          <button class="icon-button" id="theme-button" type="button" aria-label="Switch theme">
+            <span id="theme-icon" aria-hidden="true">☼</span>
+          </button>
+        </nav>
+      </header>
+
+      <section class="research-bar" id="research-bar" data-state="idle" aria-live="polite">
+        <div class="research-status-icon" aria-hidden="true">
+          <span class="radar-sweep"></span><span class="radar-center"></span>
+        </div>
+        <div class="research-copy">
+          <strong id="research-title">Public context gate</strong>
+          <span id="research-disclosure">Research is optional and off until you share a name.</span>
+        </div>
+        <div class="research-actions">
+          <button class="text-button hidden" id="research-review" type="button">Review matches</button>
+          <button class="text-button hidden" id="research-optout" type="button">Stop &amp; purge</button>
+        </div>
+      </section>
+
+      <main class="workspace">
+        <aside class="profile-rail" aria-label="Prathamesh profile">
+          <section class="profile-card glass-card">
+            <div class="twin-visual" aria-label="Prathamesh initials avatar">
+              <span class="orbit orbit-one"></span>
+              <span class="orbit orbit-two"></span>
+              <span class="core-glow"></span>
+              <span class="core-initials">PK</span>
+              <span class="node node-one"></span><span class="node node-two"></span>
+            </div>
+            <div class="profile-heading">
+              <span class="eyebrow">BACK-END × AGENT SYSTEMS</span>
+              <h1>Prathamesh<br>Kalamkar</h1>
+              <p>Dublin, Ireland <span>·</span> Open to engineering conversations</p>
+            </div>
+            <div class="profile-tags" aria-label="Core disciplines">
+              <span>Python</span><span>Java</span><span>FastAPI</span><span>Reliability</span>
+            </div>
+            <a class="contact-link" href="mailto:prathameh7744yt@gmail.com">
+              <span>Contact the real Prathamesh</span><span aria-hidden="true">↗</span>
+            </a>
+          </section>
+
+          <section class="signal-card glass-card">
+            <div class="section-label"><span>TRUST SIGNAL</span><span>01</span></div>
+            <p class="signal-quote">“A claim without evidence does not ship.”</p>
+            <div class="mini-pipeline" aria-label="Answer verification pipeline">
+              <span>Retrieve</span><i></i><span>Draft</span><i></i><span>Verify</span>
+            </div>
+          </section>
+        </aside>
+
+        <section class="chat-stage glass-card" aria-label="Conversation with the twin">
+          <div class="chat-heading">
+            <div>
+              <span class="eyebrow">LIVE CONVERSATION</span>
+              <h2>Ask what matters.</h2>
+            </div>
+            <div class="session-badge" title="Offline-safe provider with a per-session cost cap">
+              <span class="session-led"></span><span id="provider-label">OFFLINE SAFE</span>
+            </div>
+          </div>
+
+          <div class="messages" id="messages" role="log" aria-live="polite" aria-label="Chat messages">
+            <div class="message-placeholder" id="message-placeholder">
+              <span class="placeholder-mark">TWIN / 00</span>
+              <p>Starting a grounded session…</p>
+            </div>
+          </div>
+
+          <div class="starters" id="starters" aria-label="Suggested questions">
+            <button type="button" data-prompt="Give me the 60-second overview of Prathamesh.">
+              <span>01</span>60-second overview
+            </button>
+            <button type="button" data-prompt="Which reliability project best shows his engineering judgement?">
+              <span>02</span>Best reliability work
+            </button>
+            <button type="button" data-prompt="What is his production backend experience?">
+              <span>03</span>Production experience
+            </button>
+          </div>
+
+          <form class="composer" id="composer">
+            <label class="sr-only" for="composer-input">Ask the twin a question</label>
+            <textarea id="composer-input" maxlength="8000" rows="1"
+              placeholder="Ask about experience, projects, skills, or role fit…" required></textarea>
+            <div class="composer-bottom">
+              <span><kbd>Enter</kbd> send · <kbd>Shift</kbd> + <kbd>Enter</kbd> newline</span>
+              <button class="send-button" id="send-button" type="submit" aria-label="Send message">
+                <span>ASK TWIN</span><span aria-hidden="true">↗</span>
+              </button>
+            </div>
+          </form>
+          <p class="chat-footnote">Answers are source-linked and verified. Contractual decisions always go to Prathamesh.</p>
+        </section>
+
+        <aside class="evidence-rail" aria-label="Evidence and system boundaries">
+          <section class="authority-card glass-card">
+            <div class="section-label"><span>AUTHORITY GATE</span><span>LIVE</span></div>
+            <div class="gate-map" id="gate-map" data-state="locked">
+              <div class="gate-node">
+                <span class="gate-icon">⌕</span><span><strong>Public discovery</strong><small>Untrusted proposal</small></span>
+              </div>
+              <div class="gate-line"><i></i><span id="gate-lock">LOCKED</span></div>
+              <div class="gate-node">
+                <span class="gate-icon">✓</span><span><strong>Your confirmation</strong><small>Grants authority</small></span>
+              </div>
+              <div class="gate-line"><i></i><span>CODE BOUNDARY</span></div>
+              <div class="gate-node active">
+                <span class="gate-icon">◎</span><span><strong>Twin context</strong><small>Grounded evidence only</small></span>
+              </div>
+            </div>
+          </section>
+
+          <section class="evidence-card glass-card">
+            <div class="section-label"><span>ANSWER EVIDENCE</span><span id="source-count">00</span></div>
+            <div id="evidence-list" class="evidence-list">
+              <div class="empty-evidence">
+                <span>↳</span>
+                <p>Sources for the latest answer will resolve here.</p>
+              </div>
+            </div>
+          </section>
+
+          <section class="privacy-note">
+            <span aria-hidden="true">◉</span>
+            <p><strong>Privacy by boundary.</strong> Public sources only. No LinkedIn login, data brokers, or sensitive inference.</p>
+          </section>
+        </aside>
+      </main>
+    </div>
+
+    <div class="modal-backdrop" id="onboarding" role="dialog" aria-modal="true" aria-labelledby="onboarding-title">
+      <section class="onboarding-card">
+        <button class="modal-close" id="onboarding-close" type="button" aria-label="Skip optional introduction">×</button>
+        <div class="modal-kicker"><span class="pulse-dot"></span>OPTIONAL INTRODUCTION</div>
+        <h2 id="onboarding-title">Who am I speaking with?</h2>
+        <p>Sharing a name is completely optional. If you do, I’ll look for public professional context in the background. Chat never waits for it, and nothing is used until you confirm.</p>
+        <form id="identity-form">
+          <label for="visitor-name">Your name <span>optional</span></label>
+          <input id="visitor-name" name="name" maxlength="80" autocomplete="name" placeholder="e.g. Sarah Chen">
+          <label for="visitor-company">Company <span>optional · improves matching</span></label>
+          <input id="visitor-company" name="company" maxlength="120" autocomplete="organization" placeholder="e.g. Stripe">
+          <button class="primary-button" type="submit">Start chat + background lookup <span>↗</span></button>
+          <button class="skip-button" id="skip-name" type="button">Skip — give me the full chat</button>
+        </form>
+        <div class="modal-policy"><span>✓</span> Public search results only <span>✓</span> Opt out any time <span>✓</span> No degraded skip path</div>
+      </section>
+    </div>
+
+    <div class="drawer-backdrop hidden" id="drawer-backdrop"></div>
+    <aside class="drawer" id="research-drawer" aria-hidden="true" aria-labelledby="research-drawer-title">
+      <div class="drawer-header">
+        <div><span class="eyebrow">PUBLIC MATCHES</span><h2 id="research-drawer-title">Is one of these you?</h2></div>
+        <button class="drawer-close" type="button" data-close-drawer aria-label="Close">×</button>
+      </div>
+      <p class="drawer-intro">These are search-engine results, not verified identities. Confidence is calculated from observable signals and is not generated by a model.</p>
+      <div class="candidate-list" id="candidate-list"></div>
+    </aside>
+
+    <aside class="drawer" id="jd-drawer" aria-hidden="true" aria-labelledby="jd-title">
+      <div class="drawer-header">
+        <div><span class="eyebrow">GROUNDED ANALYSIS</span><h2 id="jd-title">Job description fit</h2></div>
+        <button class="drawer-close" type="button" data-close-drawer aria-label="Close">×</button>
+      </div>
+      <p class="drawer-intro">Paste a JD. The report only counts requirements evidenced in the CV and labels everything else “not evidenced”—never “definitely missing.”</p>
+      <form id="jd-form" class="jd-form">
+        <label class="sr-only" for="jd-input">Job description</label>
+        <textarea id="jd-input" minlength="20" maxlength="50000" placeholder="Paste the role description here…" required></textarea>
+        <button type="submit" class="primary-button">Run evidence comparison <span>↗</span></button>
+      </form>
+      <div id="jd-results" class="jd-results"></div>
+    </aside>
+
+    <aside class="drawer wide-drawer" id="projects-drawer" aria-hidden="true" aria-labelledby="projects-title">
+      <div class="drawer-header">
+        <div><span class="eyebrow">LIVE FROM GITHUB</span><h2 id="projects-title">Reliability, made inspectable.</h2></div>
+        <button class="drawer-close" type="button" data-close-drawer aria-label="Close">×</button>
+      </div>
+      <p class="drawer-intro">Stats, topics, and recent commits come from GitHub at runtime. A grey “offline” badge means the API was unavailable—no stale number is presented as live.</p>
+      <div class="project-grid" id="project-grid"><div class="drawer-loader">Resolving ten repositories…</div></div>
+    </aside>
+
+    <div class="toast-region" id="toast-region" aria-live="assertive"></div>
+    <script src="/static/app.js" defer></script>
+  </body>
+</html>

@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow">
+    <title>PK.TWIN · Owner console</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="stylesheet" href="/static/owner.css">
+  </head>
+  <body class="owner-body">
+    <div class="aurora" aria-hidden="true"><span class="aurora-one"></span><span class="aurora-two"></span></div>
+    <main class="owner-shell">
+      <header class="owner-header">
+        <a class="brand" href="/"><span class="mini-core"><span>PK</span></span><span class="brand-copy"><strong>PK.TWIN / OWNER</strong><small>Authenticated operations view</small></span></a>
+        <a class="primary-button export-button" href="/api/owner/export.csv">Export CSV <span>↓</span></a>
+      </header>
+      <section class="owner-hero">
+        <span class="eyebrow">PRIVATE CONTROL PLANE</span>
+        <h1>Conversations,<br><em>without surveillance.</em></h1>
+        <p>Only session data supplied to the twin is shown. Raw IP addresses and unconfirmed research payloads are never available here.</p>
+      </section>
+      <section class="owner-metrics" id="owner-metrics"></section>
+      <section class="owner-table-card glass-card">
+        <div class="section-label"><span>RECENT SESSIONS</span><span id="owner-updated">LOADING</span></div>
+        <div class="owner-table-wrap">
+          <table>
+            <thead><tr><th>Visitor</th><th>Research</th><th>Questions</th><th>Usage</th><th>Created</th></tr></thead>
+            <tbody id="owner-rows"><tr><td colspan="5">Loading authenticated data…</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+    <script src="/static/owner.js" defer></script>
+  </body>
+</html>
+
