@@ -95,7 +95,15 @@ a { color: inherit; }
 
 /* ---------- shell ---------- */
 
-.page { max-width: 1420px; margin: 0 auto; padding: 20px clamp(14px, 3vw, 32px) 48px; }
+/*
+  Viewport-height flex column: the layout takes whatever the topbar, hero and
+  research strip leave behind, so the composer stays reachable without a fixed
+  pixel guess that breaks the moment the hero rewraps.
+*/
+.page {
+  max-width: 1420px; margin: 0 auto; padding: 20px clamp(14px, 3vw, 32px) 28px;
+  min-height: 100vh; display: flex; flex-direction: column;
+}
 
 .topbar {
   display: flex; align-items: center; gap: 18px;
@@ -132,6 +140,40 @@ a { color: inherit; }
 }
 
 .topbar-actions { display: flex; align-items: center; gap: 8px; }
+
+/* ---------- hero ---------- */
+
+.hero {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 28px; align-items: center;
+  padding: 26px clamp(20px, 2.6vw, 34px); margin-bottom: 18px;
+  border: 1px solid var(--line); border-radius: var(--radius);
+  background:
+    radial-gradient(600px 200px at 0% 0%, var(--accent-soft), transparent 70%),
+    var(--surface);
+}
+
+.hero-copy { min-width: 0; }
+.hero h1 {
+  font-size: clamp(25px, 3.4vw, 38px); margin: 10px 0 12px; max-width: 22ch;
+}
+.hero p { color: var(--text-2); font-size: 14.5px; margin: 0 0 16px; max-width: 62ch; }
+
+.cred { list-style: none; display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 16px; padding: 0; }
+.cred li {
+  font: 500 12px/1 var(--mono); letter-spacing: .01em;
+  border: 1px solid var(--line-2); border-radius: 999px;
+  padding: 7px 12px; color: var(--text-2); background: var(--surface-2);
+}
+
+.hero-actions { display: flex; gap: 9px; flex-wrap: wrap; }
+.hero-actions .ghost-btn { text-decoration: none; }
+
+.hero-orb {
+  width: 104px; height: 104px; flex: none; border-radius: 50%; display: grid; place-items: center;
+  font: 700 25px/1 var(--mono); color: var(--accent-ink); margin-right: 12px;
+  background: radial-gradient(circle at 34% 30%, color-mix(in srgb, var(--accent) 92%, #fff), var(--accent) 64%, color-mix(in srgb, var(--accent) 62%, var(--info)));
+  box-shadow: 0 0 0 1px var(--line-2), 0 14px 34px color-mix(in srgb, var(--accent) 16%, transparent);
+}
 
 /* ---------- buttons ---------- */
 
@@ -197,7 +239,8 @@ a { color: inherit; }
 .layout {
   display: grid; gap: 20px;
   grid-template-columns: minmax(0, 1fr) minmax(330px, 400px);
-  align-items: start;
+  align-items: stretch;
+  flex: 1 1 auto; min-height: 500px;
 }
 
 .card, .panel {
@@ -224,7 +267,17 @@ a { color: inherit; }
 
 /* ---------- chat ---------- */
 
-.chat-panel { padding: 24px clamp(18px, 2.4vw, 30px) 22px; display: flex; flex-direction: column; min-height: 640px; }
+/*
+  The chat column owns the viewport height so the composer stays anchored at the
+  bottom and the transcript scrolls inside it, rather than the whole page growing
+  and leaving a lake of empty space under short conversations.
+*/
+.chat-panel {
+  padding: 24px clamp(18px, 2.4vw, 30px) 22px;
+  display: flex; flex-direction: column;
+  min-height: 0; height: 100%;
+}
+.composer-zone { flex: none; }
 
 .panel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding-bottom: 18px; border-bottom: 1px solid var(--line); }
 .eyebrow { font: 600 10.5px/1 var(--mono); letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent); }
@@ -235,7 +288,12 @@ a { color: inherit; }
   border: 1px solid var(--line-2); background: var(--surface-2); color: var(--text-2);
 }
 
-.messages { flex: 1; display: flex; flex-direction: column; gap: 18px; padding: 22px 0; overflow-y: auto; max-height: 52vh; }
+.messages {
+  flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 18px;
+  padding: 22px 2px; overflow-y: auto; scrollbar-width: thin;
+}
+.messages::-webkit-scrollbar { width: 8px; }
+.messages::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 4px; }
 
 .msg { max-width: 86%; display: flex; flex-direction: column; gap: 7px; }
 .msg-role { font: 600 10px/1 var(--mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
@@ -461,8 +519,11 @@ kbd { font: 500 10.5px/1 var(--mono); border: 1px solid var(--line-2); border-ra
 @media (max-width: 1080px) {
   .layout { grid-template-columns: minmax(0, 1fr); }
   .rail { position: static; }
-  .chat-panel { min-height: 0; }
-  .messages { max-height: none; }
+  /* Stacked: let the page scroll normally instead of trapping the transcript. */
+  .chat-panel { height: auto; min-height: 0; }
+  .messages { overflow: visible; }
+  .hero { grid-template-columns: minmax(0, 1fr); }
+  .hero-orb { display: none; }
 }
 
 @media (max-width: 620px) {
@@ -472,6 +533,8 @@ kbd { font: 500 10.5px/1 var(--mono); border: 1px solid var(--line-2); border-ra
   .strip-actions { margin-left: 0; width: 100%; }
   .msg { max-width: 100%; }
   .panel-head { flex-direction: column; }
+  .hero { padding: 22px 18px; }
+  .cred li { font-size: 11.5px; padding: 6px 10px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

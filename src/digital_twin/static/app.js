@@ -824,6 +824,19 @@
     }
 
     try {
+      const contact = await api("/api/contact");
+      const link = $("#contact-link");
+      if (link && contact.email) {
+        link.href = `mailto:${contact.email}`;
+        link.textContent = "Email ↗";
+      } else if (link) {
+        link.remove();
+      }
+    } catch {
+      $("#contact-link")?.remove();
+    }
+
+    try {
       const session = await api("/api/sessions", { method: "POST", body: "{}" });
       state.sessionId = session.session_id;
       addMessage("twin", session.greeting, ["CV › Grounding contract"]);

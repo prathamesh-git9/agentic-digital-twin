@@ -42,6 +42,26 @@
         </nav>
       </header>
 
+      <!-- Credibility band: what a recruiter needs in the first six seconds. -->
+      <section class="hero" aria-label="Summary">
+        <div class="hero-copy">
+          <span class="eyebrow">Evidence, not improv</span>
+          <h1>I build the correctness layer under AI agents.</h1>
+          <p>Idempotency, deterministic replay, crash recovery, authority boundaries — the problems a more capable model doesn't solve. Ask this twin anything; every answer is checked against the CV before you see it.</p>
+          <ul class="cred" aria-label="Background">
+            <li>3.5+ yrs back-end</li>
+            <li>MSc Cybersecurity · 1:1</li>
+            <li>Java · Python · FastAPI</li>
+            <li>Dublin, Ireland</li>
+          </ul>
+          <div class="hero-actions">
+            <a class="ghost-btn" href="https://github.com/prathamesh-git9" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
+            <a class="ghost-btn" id="contact-link" href="#">Email ↗</a>
+          </div>
+        </div>
+        <div class="hero-orb" aria-hidden="true"><span>PK</span></div>
+      </section>
+
       <!-- Live research strip; hidden unless research is actually running. -->
       <div class="research-strip" id="research-strip" role="status" aria-live="polite" hidden>
         <span class="strip-spinner" aria-hidden="true"></span>
@@ -60,25 +80,27 @@
           <div class="panel-head">
             <div>
               <span class="eyebrow">Live conversation</span>
-              <h1>Ask what matters.</h1>
+              <h2>Ask what matters.</h2>
             </div>
             <span class="pill" id="budget-pill" title="Per-session cost ceiling">Offline safe</span>
           </div>
 
           <div class="messages" id="messages" role="log" aria-live="polite" aria-label="Messages"></div>
 
-          <div class="starters" id="starters" aria-label="Suggested questions"></div>
+          <div class="composer-zone">
+            <div class="starters" id="starters" aria-label="Suggested questions"></div>
 
-          <form class="composer" id="composer">
-            <label class="sr-only" for="composer-input">Message</label>
-            <textarea id="composer-input" rows="1" placeholder="Ask about his experience, projects, or fit for a role…" autocomplete="off"></textarea>
-            <div class="composer-foot">
-              <span class="hint"><kbd>Enter</kbd> send · <kbd>Shift</kbd>+<kbd>Enter</kbd> newline</span>
-              <button type="submit" class="primary-btn" id="send-button">Ask twin</button>
-            </div>
-          </form>
+            <form class="composer" id="composer">
+              <label class="sr-only" for="composer-input">Message</label>
+              <textarea id="composer-input" rows="1" placeholder="Ask about his experience, projects, or fit for a role…" autocomplete="off"></textarea>
+              <div class="composer-foot">
+                <span class="hint"><kbd>Enter</kbd> send · <kbd>Shift</kbd>+<kbd>Enter</kbd> newline</span>
+                <button type="submit" class="primary-btn" id="send-button">Ask twin</button>
+              </div>
+            </form>
 
-          <p class="disclaimer">Answers are source-linked and verified. Contractual decisions always go to Prathamesh.</p>
+            <p class="disclaimer">Answers are source-linked and verified. Contractual decisions always go to Prathamesh.</p>
+          </div>
         </section>
 
         <aside class="rail" aria-label="Context and evidence">
