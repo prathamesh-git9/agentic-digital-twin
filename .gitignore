@@ -13,4 +13,4 @@ build/
 htmlcov/
 .coverage
 artifacts/runtime/
-
+.twin-linkedin-profile/

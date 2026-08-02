@@ -7,6 +7,7 @@ import io
 import json
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -19,31 +20,73 @@ from fastapi.staticfiles import StaticFiles
 
 from . import __version__
 from .config import Settings
+from .deliverability import DeliverabilityPreflight, DnspythonTXTResolver, TXTResolver
+from .email_discovery import (
+    DnspythonMXResolver,
+    EmailDiscoveryService,
+    HunterVerificationAdapter,
+    MXResolver,
+)
+from .engagement import (
+    CompanyFitService,
+    NotificationService,
+    Notifier,
+    ProofPackService,
+    crm_row,
+    verify_corporate_recruiter,
+)
 from .events import EventHub
 from .github import GitHubService
+from .linkedin import (
+    LinkedInAutomationService,
+    LinkedInDriver,
+    PlaywrightLinkedInDriver,
+)
+from .mailer import GmailSMTPSender, MailSender
 from .models import Database, Visit
+from .outreach import (
+    ApprovalTokenService,
+    OutreachComposer,
+    OutreachService,
+    SendDecision,
+    body_hash,
+    decide_send,
+)
 from .profile import ProfileCorpus
 from .providers import AnswerProvider, OpenAICompatibleProvider, ScriptedProvider
 from .research import (
     BraveSearchProvider,
+    CandidateDossier,
     DuckDuckGoSearchProvider,
     ResearchEngine,
     SearchOutcome,
     SearchProvider,
     SerperSearchProvider,
     TavilySearchProvider,
+    attach_candidate_email,
 )
+from .research_sources import PageFetcher, ScraplingPageFetcher
+from .roles import OpenRoleService, PublicATSClient, RoleDiscoveryResult
 from .schemas import (
     ChatRequest,
     ChatResponse,
     ConfirmCandidateRequest,
     ConfirmCandidateResponse,
+    CRMStageRequest,
+    FollowUpRequest,
     IdentityRequest,
     IdentityResponse,
+    IntentRequest,
     JobDescriptionRequest,
     JobFitResponse,
+    LinkedInActionRequest,
+    LinkedInApprovalRequest,
+    OutreachApprovalRequest,
+    OutreachSendRequest,
+    RecruiterVerificationRequest,
     ResearchStateResponse,
     SessionResponse,
+    SuppressionRequest,
 )
 from .security import (
     SlidingWindowLimiter,
@@ -53,6 +96,7 @@ from .security import (
     sanitize_external_text,
 )
 from .services import ChatService, JobFitAnalyzer
+from .supplemental import GitHubOrganizationSource, HackerNewsAlgoliaSource, RSSAtomReader
 
 STATIC_DIR = Path(__file__).parent / "static"
 GREETING = (
@@ -61,6 +105,26 @@ GREETING = (
     "for public professional context; it is completely optional, and Skip gives you the "
     "same full chat."
 )
+
+
+def _draft_payload(draft: Any) -> dict[str, Any]:
+    return {
+        "id": draft.id,
+        "session_id": draft.session_id,
+        "candidate_id": draft.candidate_id,
+        "recipient": draft.recipient,
+        "recipient_status": draft.recipient_status,
+        "subject": draft.subject,
+        "variants": draft.variants,
+        "linkedin": draft.linkedin,
+        "kind": draft.kind,
+        "parent_draft_id": draft.parent_draft_id,
+        "created_at": draft.created_at.isoformat(),
+    }
+
+
+def _utc(value: datetime) -> datetime:
+    return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
 
 
 def _answer_provider(settings: Settings) -> tuple[AnswerProvider, str]:
@@ -100,6 +164,13 @@ def create_app(
     search_provider: SearchProvider | None = None,
     answer_provider: AnswerProvider | None = None,
     github_service: GitHubService | None = None,
+    page_fetcher: PageFetcher | None = None,
+    mx_resolver: MXResolver | None = None,
+    txt_resolver: TXTResolver | None = None,
+    mail_sender: MailSender | None = None,
+    ats_client: PublicATSClient | None = None,
+    linkedin_driver: LinkedInDriver | None = None,
+    notifier_service: Notifier | None = None,
 ) -> FastAPI:
     settings = settings or Settings()
     database = Database(settings.database_url)
@@ -110,9 +181,36 @@ def create_app(
     if answer_provider is not None:
         effective_provider = type(answer_provider).__name__
     github = github_service or GitHubService(token=settings.github_token)
+    production_research = search_provider is None
+    effective_search = search_provider or _search_provider(settings)
+    effective_page_fetcher = page_fetcher
+    if effective_page_fetcher is None and production_research:
+        effective_page_fetcher = ScraplingPageFetcher(
+            timeout=settings.research_source_timeout_seconds
+        )
+    supplemental = (
+        (
+            HackerNewsAlgoliaSource(timeout=settings.research_source_timeout_seconds),
+            GitHubOrganizationSource(
+                timeout=settings.research_source_timeout_seconds,
+                token=settings.github_token,
+            ),
+        )
+        if production_research
+        else ()
+    )
     research = ResearchEngine(
-        search_provider or _search_provider(settings),
+        effective_search,
         cache_ttl_seconds=settings.research_cache_ttl_seconds,
+        page_fetcher=effective_page_fetcher,
+        source_timeout_seconds=settings.research_source_timeout_seconds,
+        page_limit=settings.research_page_limit,
+        supplemental_sources=supplemental,
+        feed_reader=(
+            RSSAtomReader(timeout=settings.research_source_timeout_seconds)
+            if production_research
+            else None
+        ),
     )
     events = EventHub()
     chat = ChatService(
@@ -123,11 +221,72 @@ def create_app(
         provider=provider,
     )
     fit = JobFitAnalyzer(corpus)
+    email_verifier = (
+        HunterVerificationAdapter(
+            settings.email_verification_api_key,
+            base_url=settings.email_verification_base_url,
+            timeout=settings.research_source_timeout_seconds,
+        )
+        if settings.email_verification_provider == "hunter"
+        and settings.email_verification_api_key
+        else None
+    )
+    email_discovery = EmailDiscoveryService(
+        mx_resolver=mx_resolver
+        or DnspythonMXResolver(timeout=settings.email_mx_timeout_seconds),
+        verifier=email_verifier,
+    )
+    role_service = OpenRoleService(
+        corpus,
+        client=ats_client
+        or PublicATSClient(timeout=settings.research_source_timeout_seconds),
+    )
+    tokens = ApprovalTokenService(
+        settings.hash_secret, ttl_seconds=settings.outreach_approval_ttl_seconds
+    )
+    composer = OutreachComposer(
+        corpus,
+        public_base_url=settings.public_base_url,
+        token_service=tokens,
+    )
+    preflight = DeliverabilityPreflight(
+        txt_resolver or DnspythonTXTResolver(timeout=settings.email_mx_timeout_seconds),
+        selectors=settings.parsed_dkim_selectors,
+    )
+    outreach = OutreachService(
+        settings=settings,
+        database=database,
+        sender=mail_sender or GmailSMTPSender(settings),
+        preflight=preflight,
+        tokens=tokens,
+    )
+    company_fit = CompanyFitService(corpus)
+    proof_packs = ProofPackService(
+        database=database,
+        corpus=corpus,
+        ttl_seconds=settings.proof_pack_ttl_seconds,
+        public_base_url=settings.public_base_url,
+    )
+    notifier = notifier_service or NotificationService(settings)
+    linkedin = LinkedInAutomationService(
+        settings=settings,
+        database=database,
+        driver=linkedin_driver or PlaywrightLinkedInDriver(settings),
+        tokens=tokens,
+    )
     limiter = SlidingWindowLimiter(settings.requests_per_minute)
     session_limiter = SlidingWindowLimiter(settings.max_sessions_per_ip_hour, 3_600)
     research_results: dict[str, SearchOutcome] = {}
+    role_results: dict[str, dict[str, RoleDiscoveryResult]] = {}
+    send_decisions: dict[str, SendDecision] = {}
     identities: dict[str, IdentityRequest] = {}
     tasks: dict[str, asyncio.Task[None]] = {}
+    notification_tasks: set[asyncio.Task[bool]] = set()
+
+    def notify_later(kind: str, payload: dict[str, Any]) -> None:
+        task = asyncio.create_task(notifier.notify(kind, payload))
+        notification_tasks.add(task)
+        task.add_done_callback(notification_tasks.discard)
 
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncIterator[None]:
@@ -136,7 +295,11 @@ def create_app(
             task.cancel()
         if tasks:
             await asyncio.gather(*tasks.values(), return_exceptions=True)
+        if notification_tasks:
+            await asyncio.gather(*notification_tasks, return_exceptions=True)
         research_results.clear()
+        role_results.clear()
+        send_decisions.clear()
         identities.clear()
 
     app = FastAPI(
@@ -160,10 +323,21 @@ def create_app(
     app.state.research_results = research_results
     app.state.events = events
     app.state.chat_service = chat
+    app.state.role_results = role_results
+    app.state.send_decisions = send_decisions
+    app.state.outreach = outreach
+    app.state.linkedin = linkedin
 
     @app.middleware("http")
     async def security_headers(request: Request, call_next: Any) -> Response:
-        response = await call_next(request)
+        try:
+            response = await call_next(request)
+        except Exception as exc:
+            notify_later(
+                "error",
+                {"error": f"{request.url.path}: {type(exc).__name__}"},
+            )
+            raise
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["Referrer-Policy"] = "no-referrer"
         response.headers["Permissions-Policy"] = (
@@ -198,14 +372,161 @@ def create_app(
             )
 
     async def run_research(session_id: str, identity: IdentityRequest) -> None:
+        async def publish_progress(event: dict[str, Any]) -> None:
+            visit = database.get_visit(session_id)
+            if visit is not None and not visit.research_opted_out:
+                await events.publish(session_id, event, retain=False)
+
         outcome = await research.find(
             identity.name or "",
             company=identity.company,
             location=identity.location,
+            progress=publish_progress,
         )
         latest = database.get_visit(session_id)
         if latest is None or latest.research_opted_out:
             return
+        enriched_candidates = []
+        for candidate in outcome.candidates:
+            dossier = next(
+                (
+                    value
+                    for value in outcome.dossiers
+                    if value.candidate_id == candidate.id
+                ),
+                None,
+            )
+            if dossier is None:
+                enriched_candidates.append(candidate)
+                continue
+            discovery = await email_discovery.discover(candidate, dossier)
+            enriched_candidates.append(
+                attach_candidate_email(candidate, discovery.selected)
+                if discovery.selected
+                else candidate
+            )
+        outcome = outcome.model_copy(update={"candidates": enriched_candidates})
+        per_candidate_roles: dict[str, RoleDiscoveryResult] = {}
+        for candidate in outcome.candidates:
+            dossier = next(
+                (
+                    value
+                    for value in outcome.dossiers
+                    if value.candidate_id == candidate.id
+                ),
+                None,
+            )
+            careers = dossier.company.careers_page if dossier else None
+            if careers is None:
+                continue
+            links = [link for document in dossier.documents for link in document.links]
+            link_labels = {
+                url: label
+                for document in dossier.documents
+                for url, label in document.link_labels.items()
+            }
+            per_candidate_roles[candidate.id] = await role_service.discover(
+                careers.value,
+                links=links,
+                link_labels=link_labels,
+                preferred_location=corpus.data["person"]["location"],
+            )
+        role_results[session_id] = per_candidate_roles
+        decision = decide_send(
+            outcome.candidates,
+            threshold=settings.send_confidence_threshold,
+            fanout_unselected=settings.fanout_unselected,
+            fanout_max=settings.fanout_max,
+        )
+        send_decisions[session_id] = decision
+        outreach_cards: list[dict[str, Any]] = []
+        auto_work: list[tuple[Any, str, str, str | None]] = []
+        for candidate in outcome.candidates:
+            if candidate.email is None:
+                if candidate.id in {
+                    *decision.candidate_ids,
+                    *decision.fanout_candidate_ids,
+                }:
+                    notify_later(
+                        "send_refusal",
+                        {
+                            "visitor_name": identity.name,
+                            "decision": decision.reason,
+                            "error": "No publishable or safely inferred email address.",
+                        },
+                    )
+                continue
+            role_result = per_candidate_roles.get(candidate.id)
+            best_role = (
+                role_result.roles[0] if role_result and role_result.roles else None
+            )
+            if candidate.id in decision.candidate_ids:
+                template = "single_match"
+            elif candidate.id in decision.fanout_candidate_ids:
+                template = "fanout"
+            else:
+                template = "selected"
+            variants = composer.variants(
+                candidate,
+                candidate.email,
+                role=best_role,
+                template=template,
+            )
+            linkedin_profile = next(
+                (profile for profile in candidate.profiles if profile.kind == "linkedin"),
+                None,
+            )
+            linkedin_draft = {
+                "profile_url": linkedin_profile.url if linkedin_profile else None,
+                "connect_note": (
+                    "Hi — I build reliable Java/Python backend and agent systems. "
+                    "Happy to connect and share a compact proof pack."
+                ),
+                "message": (
+                    "Thanks for connecting. I’m a backend engineer with 3.5+ years "
+                    "across Java, Spring Boot, Python and production support, with "
+                    "recent agent-systems work. Happy to share evidence relevant to "
+                    "your team."
+                ),
+            }
+            draft = outreach.create_draft(
+                session_id=session_id,
+                candidate=candidate,
+                email=candidate.email,
+                variants=variants,
+                linkedin=linkedin_draft,
+            )
+            outreach.record_decision(
+                session_id=session_id,
+                candidate=candidate,
+                email=candidate.email,
+                decision=decision,
+                template=template,
+            )
+            outreach_cards.append(
+                {
+                    "candidate_id": candidate.id,
+                    "draft_id": draft.id,
+                    "recipient": candidate.email.model_dump(mode="json"),
+                    "variants": [
+                        variant.model_dump(mode="json") for variant in variants[0:3]
+                    ],
+                    "linkedin": linkedin_draft,
+                    "template": template,
+                }
+            )
+            if settings.autosend and (
+                candidate.id in decision.candidate_ids
+                or candidate.id in decision.fanout_candidate_ids
+            ):
+                auto_work.append(
+                    (
+                        draft,
+                        variants[0].id,
+                        template,
+                        best_role.title if best_role else None,
+                    )
+                )
         research_results[session_id] = outcome
         database.update_visit(
             session_id,
@@ -220,6 +541,105 @@ def create_app(
             ),
         }
         await events.publish(session_id, event)
+        if outcome.dossiers:
+            await events.publish(
+                session_id,
+                {
+                    "type": "research.dossier",
+                    "candidates": [
+                        candidate.model_dump(mode="json")
+                        for candidate in outcome.candidates
+                    ],
+                    "dossiers": [
+                        dossier.model_dump(mode="json") for dossier in outcome.dossiers
+                    ],
+                },
+                retain=False,
+            )
+        notify_later(
+            "research_completed",
+            {
+                "visitor_name": identity.name,
+                "candidate_count": len(outcome.candidates),
+            },
+        )
+        degraded = [
+            report.source
+            for report in outcome.source_reports
+            if report.status in {"failed", "timeout"}
+        ]
+        if degraded:
+            notify_later(
+                "error",
+                {
+                    "visitor_name": identity.name,
+                    "error": "Research source degradation: " + ", ".join(degraded[:5]),
+                },
+            )
+        if per_candidate_roles:
+            await events.publish(
+                session_id,
+                {
+                    "type": "roles.ready",
+                    "roles": {
+                        candidate_id: result.model_dump(mode="json")
+                        for candidate_id, result in per_candidate_roles.items()
+                    },
+                },
+                retain=False,
+            )
+        await events.publish(
+            session_id,
+            {
+                "type": "outreach.ready",
+                "decision": decision.model_dump(mode="json"),
+                "drafts": outreach_cards,
+            },
+            retain=False,
+        )
+        for draft, variant_id, template, role_title in auto_work:
+            try:
+                result = await outreach.send(
+                    draft=draft,
+                    variant_id=variant_id,
+                    decision=decision,
+                    template=template,
+                    approver="owner:auto-policy",
+                    automatic=True,
+                )
+            except Exception as exc:  # noqa: BLE001 - delivery cannot disrupt research
+                notify_later(
+                    "error",
+                    {
+                        "visitor_name": identity.name,
+                        "recipient": draft.recipient,
+                        "role": role_title,
+                        "decision": decision.reason,
+                        "error": type(exc).__name__,
+                    },
+                )
+                continue
+            recent_questions = database.questions_for(session_id, limit=1)
+            notify_later(
+                "outreach_email_sent" if result.status == "sent" else "send_refusal",
+                {
+                    "visitor_name": identity.name,
+                    "recipient": draft.recipient,
+                    "role": role_title,
+                    "decision": decision.reason,
+                    "question": recent_questions[0] if recent_questions else None,
+                    "error": result.reason if result.status != "sent" else None,
+                },
+            )
+            await events.publish(
+                session_id,
+                {
+                    "type": "outreach.action",
+                    "candidate_id": draft.candidate_id,
+                    **result.model_dump(mode="json"),
+                },
+                retain=False,
+            )
 
     @app.get("/", include_in_schema=False)
     async def index() -> FileResponse:
@@ -266,6 +686,7 @@ def create_app(
                 headers={"Retry-After": "3600"},
             )
         visit = database.create_visit(ip_hash)
+        notify_later("new_visitor_session", {"session_id": visit.id})
         initial = events.latest(visit.id)
         return SessionResponse(
             session_id=visit.id,
@@ -322,7 +743,16 @@ def create_app(
             research_opted_out=False,
             match_count=0,
             confirmed_candidate_json=None,
+            confirmed_person_dossier_json=None,
+            confirmed_company_dossier_json=None,
+            confirmed_email_json=None,
+            verified_corporate_domain=None,
+            crm_stage="visited",
         )
+        research_results.pop(session_id, None)
+        role_results.pop(session_id, None)
+        send_decisions.pop(session_id, None)
+        database.purge_research_artifacts(session_id)
         await events.publish(
             session_id,
             {
@@ -330,9 +760,16 @@ def create_app(
                 "status": "researching",
                 "query": name,
                 "message": f'Researching "{name}"…',
-                "disclosure": ("Checking public results. Chat remains fully available."),
+                "disclosure": (
+                    "Checking public results. Nothing enters chat before confirmation. "
+                    "If owner-enabled delivery authorizes this candidate set, its "
+                    "separate outreach policy may prepare and send once; opt-out is "
+                    "always "
+                    "available. Chat remains fully available."
+                ),
             },
         )
+        notify_later("research_started", {"visitor_name": name})
         task = asyncio.create_task(run_research(session_id, safe_identity))
         tasks[session_id] = task
         task.add_done_callback(
@@ -370,6 +807,164 @@ def create_app(
             headers={"X-Accel-Buffering": "no", "Cache-Control": "no-cache"},
         )
 
+    @app.post("/api/sessions/{session_id}/intent")
+    async def set_intent(
+        session_id: str, payload: IntentRequest, request: Request
+    ) -> dict[str, str]:
+        visit = require_visit(session_id)
+        enforce_rate(request, session_id)
+        database.update_visit(session_id, visitor_intent=payload.intent)
+        await events.publish(
+            session_id,
+            {"type": "intent", "intent": payload.intent, "status": "recorded"},
+            retain=False,
+        )
+        notify_later(
+            "visitor_intent",
+            {"visitor_name": visit.visitor_name, "decision": payload.intent},
+        )
+        return {"status": "recorded", "intent": payload.intent}
+
+    @app.get("/api/sessions/{session_id}/dossier")
+    async def session_dossier(session_id: str) -> dict[str, Any]:
+        require_visit(session_id)
+        outcome = research_results.get(session_id)
+        if outcome is None:
+            raise HTTPException(status_code=404, detail="Research result is unavailable")
+        return {
+            "status": outcome.status,
+            "candidates": [
+                candidate.model_dump(mode="json") for candidate in outcome.candidates
+            ],
+            "dossiers": [dossier.model_dump(mode="json") for dossier in outcome.dossiers],
+            "sources": [
+                report.model_dump(mode="json") for report in outcome.source_reports
+            ],
+            "authority": (
+                "Card and outreach data only; absent from chat until candidate "
+                "confirmation."
+            ),
+        }
+
+    @app.get("/api/sessions/{session_id}/roles")
+    async def session_roles(session_id: str) -> dict[str, Any]:
+        require_visit(session_id)
+        return {
+            "by_candidate": {
+                candidate_id: result.model_dump(mode="json")
+                for candidate_id, result in role_results.get(session_id, {}).items()
+            }
+        }
+
+    @app.get("/api/sessions/{session_id}/outreach")
+    async def session_outreach(session_id: str) -> dict[str, Any]:
+        require_visit(session_id)
+        drafts = database.outreach_drafts_for(session_id)
+        decision = send_decisions.get(session_id)
+        return {
+            "decision": decision.model_dump(mode="json") if decision else None,
+            "drafts": [_draft_payload(draft) for draft in drafts],
+            "smtp_automation_configured": settings.autosend and settings.smtp_ready,
+        }
+
+    @app.get("/api/sessions/{session_id}/company-fit")
+    async def session_company_fit(session_id: str) -> dict[str, Any]:
+        visit = require_visit(session_id)
+        if visit.research_status != "confirmed" or not visit.confirmed_company_dossier:
+            raise HTTPException(
+                status_code=409, detail="Confirm a candidate before company-fit analysis"
+            )
+        dossier = CandidateDossier.model_validate(
+            {
+                "candidate_id": (visit.confirmed_candidate or {}).get("id", "confirmed"),
+                "person": visit.confirmed_person_dossier or {"candidate_id": "confirmed"},
+                "company": visit.confirmed_company_dossier,
+                "documents": [],
+            }
+        )
+        result = company_fit.analyze(dossier.company)
+        await events.publish(
+            session_id,
+            {"type": "company_fit.ready", **result.model_dump(mode="json")},
+            retain=False,
+        )
+        return result.model_dump(mode="json")
+
+    @app.get("/api/sessions/{session_id}/calendar")
+    async def calendar(session_id: str) -> dict[str, Any]:
+        require_visit(session_id)
+        return {
+            "configured": bool(settings.calendar_url),
+            "url": settings.calendar_url or None,
+            "cta": "Book a short conversation with Prathamesh"
+            if settings.calendar_url
+            else None,
+        }
+
+    @app.post("/api/sessions/{session_id}/proof-pack", status_code=201)
+    async def create_proof_pack(session_id: str) -> dict[str, Any]:
+        visit = require_visit(session_id)
+        if visit.research_status != "confirmed":
+            raise HTTPException(status_code=409, detail="Candidate confirmation required")
+        candidate_id = str((visit.confirmed_candidate or {}).get("id", ""))
+        role_result = role_results.get(session_id, {}).get(candidate_id)
+        role = role_result.roles[0] if role_result and role_result.roles else None
+        fit_result = None
+        if visit.confirmed_company_dossier:
+            dossier = CandidateDossier.model_validate(
+                {
+                    "candidate_id": candidate_id or "confirmed",
+                    "person": visit.confirmed_person_dossier
+                    or {"candidate_id": candidate_id or "confirmed"},
+                    "company": visit.confirmed_company_dossier,
+                    "documents": [],
+                }
+            )
+            fit_result = company_fit.analyze(dossier.company)
+        pack, url = proof_packs.create(
+            session_id=session_id, role=role, company_fit=fit_result
+        )
+        await events.publish(
+            session_id,
+            {
+                "type": "proof_pack.ready",
+                "url": url,
+                "expires_at": pack.expires_at.isoformat(),
+            },
+            retain=False,
+        )
+        return {"url": url, "expires_at": pack.expires_at.isoformat()}
+
+    @app.get("/api/proof-packs/{token}")
+    async def get_proof_pack(token: str) -> dict[str, Any]:
+        pack = database.get_proof_pack(token)
+        if pack is None:
+            raise HTTPException(status_code=404, detail="Proof pack not found or expired")
+        return pack.payload
+
+    @app.post("/api/sessions/{session_id}/recruiter/verify")
+    async def recruiter_verify(
+        session_id: str, payload: RecruiterVerificationRequest
+    ) -> dict[str, Any]:
+        visit = require_visit(session_id)
+        result = verify_corporate_recruiter(
+            payload.email, expected_domain=visit.verified_corporate_domain
+        )
+        if result.verified:
+            database.update_visit(session_id, verified_corporate_domain=result.domain)
+        return result.model_dump(mode="json")
+
+    @app.get("/outreach/opt-out")
+    async def outreach_opt_out(token: str) -> dict[str, str]:
+        address = tokens.verify_opt_out(token)
+        if address is None:
+            raise HTTPException(status_code=400, detail="Invalid or expired opt-out link")
+        database.suppress(address, "recipient opt-out link")
+        return {
+            "status": "suppressed",
+            "message": "You will not receive further automated outreach.",
+        }
+
     @app.post(
         "/api/sessions/{session_id}/confirm",
         response_model=ConfirmCandidateResponse,
@@ -392,11 +987,37 @@ def create_app(
             raise HTTPException(
                 status_code=404, detail="Candidate is unavailable or expired"
             )
+        dossier = next(
+            (
+                value
+                for value in (outcome.dossiers if outcome else [])
+                if value.candidate_id == candidate.id
+            ),
+            None,
+        )
+        company_domain = (
+            dossier.company.domain.value
+            if dossier and dossier.company.domain is not None
+            else None
+        )
         database.update_visit(
             session_id,
             visitor_name=candidate.name,
             research_status="confirmed",
             confirmed_candidate_json=json.dumps(candidate.model_dump(mode="json")),
+            confirmed_person_dossier_json=(
+                json.dumps(dossier.person.model_dump(mode="json")) if dossier else None
+            ),
+            confirmed_company_dossier_json=(
+                json.dumps(dossier.company.model_dump(mode="json")) if dossier else None
+            ),
+            confirmed_email_json=(
+                json.dumps(candidate.email.model_dump(mode="json"))
+                if candidate.email
+                else None
+            ),
+            verified_corporate_domain=company_domain,
+            crm_stage="confirmed",
         )
         await events.publish(
             session_id,
@@ -412,10 +1033,47 @@ def create_app(
                 ),
             },
         )
+        await events.publish(
+            session_id,
+            {
+                "type": "handoff",
+                "status": "ready",
+                "candidate_id": candidate.id,
+                "calendar_url": settings.calendar_url or None,
+                "message": "Confirmed visitor context is ready for owner handoff.",
+            },
+            retain=False,
+        )
+        notify_later(
+            "confirmed_visitor",
+            {
+                "session_id": session_id,
+                "name": candidate.name,
+                "company": candidate.company,
+                "intent": require_visit(session_id).visitor_intent,
+            },
+        )
+        database.update_visit(session_id, handoff_notified=True)
+        roles = role_results.get(session_id, {}).get(candidate.id)
+        draft = database.latest_outreach_draft_for(session_id, candidate.id)
         return ConfirmCandidateResponse(
             status="confirmed",
             candidate=candidate,
             message="Confirmed context is now available to the twin.",
+            dossier=dossier,
+            roles=roles.roles if roles else [],
+            outreach=(
+                {
+                    "draft_id": draft.id,
+                    "recipient": draft.recipient,
+                    "recipient_status": draft.recipient_status,
+                    "variants": draft.variants,
+                    "linkedin": draft.linkedin,
+                    "consent": "Confirmation authorises preparation, not manual sending.",
+                }
+                if draft
+                else None
+            ),
         )
 
     @app.post("/api/sessions/{session_id}/research/opt-out")
@@ -428,13 +1086,23 @@ def create_app(
         identity = identities.pop(session_id, None)
         if identity and identity.name:
             research.cache.purge(identity.name)
-        research_results.pop(session_id, None)
+        prior_outcome = research_results.pop(session_id, None)
+        for candidate in prior_outcome.candidates if prior_outcome else []:
+            if candidate.email:
+                database.suppress(candidate.email.address, "session research opt-out")
+        role_results.pop(session_id, None)
+        send_decisions.pop(session_id, None)
+        database.purge_research_artifacts(session_id)
         database.update_visit(
             session_id,
             research_status="opted_out",
             research_opted_out=True,
             match_count=0,
             confirmed_candidate_json=None,
+            confirmed_person_dossier_json=None,
+            confirmed_company_dossier_json=None,
+            confirmed_email_json=None,
+            verified_corporate_domain=None,
         )
         await events.publish(
             session_id,
@@ -459,6 +1127,8 @@ def create_app(
         if identity and identity.name:
             research.cache.purge(identity.name)
         research_results.pop(session_id, None)
+        role_results.pop(session_id, None)
+        send_decisions.pop(session_id, None)
         events.purge(session_id)
         database.delete_visit(session_id)
         return Response(status_code=204)
@@ -571,6 +1241,13 @@ def create_app(
                     "research_status": visit.research_status,
                     "match_count": visit.match_count,
                     "confirmed_candidate": candidate,
+                    "crm_stage": visit.crm_stage,
+                    "visitor_intent": visit.visitor_intent,
+                    "send_decision": (
+                        send_decisions[visit.id].model_dump(mode="json")
+                        if visit.id in send_decisions
+                        else None
+                    ),
                     "message_count": visit.message_count,
                     "token_usage": visit.token_usage,
                     "questions": database.questions_for(visit.id),
@@ -581,6 +1258,310 @@ def create_app(
     @app.get("/owner", include_in_schema=False)
     async def owner_page(_: str = Depends(require_owner)) -> FileResponse:
         return FileResponse(STATIC_DIR / "owner.html")
+
+    @app.post("/outreach/approve")
+    async def approve_outreach(
+        payload: OutreachApprovalRequest,
+        _: str = Depends(require_owner),
+    ) -> dict[str, Any]:
+        draft = database.get_outreach_draft(payload.draft_id)
+        if draft is None:
+            raise HTTPException(status_code=404, detail="Outreach draft not found")
+        variant = next(
+            (value for value in draft.variants if value.get("id") == payload.variant_id),
+            None,
+        )
+        if variant is None:
+            raise HTTPException(status_code=404, detail="Draft variant not found")
+        body = str(variant.get("body", ""))
+        token = tokens.issue(
+            draft_id=draft.id,
+            recipient=draft.recipient,
+            variant_id=payload.variant_id,
+            body=body,
+        )
+        return {
+            "approval_token": token,
+            "draft_id": draft.id,
+            "variant_id": payload.variant_id,
+            "recipient": draft.recipient,
+            "body_hash": body_hash(body),
+            "expires_in_seconds": settings.outreach_approval_ttl_seconds,
+        }
+
+    @app.post("/outreach/send")
+    async def send_outreach(
+        payload: OutreachSendRequest,
+        owner: str = Depends(require_owner),
+    ) -> dict[str, Any]:
+        draft = database.get_outreach_draft(payload.draft_id)
+        if draft is None:
+            raise HTTPException(status_code=404, detail="Outreach draft not found")
+        decision = send_decisions.get(draft.session_id) or SendDecision(
+            decision="review",
+            reason="Owner explicitly approved a reviewed draft.",
+            candidate_ids=[],
+            confidence_threshold=settings.send_confidence_threshold,
+        )
+        variant = next(
+            (value for value in draft.variants if value.get("id") == payload.variant_id),
+            None,
+        )
+        template = str((variant or {}).get("template", "selected"))
+        if template not in {"single_match", "selected", "fanout", "follow_up"}:
+            raise HTTPException(status_code=422, detail="Unsupported outreach template")
+        try:
+            result = await outreach.send(
+                draft=draft,
+                variant_id=payload.variant_id,
+                decision=decision,
+                template=template,
+                approver=owner,
+                approval_token=payload.approval_token,
+                automatic=False,
+            )
+        except Exception as exc:
+            notify_later(
+                "error",
+                {
+                    "visitor_name": require_visit(draft.session_id).visitor_name,
+                    "recipient": draft.recipient,
+                    "decision": decision.reason,
+                    "error": type(exc).__name__,
+                },
+            )
+            raise HTTPException(
+                status_code=502, detail="SMTP delivery failed safely"
+            ) from exc
+        roles = role_results.get(draft.session_id, {}).get(draft.candidate_id)
+        role_title = roles.roles[0].title if roles and roles.roles else None
+        notify_later(
+            "outreach_email_sent" if result.status == "sent" else "send_refusal",
+            {
+                "visitor_name": require_visit(draft.session_id).visitor_name,
+                "recipient": draft.recipient,
+                "role": role_title,
+                "decision": decision.reason,
+                "error": result.reason if result.status != "sent" else None,
+            },
+        )
+        await events.publish(
+            draft.session_id,
+            {"type": "outreach.action", **result.model_dump(mode="json")},
+            retain=False,
+        )
+        return result.model_dump(mode="json")
+
+    @app.post("/outreach/suppress")
+    async def suppress_outreach(
+        payload: SuppressionRequest,
+        _: str = Depends(require_owner),
+    ) -> dict[str, str]:
+        database.suppress(payload.address, payload.reason)
+        return {"status": "suppressed"}
+
+    @app.post("/api/sessions/{session_id}/outreach/follow-up", status_code=201)
+    async def draft_follow_up(
+        session_id: str,
+        payload: FollowUpRequest,
+        _: str = Depends(require_owner),
+    ) -> dict[str, Any]:
+        require_visit(session_id)
+        parent = database.get_outreach_draft(payload.draft_id)
+        if parent is None or parent.session_id != session_id:
+            raise HTTPException(status_code=404, detail="Parent outreach draft not found")
+        sent = any(
+            action.action == "email.sent" and action.draft_id == parent.id
+            for action in database.outreach_actions_for(session_id=session_id)
+        )
+        if not sent:
+            raise HTTPException(status_code=409, detail="Initial email has not been sent")
+        available_at = _utc(parent.created_at) + timedelta(days=settings.follow_up_days)
+        if datetime.now(UTC) < available_at:
+            raise HTTPException(
+                status_code=409,
+                detail=f"Follow-up is available after {available_at.isoformat()}",
+            )
+        outcome = research_results.get(session_id)
+        candidate = next(
+            (
+                value
+                for value in (outcome.candidates if outcome else [])
+                if value.id == parent.candidate_id
+            ),
+            None,
+        )
+        if candidate is None or candidate.email is None:
+            raise HTTPException(status_code=404, detail="Candidate context was purged")
+        role_result = role_results.get(session_id, {}).get(candidate.id)
+        role = role_result.roles[0] if role_result and role_result.roles else None
+        variants = composer.variants(
+            candidate, candidate.email, role=role, template="follow_up"
+        )
+        draft = outreach.create_draft(
+            session_id=session_id,
+            candidate=candidate,
+            email=candidate.email,
+            variants=variants,
+            linkedin=parent.linkedin,
+            kind="follow_up",
+            parent_draft_id=parent.id,
+        )
+        return _draft_payload(draft)
+
+    def _observed_linkedin_profile(
+        session_id: str, candidate_id: str, profile_url: str
+    ) -> Any:
+        outcome = research_results.get(session_id)
+        candidate = next(
+            (
+                value
+                for value in (outcome.candidates if outcome else [])
+                if value.id == candidate_id
+            ),
+            None,
+        )
+        if candidate is None or not any(
+            profile.kind == "linkedin" and profile.url == profile_url
+            for profile in candidate.profiles
+        ):
+            raise HTTPException(
+                status_code=404,
+                detail="LinkedIn profile was not observed for this research candidate",
+            )
+        return candidate
+
+    @app.post("/api/sessions/{session_id}/linkedin/approve")
+    async def approve_linkedin(
+        session_id: str,
+        payload: LinkedInApprovalRequest,
+        _: str = Depends(require_owner),
+    ) -> dict[str, str]:
+        require_visit(session_id)
+        _observed_linkedin_profile(session_id, payload.candidate_id, payload.profile_url)
+        token = linkedin.approval_token(
+            candidate_id=payload.candidate_id,
+            profile_url=payload.profile_url,
+            action=payload.action,
+            message=payload.message,
+        )
+        return {"approval_token": token}
+
+    @app.post("/api/sessions/{session_id}/linkedin/action")
+    async def linkedin_action(
+        session_id: str,
+        payload: LinkedInActionRequest,
+        _: str = Depends(require_owner),
+    ) -> dict[str, Any]:
+        require_visit(session_id)
+        candidate = _observed_linkedin_profile(
+            session_id, payload.candidate_id, payload.profile_url
+        )
+        try:
+            result = await linkedin.perform(
+                session_id=session_id,
+                candidate_id=payload.candidate_id,
+                profile_url=payload.profile_url,
+                action=payload.action,
+                message=payload.message,
+                approval_token=payload.approval_token,
+                automatic=payload.automatic,
+            )
+        except Exception as exc:
+            notify_later(
+                "error",
+                {"visitor_name": candidate.name, "error": type(exc).__name__},
+            )
+            raise HTTPException(
+                status_code=502, detail="LinkedIn automation failed safely"
+            ) from exc
+        notify_later(
+            "linkedin_action_taken",
+            {
+                "visitor_name": candidate.name,
+                "decision": f"{payload.action}: {result.status}",
+                "error": result.detail if result.status != "completed" else None,
+            },
+        )
+        await events.publish(
+            session_id,
+            {"type": "linkedin.action", **result.model_dump(mode="json")},
+            retain=False,
+        )
+        return result.model_dump(mode="json")
+
+    @app.get("/api/owner/contacts")
+    async def owner_contacts(_: str = Depends(require_owner)) -> dict[str, Any]:
+        return {
+            "contacts": [crm_row(visit, database) for visit in database.list_visits()]
+        }
+
+    @app.get("/api/owner/sessions/{session_id}/replay")
+    async def owner_replay(
+        session_id: str, _: str = Depends(require_owner)
+    ) -> dict[str, Any]:
+        visit = require_visit(session_id)
+        return {
+            "contact": crm_row(visit, database),
+            "messages": [
+                {
+                    "role": message.role,
+                    "content": message.content,
+                    "sources": message.sources,
+                    "created_at": message.created_at.isoformat(),
+                }
+                for message in database.messages_for(session_id)
+            ],
+            "research": (
+                research_results[session_id].model_dump(mode="json")
+                if session_id in research_results
+                else None
+            ),
+        }
+
+    @app.post("/api/owner/contacts/{session_id}/stage")
+    async def owner_stage(
+        session_id: str,
+        payload: CRMStageRequest,
+        _: str = Depends(require_owner),
+    ) -> dict[str, str]:
+        require_visit(session_id)
+        database.update_visit(session_id, crm_stage=payload.stage)
+        return {"status": "updated", "stage": payload.stage}
+
+    @app.get("/api/owner/outreach")
+    async def owner_outreach(_: str = Depends(require_owner)) -> dict[str, Any]:
+        actions = database.outreach_actions()
+        performance: dict[str, dict[str, int]] = {}
+        for action in actions:
+            variant = str(action.metadata_value.get("variant") or "unassigned")
+            counts = performance.setdefault(
+                variant, {"sent": 0, "compose": 0, "failed": 0}
+            )
+            if action.action == "email.sent":
+                counts["sent"] += 1
+            elif action.action == "email.compose":
+                counts["compose"] += 1
+            elif action.action == "email.failed":
+                counts["failed"] += 1
+        return {
+            "actions": [
+                {
+                    "id": action.id,
+                    "session_id": action.session_id,
+                    "candidate_id": action.candidate_id,
+                    "recipient": action.recipient,
+                    "action": action.action,
+                    "transport": action.transport,
+                    "approver": action.approver,
+                    "metadata": action.metadata_value,
+                    "created_at": action.created_at.isoformat(),
+                }
+                for action in actions
+            ],
+            "variant_performance": performance,
+            "tracking_pixels": False,
+        }
 
     @app.get("/api/owner/visits")
     async def owner_visits(_: str = Depends(require_owner)) -> JSONResponse:
