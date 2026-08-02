@@ -233,6 +233,10 @@ def create_app(
     async def widget() -> FileResponse:
         return FileResponse(STATIC_DIR / "widget.js", media_type="text/javascript")
 
+    @app.get("/favicon.ico", include_in_schema=False)
+    async def favicon() -> FileResponse:
+        return FileResponse(STATIC_DIR / "favicon.svg", media_type="image/svg+xml")
+
     @app.get("/api/health")
     async def health() -> dict[str, Any]:
         return {

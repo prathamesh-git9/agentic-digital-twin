@@ -65,12 +65,14 @@ class OpenAICompatibleProvider:
         model: str,
         timeout: float = 25.0,
         max_output_tokens: int = 700,
+        client: httpx.AsyncClient | None = None,
     ) -> None:
         self.base_url = base_url.rstrip("/")
         self.api_key = api_key
         self.model = model
         self.timeout = timeout
         self.max_output_tokens = max_output_tokens
+        self.client = client
 
     async def generate(self, request: GenerationRequest) -> DraftAnswer:
         payload = {
@@ -93,13 +95,21 @@ class OpenAICompatibleProvider:
             ],
         }
         headers = {"Authorization": f"Bearer {self.api_key}"}
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
+        if self.client is not None:
+            response = await self.client.post(
                 f"{self.base_url}/chat/completions",
                 headers=headers,
                 json=payload,
                 timeout=self.timeout,
             )
+        else:
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    f"{self.base_url}/chat/completions",
+                    headers=headers,
+                    json=payload,
+                    timeout=self.timeout,
+                )
         response.raise_for_status()
         content = response.json()["choices"][0]["message"]["content"]
         content = re.sub(r"^```(?:json)?\s*|\s*```$", "", str(content).strip())
