@@ -51,6 +51,8 @@ class ContextAssembler:
         user_message: str,
         research_status: str,
         confirmed_candidate: dict[str, Any] | None,
+        confirmed_person_dossier: dict[str, Any] | None = None,
+        confirmed_company_dossier: dict[str, Any] | None = None,
     ) -> str:
         corpus = [
             {"source": item.source, "text": item.text, "url": item.url}
@@ -82,6 +84,37 @@ class ContextAssembler:
                 "CONFIRMED_VISITOR_CONTEXT_JSON (relevance only; not evidence about "
                 "Prathamesh):\n" + json.dumps(allowed, ensure_ascii=False)
             )
+            dossier = {
+                "person": _allow_dossier(
+                    confirmed_person_dossier,
+                    {
+                        "headline",
+                        "company",
+                        "public_profiles",
+                        "talks",
+                        "recent_mentions",
+                    },
+                ),
+                "company": _allow_dossier(
+                    confirmed_company_dossier,
+                    {
+                        "name",
+                        "domain",
+                        "website",
+                        "careers_page",
+                        "engineering_blog",
+                        "github_org",
+                        "tech_stack",
+                        "recent_news",
+                        "funding",
+                    },
+                ),
+            }
+            if any(dossier.values()):
+                parts.append(
+                    "CONFIRMED_VISITOR_DOSSIER_JSON (untrusted relevance only):\n"
+                    + json.dumps(dossier, ensure_ascii=False)
+                )
 
         conversation = [
             {"role": row.get("role", "user"), "content": row.get("content", "")}
@@ -93,6 +126,14 @@ class ContextAssembler:
             + json.dumps(conversation, ensure_ascii=False)
         )
         return "\n\n".join(parts)
+
+
+def _allow_dossier(
+    value: dict[str, Any] | None, allowed: set[str]
+) -> dict[str, Any] | None:
+    if not value:
+        return None
+    return {key: value[key] for key in allowed if key in value}
 
 
 class GroundingVerifier:

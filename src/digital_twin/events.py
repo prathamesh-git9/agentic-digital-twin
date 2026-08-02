@@ -16,8 +16,11 @@ class EventHub:
         )
         self._latest: dict[str, dict[str, Any]] = {}
 
-    async def publish(self, session_id: str, event: dict[str, Any]) -> None:
-        self._latest[session_id] = event
+    async def publish(
+        self, session_id: str, event: dict[str, Any], *, retain: bool = True
+    ) -> None:
+        if retain:
+            self._latest[session_id] = event
         for queue in tuple(self._subscribers.get(session_id, ())):
             try:
                 queue.put_nowait(event)

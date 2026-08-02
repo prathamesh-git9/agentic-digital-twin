@@ -34,7 +34,51 @@ class Settings(BaseSettings):
     search_provider: Literal["duckduckgo", "tavily", "serper", "brave"] = "duckduckgo"
     search_api_key: str = ""
     search_timeout_seconds: float = 8.0
+    research_source_timeout_seconds: float = Field(default=5.0, ge=0.1, le=30)
+    research_page_limit: int = Field(default=2, ge=0, le=5)
     research_cache_ttl_seconds: int = Field(default=900, ge=30, le=86_400)
+
+    email_mx_timeout_seconds: float = Field(default=3.0, ge=0.1, le=15)
+    email_verification_provider: Literal["none", "hunter"] = "none"
+    email_verification_api_key: str = ""
+    email_verification_base_url: str = "https://api.hunter.io/v2"
+
+    linkedin_url: str = "https://www.linkedin.com/in/prathameshkalamkar"
+    calendar_url: str = ""
+    from_email: str = "prathameh7744yt@gmail.com"
+    from_name: str = "Prathamesh Kalamkar"
+    outreach_approval_ttl_seconds: int = Field(default=900, ge=60, le=86_400)
+    follow_up_days: int = Field(default=5, ge=1, le=30)
+    proof_pack_ttl_seconds: int = Field(default=604_800, ge=300, le=2_592_000)
+
+    smtp_host: str = ""
+    smtp_port: int = Field(default=587, ge=1, le=65_535)
+    smtp_username: str = ""
+    smtp_password: str = ""
+    smtp_starttls: bool = True
+    autosend: bool = False
+    send_confidence_threshold: int = Field(default=85, ge=50, le=100)
+    fanout_unselected: bool = False
+    fanout_max: int = Field(default=3, ge=1, le=3)
+    daily_send_cap: int = Field(default=20, ge=1, le=100)
+    outreach_candidate_daily_cap: int = Field(default=1, ge=1, le=5)
+    dkim_selectors: str = "20230601,20161025,default,google,selector1,selector2"
+
+    linkedin_enabled: bool = False
+    linkedin_auto: bool = False
+    linkedin_kill_switch: bool = False
+    linkedin_user_data_dir: Path = Path(".twin-linkedin-profile")
+    linkedin_daily_cap: int = Field(default=5, ge=1, le=20)
+    linkedin_delay_min_seconds: float = Field(default=4.0, ge=0, le=60)
+    linkedin_delay_max_seconds: float = Field(default=12.0, ge=0, le=120)
+
+    handoff_webhook_url: str = ""
+    telegram_bot_token: str = ""
+    telegram_chat_id: str = ""
+    pushover_enabled: bool = False
+    pushover_user: str = ""
+    pushover_token: str = ""
+    notification_rate_limit_per_minute: int = Field(default=12, ge=1, le=60)
 
     requests_per_minute: int = Field(default=30, ge=1, le=1_000)
     token_budget_per_session: int = Field(default=12_000, ge=500, le=1_000_000)
@@ -50,3 +94,24 @@ class Settings(BaseSettings):
     @property
     def owner_enabled(self) -> bool:
         return bool(self.owner_username and self.owner_password)
+
+    @property
+    def smtp_ready(self) -> bool:
+        return bool(
+            self.smtp_host.casefold() == "smtp.gmail.com"
+            and self.smtp_port == 587
+            and self.smtp_starttls
+            and self.smtp_username
+            and self.smtp_password
+            and self.from_email
+        )
+
+    @property
+    def parsed_dkim_selectors(self) -> tuple[str, ...]:
+        return tuple(
+            dict.fromkeys(
+                selector.strip().casefold()
+                for selector in self.dkim_selectors.split(",")
+                if selector.strip()
+            )
+        )

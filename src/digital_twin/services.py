@@ -114,6 +114,8 @@ class ChatService:
             user_message=question,
             research_status=visit.research_status,
             confirmed_candidate=confirmed,
+            confirmed_person_dossier=visit.confirmed_person_dossier,
+            confirmed_company_dossier=visit.confirmed_company_dossier,
         )
         request = GenerationRequest(question, context, evidence, confirmed)
         try:
