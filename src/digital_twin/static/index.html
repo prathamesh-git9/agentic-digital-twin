@@ -9,216 +9,207 @@
     <link rel="stylesheet" href="/static/styles.css">
   </head>
   <body>
+    <!--
+      Structure follows the authority boundary rather than visual convenience.
+      The right rail is one state machine (idle -> researching -> candidates ->
+      active) so the visitor can always see what the system knows and the exact
+      moment it starts to matter. Everything rendered from research is inert
+      card data; it does not reach the model until /confirm succeeds server-side.
+    -->
     <a class="skip-link" href="#composer-input">Skip to chat</a>
-    <div class="aurora" aria-hidden="true">
-      <span class="aurora-one"></span><span class="aurora-two"></span>
-      <span class="noise"></span>
-    </div>
 
-    <div class="app-frame">
-      <header class="masthead">
-        <a class="brand" href="/" aria-label="Prathamesh digital twin home">
-          <span class="mini-core"><span>PK</span></span>
-          <span class="brand-copy">
-            <strong>PRATHAMESH<span class="brand-dot">.</span>TWIN</strong>
-            <small>Evidence, not improv</small>
+    <div class="page" id="page" data-research="idle">
+      <header class="topbar">
+        <a class="identity" href="/" aria-label="Digital twin home">
+          <span class="mark" aria-hidden="true">PK</span>
+          <span class="identity-text">
+            <strong>Prathamesh Kalamkar</strong>
+            <small>Back-end &amp; agent systems · Dublin</small>
           </span>
         </a>
-        <div class="header-status" title="Every answer passes a grounding check">
-          <span class="pulse-dot"></span>
-          <span>Grounding online</span>
+
+        <div class="topbar-status" id="provider-status" title="Every answer is checked against the CV corpus before it is shown">
+          <span class="dot" aria-hidden="true"></span>
+          <span id="provider-label">Grounding online</span>
         </div>
-        <nav class="header-actions" aria-label="Product actions">
-          <button class="icon-button" id="projects-button" type="button" title="Live GitHub work">
-            <span aria-hidden="true">⌘</span><span class="button-label">Work</span>
-          </button>
-          <button class="icon-button" id="jd-button" type="button" title="Analyse a job description">
-            <span aria-hidden="true">◇</span><span class="button-label">JD fit</span>
-          </button>
-          <button class="icon-button" id="theme-button" type="button" aria-label="Switch theme">
-            <span id="theme-icon" aria-hidden="true">☼</span>
+
+        <nav class="topbar-actions" aria-label="Tools">
+          <button class="ghost-btn" id="projects-button" type="button">Work</button>
+          <button class="ghost-btn" id="jd-button" type="button">Role fit</button>
+          <button class="icon-btn" id="theme-button" type="button" aria-label="Switch colour theme">
+            <span id="theme-icon" aria-hidden="true">◐</span>
           </button>
         </nav>
       </header>
 
-      <section class="research-bar" id="research-bar" data-state="idle" aria-live="polite">
-        <div class="research-status-icon" aria-hidden="true">
-          <span class="radar-sweep"></span><span class="radar-center"></span>
+      <!-- Live research strip; hidden unless research is actually running. -->
+      <div class="research-strip" id="research-strip" role="status" aria-live="polite" hidden>
+        <span class="strip-spinner" aria-hidden="true"></span>
+        <div class="strip-copy">
+          <strong id="strip-title">Checking public sources</strong>
+          <small id="strip-detail">Search engines only. No LinkedIn login, no data brokers.</small>
         </div>
-        <div class="research-copy">
-          <strong id="research-title">Public context gate</strong>
-          <span id="research-disclosure">Research is optional and off until you share a name.</span>
+        <div class="strip-actions">
+          <button type="button" class="link-btn" id="strip-view">View</button>
+          <button type="button" class="link-btn danger" id="strip-optout">Stop &amp; erase</button>
         </div>
-        <div class="research-actions">
-          <button class="text-button hidden" id="research-review" type="button">Review matches</button>
-          <button class="text-button hidden" id="research-optout" type="button">Stop &amp; purge</button>
-        </div>
-      </section>
+      </div>
 
-      <main class="workspace">
-        <aside class="profile-rail" aria-label="Prathamesh profile">
-          <section class="profile-card glass-card">
-            <div class="twin-visual" aria-label="Prathamesh initials avatar">
-              <span class="orbit orbit-one"></span>
-              <span class="orbit orbit-two"></span>
-              <span class="core-glow"></span>
-              <span class="core-initials">PK</span>
-              <span class="node node-one"></span><span class="node node-two"></span>
-            </div>
-            <div class="profile-heading">
-              <span class="eyebrow">BACK-END × AGENT SYSTEMS</span>
-              <h1>Prathamesh<br>Kalamkar</h1>
-              <p>Dublin, Ireland <span>·</span> Open to engineering conversations</p>
-            </div>
-            <div class="profile-tags" aria-label="Core disciplines">
-              <span>Python</span><span>Java</span><span>FastAPI</span><span>Reliability</span>
-            </div>
-            <a class="contact-link" href="mailto:prathameh7744yt@gmail.com">
-              <span>Contact the real Prathamesh</span><span aria-hidden="true">↗</span>
-            </a>
-          </section>
-
-          <section class="signal-card glass-card">
-            <div class="section-label"><span>TRUST SIGNAL</span><span>01</span></div>
-            <p class="signal-quote">“A claim without evidence does not ship.”</p>
-            <div class="mini-pipeline" aria-label="Answer verification pipeline">
-              <span>Retrieve</span><i></i><span>Draft</span><i></i><span>Verify</span>
-            </div>
-          </section>
-        </aside>
-
-        <section class="chat-stage glass-card" aria-label="Conversation with the twin">
-          <div class="chat-heading">
+      <main class="layout">
+        <section class="panel chat-panel" aria-label="Conversation">
+          <div class="panel-head">
             <div>
-              <span class="eyebrow">LIVE CONVERSATION</span>
-              <h2>Ask what matters.</h2>
+              <span class="eyebrow">Live conversation</span>
+              <h1>Ask what matters.</h1>
             </div>
-            <div class="session-badge" title="Offline-safe provider with a per-session cost cap">
-              <span class="session-led"></span><span id="provider-label">OFFLINE SAFE</span>
-            </div>
+            <span class="pill" id="budget-pill" title="Per-session cost ceiling">Offline safe</span>
           </div>
 
-          <div class="messages" id="messages" role="log" aria-live="polite" aria-label="Chat messages">
-            <div class="message-placeholder" id="message-placeholder">
-              <span class="placeholder-mark">TWIN / 00</span>
-              <p>Starting a grounded session…</p>
-            </div>
-          </div>
+          <div class="messages" id="messages" role="log" aria-live="polite" aria-label="Messages"></div>
 
-          <div class="starters" id="starters" aria-label="Suggested questions">
-            <button type="button" data-prompt="Give me the 60-second overview of Prathamesh.">
-              <span>01</span>60-second overview
-            </button>
-            <button type="button" data-prompt="Which reliability project best shows his engineering judgement?">
-              <span>02</span>Best reliability work
-            </button>
-            <button type="button" data-prompt="What is his production backend experience?">
-              <span>03</span>Production experience
-            </button>
-          </div>
+          <div class="starters" id="starters" aria-label="Suggested questions"></div>
 
           <form class="composer" id="composer">
-            <label class="sr-only" for="composer-input">Ask the twin a question</label>
-            <textarea id="composer-input" maxlength="8000" rows="1"
-              placeholder="Ask about experience, projects, skills, or role fit…" required></textarea>
-            <div class="composer-bottom">
-              <span><kbd>Enter</kbd> send · <kbd>Shift</kbd> + <kbd>Enter</kbd> newline</span>
-              <button class="send-button" id="send-button" type="submit" aria-label="Send message">
-                <span>ASK TWIN</span><span aria-hidden="true">↗</span>
-              </button>
+            <label class="sr-only" for="composer-input">Message</label>
+            <textarea id="composer-input" rows="1" placeholder="Ask about his experience, projects, or fit for a role…" autocomplete="off"></textarea>
+            <div class="composer-foot">
+              <span class="hint"><kbd>Enter</kbd> send · <kbd>Shift</kbd>+<kbd>Enter</kbd> newline</span>
+              <button type="submit" class="primary-btn" id="send-button">Ask twin</button>
             </div>
           </form>
-          <p class="chat-footnote">Answers are source-linked and verified. Contractual decisions always go to Prathamesh.</p>
+
+          <p class="disclaimer">Answers are source-linked and verified. Contractual decisions always go to Prathamesh.</p>
         </section>
 
-        <aside class="evidence-rail" aria-label="Evidence and system boundaries">
-          <section class="authority-card glass-card">
-            <div class="section-label"><span>AUTHORITY GATE</span><span>LIVE</span></div>
-            <div class="gate-map" id="gate-map" data-state="locked">
-              <div class="gate-node">
-                <span class="gate-icon">⌕</span><span><strong>Public discovery</strong><small>Untrusted proposal</small></span>
+        <aside class="rail" aria-label="Context and evidence">
+          <!-- STATE: idle / skipped -->
+          <section class="card rail-state" data-state="idle">
+            <div class="card-head"><span>Authority gate</span><span class="muted" id="gate-stage">Locked</span></div>
+            <ol class="gate" id="gate">
+              <li class="gate-step" data-step="discovery">
+                <span class="gate-icon" aria-hidden="true">◇</span>
+                <span class="gate-copy"><strong>Public discovery</strong><em>Untrusted proposal</em></span>
+              </li>
+              <li class="gate-step" data-step="confirm">
+                <span class="gate-icon" aria-hidden="true">✓</span>
+                <span class="gate-copy"><strong>Your confirmation</strong><em>Grants authority</em></span>
+              </li>
+              <li class="gate-step" data-step="context">
+                <span class="gate-icon" aria-hidden="true">◈</span>
+                <span class="gate-copy"><strong>Twin context</strong><em>Grounded evidence only</em></span>
+              </li>
+            </ol>
+            <p class="fineprint">Research is shown to you before it is ever shown to the model. Until you confirm, it is not in the conversation at all.</p>
+          </section>
+
+          <!-- STATE: researching -->
+          <section class="card rail-state" data-state="researching" hidden>
+            <div class="card-head"><span>Checking public sources</span><span class="muted" id="source-progress"></span></div>
+            <ul class="sources" id="source-list"></ul>
+            <p class="fineprint">Each source is fetched independently. A blocked or slow source degrades quietly instead of stalling your chat.</p>
+          </section>
+
+          <!-- STATE: candidates -->
+          <section class="card rail-state" data-state="candidates" hidden>
+            <div class="card-head"><span>Public matches</span><span class="muted" id="candidate-count"></span></div>
+            <h2 class="rail-title">Is one of these you?</h2>
+            <p class="fineprint tight">Search-engine results, not verified identities. Confidence is computed from observable signals, never generated by the model.</p>
+            <div class="candidates" id="candidate-list"></div>
+            <button type="button" class="link-btn danger block" id="candidates-optout">None of these — stop researching</button>
+          </section>
+
+          <!-- STATE: active person -->
+          <section class="card rail-state active-person" data-state="active" hidden>
+            <div class="card-head"><span>Active visitor</span><span class="muted" id="active-confidence"></span></div>
+
+            <div class="person-head">
+              <img id="active-avatar" class="person-avatar" alt="" hidden>
+              <span id="active-initials" class="person-avatar initials" aria-hidden="true"></span>
+              <div class="person-id">
+                <strong id="active-name"></strong>
+                <span id="active-role"></span>
+                <small id="active-location" class="muted"></small>
               </div>
-              <div class="gate-line"><i></i><span id="gate-lock">LOCKED</span></div>
-              <div class="gate-node">
-                <span class="gate-icon">✓</span><span><strong>Your confirmation</strong><small>Grants authority</small></span>
+            </div>
+
+            <ul class="profile-links" id="active-profiles" aria-label="Public profiles"></ul>
+
+            <div class="email-row" id="active-email-row" hidden>
+              <span class="field-label">Email</span>
+              <a id="active-email" href="#"></a>
+              <span class="badge" id="active-email-status"></span>
+            </div>
+
+            <details class="disclosure" id="company-block" hidden>
+              <summary>Company</summary>
+              <div class="disclosure-body" id="company-body"></div>
+            </details>
+
+            <details class="disclosure" id="roles-block" hidden>
+              <summary>Open roles <span class="muted" id="roles-count"></span></summary>
+              <div class="disclosure-body" id="roles-body"></div>
+            </details>
+
+            <div class="outreach" id="outreach-block" hidden>
+              <div class="card-head tight"><span>Outreach</span><span class="muted" id="outreach-decision"></span></div>
+              <div class="variant-tabs" id="variant-tabs" role="tablist" aria-label="Tone"></div>
+              <div class="draft" id="draft-body"></div>
+              <div class="outreach-actions">
+                <button type="button" class="primary-btn" id="send-email">Send email</button>
+                <button type="button" class="ghost-btn" id="open-linkedin">LinkedIn</button>
               </div>
-              <div class="gate-line"><i></i><span>CODE BOUNDARY</span></div>
-              <div class="gate-node active">
-                <span class="gate-icon">◎</span><span><strong>Twin context</strong><small>Grounded evidence only</small></span>
-              </div>
+              <p class="fineprint" id="outreach-note"></p>
+            </div>
+
+            <button type="button" class="link-btn danger block" id="active-optout">Stop &amp; erase what was found</button>
+          </section>
+
+          <!-- Always present -->
+          <section class="card">
+            <div class="card-head"><span>Answer evidence</span><span class="muted" id="source-count">00</span></div>
+            <div class="evidence" id="evidence-list">
+              <p class="fineprint tight">Sources for the twin's latest answer appear here.</p>
             </div>
           </section>
 
-          <section class="evidence-card glass-card">
-            <div class="section-label"><span>ANSWER EVIDENCE</span><span id="source-count">00</span></div>
-            <div id="evidence-list" class="evidence-list">
-              <div class="empty-evidence">
-                <span>↳</span>
-                <p>Sources for the latest answer will resolve here.</p>
-              </div>
-            </div>
-          </section>
-
-          <section class="privacy-note">
-            <span aria-hidden="true">◉</span>
-            <p><strong>Privacy by boundary.</strong> Public sources only. No LinkedIn login, data brokers, or sensitive inference.</p>
-          </section>
+          <p class="privacy">
+            <strong>Privacy by boundary.</strong> Public sources only. No LinkedIn login, data brokers, or sensitive inference.
+          </p>
         </aside>
       </main>
     </div>
 
-    <div class="modal-backdrop" id="onboarding" role="dialog" aria-modal="true" aria-labelledby="onboarding-title">
-      <section class="onboarding-card">
-        <button class="modal-close" id="onboarding-close" type="button" aria-label="Skip optional introduction">×</button>
-        <div class="modal-kicker"><span class="pulse-dot"></span>OPTIONAL INTRODUCTION</div>
+    <div class="modal-backdrop" id="onboarding" role="dialog" aria-modal="true" aria-labelledby="onboarding-title" hidden>
+      <section class="modal">
+        <span class="eyebrow">Optional introduction</span>
         <h2 id="onboarding-title">Who am I speaking with?</h2>
-        <p>Sharing a name is completely optional. If you do, I’ll look for public professional context in the background. Chat never waits for it, and nothing is used until you confirm.</p>
+        <p>Share a name and I'll look for public professional context so I can point you at the most relevant work. Completely optional — <strong>Skip gives you the identical conversation.</strong></p>
         <form id="identity-form">
-          <label for="visitor-name">Your name <span>optional</span></label>
-          <input id="visitor-name" name="name" maxlength="80" autocomplete="name" placeholder="e.g. Sarah Chen">
-          <label for="visitor-company">Company <span>optional · improves matching</span></label>
-          <input id="visitor-company" name="company" maxlength="120" autocomplete="organization" placeholder="e.g. Stripe">
-          <button class="primary-button" type="submit">Start chat + background lookup <span>↗</span></button>
-          <button class="skip-button" id="skip-name" type="button">Skip — give me the full chat</button>
+          <label class="sr-only" for="visitor-name">Your name</label>
+          <input id="visitor-name" type="text" placeholder="Your name (optional)" autocomplete="name">
+          <label class="sr-only" for="visitor-company">Company</label>
+          <input id="visitor-company" type="text" placeholder="Company (optional)" autocomplete="organization">
+          <div class="modal-actions">
+            <button type="button" class="ghost-btn" id="skip-button">Skip</button>
+            <button type="submit" class="primary-btn">Continue</button>
+          </div>
         </form>
-        <div class="modal-policy"><span>✓</span> Public search results only <span>✓</span> Opt out any time <span>✓</span> No degraded skip path</div>
+        <p class="modal-policy"><span>✓</span> Public search only <span>✓</span> Opt out any time <span>✓</span> No degraded skip path</p>
       </section>
     </div>
 
-    <div class="drawer-backdrop hidden" id="drawer-backdrop"></div>
-    <aside class="drawer" id="research-drawer" aria-hidden="true" aria-labelledby="research-drawer-title">
-      <div class="drawer-header">
-        <div><span class="eyebrow">PUBLIC MATCHES</span><h2 id="research-drawer-title">Is one of these you?</h2></div>
-        <button class="drawer-close" type="button" data-close-drawer aria-label="Close">×</button>
-      </div>
-      <p class="drawer-intro">These are search-engine results, not verified identities. Confidence is calculated from observable signals and is not generated by a model.</p>
-      <div class="candidate-list" id="candidate-list"></div>
-    </aside>
+    <div class="modal-backdrop" id="drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title" hidden>
+      <section class="modal wide">
+        <div class="modal-head">
+          <h2 id="drawer-title">Selected work</h2>
+          <button type="button" class="icon-btn" id="drawer-close" aria-label="Close">✕</button>
+        </div>
+        <div id="drawer-body"></div>
+      </section>
+    </div>
 
-    <aside class="drawer" id="jd-drawer" aria-hidden="true" aria-labelledby="jd-title">
-      <div class="drawer-header">
-        <div><span class="eyebrow">GROUNDED ANALYSIS</span><h2 id="jd-title">Job description fit</h2></div>
-        <button class="drawer-close" type="button" data-close-drawer aria-label="Close">×</button>
-      </div>
-      <p class="drawer-intro">Paste a JD. The report only counts requirements evidenced in the CV and labels everything else “not evidenced”—never “definitely missing.”</p>
-      <form id="jd-form" class="jd-form">
-        <label class="sr-only" for="jd-input">Job description</label>
-        <textarea id="jd-input" minlength="20" maxlength="50000" placeholder="Paste the role description here…" required></textarea>
-        <button type="submit" class="primary-button">Run evidence comparison <span>↗</span></button>
-      </form>
-      <div id="jd-results" class="jd-results"></div>
-    </aside>
+    <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-    <aside class="drawer wide-drawer" id="projects-drawer" aria-hidden="true" aria-labelledby="projects-title">
-      <div class="drawer-header">
-        <div><span class="eyebrow">LIVE FROM GITHUB</span><h2 id="projects-title">Reliability, made inspectable.</h2></div>
-        <button class="drawer-close" type="button" data-close-drawer aria-label="Close">×</button>
-      </div>
-      <p class="drawer-intro">Stats, topics, and recent commits come from GitHub at runtime. A grey “offline” badge means the API was unavailable—no stale number is presented as live.</p>
-      <div class="project-grid" id="project-grid"><div class="drawer-loader">Resolving ten repositories…</div></div>
-    </aside>
-
-    <div class="toast-region" id="toast-region" aria-live="assertive"></div>
     <script src="/static/app.js" defer></script>
   </body>
 </html>

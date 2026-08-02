@@ -1,575 +1,840 @@
+/*
+  Digital Twin — frontend controller.
+
+  The rail is a single state machine driven by the `research` SSE event, because
+  the visitor should never have to guess what the system knows. Research payloads
+  are rendered as inert card data only; authority is granted server-side by
+  POST /confirm, so nothing here can leak candidate context into the model.
+*/
 (() => {
   "use strict";
 
-  const state = {
-    sessionId: null,
-    eventSource: null,
-    candidates: [],
-    identityHandled: false,
-    projectsLoaded: false,
-    latestSources: [],
-  };
+  const $ = (sel, root = document) => root.querySelector(sel);
 
-  const $ = (selector, root = document) => root.querySelector(selector);
-  const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
-
-  const elements = {
+  const el = {
+    page: $("#page"),
     messages: $("#messages"),
-    placeholder: $("#message-placeholder"),
+    starters: $("#starters"),
     composer: $("#composer"),
     input: $("#composer-input"),
     send: $("#send-button"),
-    starters: $("#starters"),
-    onboarding: $("#onboarding"),
-    identityForm: $("#identity-form"),
-    skipName: $("#skip-name"),
-    onboardingClose: $("#onboarding-close"),
-    researchBar: $("#research-bar"),
-    researchTitle: $("#research-title"),
-    researchDisclosure: $("#research-disclosure"),
-    researchReview: $("#research-review"),
-    researchOptout: $("#research-optout"),
+    budget: $("#budget-pill"),
+    providerLabel: $("#provider-label"),
+
+    strip: $("#research-strip"),
+    stripTitle: $("#strip-title"),
+    stripDetail: $("#strip-detail"),
+    stripView: $("#strip-view"),
+    stripOptout: $("#strip-optout"),
+
+    gate: $("#gate"),
+    gateStage: $("#gate-stage"),
+    sourceList: $("#source-list"),
+    sourceProgress: $("#source-progress"),
+
     candidateList: $("#candidate-list"),
-    gateMap: $("#gate-map"),
-    gateLock: $("#gate-lock"),
+    candidateCount: $("#candidate-count"),
+    candidatesOptout: $("#candidates-optout"),
+
+    activeConfidence: $("#active-confidence"),
+    activeAvatar: $("#active-avatar"),
+    activeInitials: $("#active-initials"),
+    activeName: $("#active-name"),
+    activeRole: $("#active-role"),
+    activeLocation: $("#active-location"),
+    activeProfiles: $("#active-profiles"),
+    emailRow: $("#active-email-row"),
+    emailLink: $("#active-email"),
+    emailStatus: $("#active-email-status"),
+    companyBlock: $("#company-block"),
+    companyBody: $("#company-body"),
+    rolesBlock: $("#roles-block"),
+    rolesBody: $("#roles-body"),
+    rolesCount: $("#roles-count"),
+    activeOptout: $("#active-optout"),
+
+    outreachBlock: $("#outreach-block"),
+    outreachDecision: $("#outreach-decision"),
+    variantTabs: $("#variant-tabs"),
+    draftBody: $("#draft-body"),
+    sendEmail: $("#send-email"),
+    openLinkedin: $("#open-linkedin"),
+    outreachNote: $("#outreach-note"),
+
     evidenceList: $("#evidence-list"),
     sourceCount: $("#source-count"),
-    backdrop: $("#drawer-backdrop"),
-    jdForm: $("#jd-form"),
-    jdInput: $("#jd-input"),
-    jdResults: $("#jd-results"),
-    projectGrid: $("#project-grid"),
-    toastRegion: $("#toast-region"),
-    providerLabel: $("#provider-label"),
+
+    onboarding: $("#onboarding"),
+    identityForm: $("#identity-form"),
+    visitorName: $("#visitor-name"),
+    visitorCompany: $("#visitor-company"),
+    skipButton: $("#skip-button"),
+
+    drawer: $("#drawer"),
+    drawerTitle: $("#drawer-title"),
+    drawerBody: $("#drawer-body"),
+    drawerClose: $("#drawer-close"),
+    projectsButton: $("#projects-button"),
+    jdButton: $("#jd-button"),
+
+    themeButton: $("#theme-button"),
+    toast: $("#toast"),
   };
+
+  const state = {
+    sessionId: null,
+    events: null,
+    candidates: [],
+    sources: new Map(),
+    active: null,
+    drafts: [],
+    draftIndex: 0,
+    variantIndex: 0,
+    roles: {},
+    busy: false,
+  };
+
+  const STARTERS = [
+    "Give me the 60-second overview.",
+    "What's the hardest problem he's solved?",
+    "How does he handle crash recovery?",
+    "Is he a fit for a platform team?",
+  ];
+
+  /* ---------- helpers ---------- */
+
+  const esc = (value) =>
+    String(value ?? "").replace(/[&<>"']/g, (c) =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]),
+    );
+
+  // Attributed fields arrive as {value, source_url, ...} or as a bare scalar.
+  const val = (field) =>
+    field && typeof field === "object" && "value" in field ? field.value : field;
+
+  const srcOf = (field) =>
+    field && typeof field === "object" ? field.source_url || null : null;
+
+  const initialsOf = (name) =>
+    String(name || "?")
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0].toUpperCase())
+      .join("");
+
+  let toastTimer;
+  function toast(message, tone) {
+    el.toast.textContent = message;
+    if (tone) el.toast.dataset.tone = tone;
+    else delete el.toast.dataset.tone;
+    el.toast.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => (el.toast.hidden = true), 4200);
+  }
 
   async function api(path, options = {}) {
     const response = await fetch(path, {
+      headers: options.body ? { "Content-Type": "application/json" } : undefined,
       ...options,
-      headers: { "Content-Type": "application/json", ...(options.headers || {}) },
     });
-    if (response.status === 204) return null;
-    let body = {};
-    try {
-      body = await response.json();
-    } catch (_error) {
-      body = { detail: "The server returned an unreadable response." };
+    if (!response.ok) {
+      const detail = await response.json().catch(() => ({}));
+      throw new Error(detail.detail || `Request failed (${response.status})`);
     }
-    if (!response.ok) throw new Error(body.detail || "Request failed");
-    return body;
+    return response.status === 204 ? null : response.json();
   }
 
-  function toast(message) {
-    const node = document.createElement("div");
-    node.className = "toast";
-    node.textContent = message;
-    elements.toastRegion.append(node);
-    window.setTimeout(() => node.remove(), 4300);
+  /* ---------- rail state machine ---------- */
+
+  const GATE_BY_STATE = {
+    idle: null,
+    skipped: null,
+    researching: "discovery",
+    candidates: "discovery",
+    empty: "discovery",
+    confirmed: "context",
+    opted_out: null,
+  };
+
+  function setRailState(name) {
+    document.querySelectorAll(".rail-state").forEach((section) => {
+      section.hidden = section.dataset.state !== name;
+    });
   }
 
-  function closeOnboarding() {
-    elements.onboarding.classList.add("hidden");
-    elements.input.focus();
-  }
+  function renderResearchState(payload) {
+    const status = payload?.status || "idle";
+    el.page.dataset.research = status;
 
-  function addMessage(role, text, sources = [], refusal = false) {
-    elements.placeholder?.remove();
-    const article = document.createElement("article");
-    article.className = `message ${role}${refusal ? " refusal" : ""}`;
+    // Gate visualisation: highlight how far authority has actually travelled.
+    const reached = GATE_BY_STATE[status];
+    const order = ["discovery", "confirm", "context"];
+    const reachedIndex = reached ? order.indexOf(reached) : -1;
+    el.gate.querySelectorAll(".gate-step").forEach((step, index) => {
+      step.dataset.active = String(index <= reachedIndex);
+    });
+    el.gateStage.textContent =
+      status === "confirmed" ? "Unlocked" : reachedIndex >= 0 ? "Proposed" : "Locked";
 
-    const meta = document.createElement("div");
-    meta.className = "message-meta";
-    meta.textContent = role === "user" ? "YOU / VISITOR" : "PK.TWIN / VERIFIED";
-    const body = document.createElement("div");
-    body.className = "message-body";
-    body.textContent = text;
-    article.append(meta, body);
-
-    if (sources.length) {
-      const chips = document.createElement("div");
-      chips.className = "source-chips";
-      sources.forEach((source, index) => {
-        const chip = document.createElement("button");
-        chip.className = "source-chip";
-        chip.type = "button";
-        chip.textContent = `[${index + 1}] ${shortSource(source)}`;
-        chip.addEventListener("click", () => {
-          renderEvidence(sources);
-          $(".evidence-card")?.scrollIntoView({ behavior: "smooth", block: "center" });
-        });
-        chips.append(chip);
-      });
-      article.append(chips);
-    }
-    elements.messages.append(article);
-    elements.messages.scrollTop = elements.messages.scrollHeight;
-    if (role === "assistant") renderEvidence(sources);
-    return article;
-  }
-
-  function addTyping() {
-    const node = addMessage("assistant", "");
-    node.dataset.typing = "true";
-    const body = $(".message-body", node);
-    body.classList.add("typing");
-    body.replaceChildren(...[0, 1, 2].map(() => document.createElement("i")));
-    return node;
-  }
-
-  function shortSource(source) {
-    if (source.startsWith("https://github.com/")) return source.split("/").pop();
-    const parts = source.split(" › ");
-    return parts.length > 2 ? parts.slice(-2).join(" › ") : source;
-  }
-
-  function renderEvidence(sources) {
-    state.latestSources = sources;
-    elements.sourceCount.textContent = String(sources.length).padStart(2, "0");
-    elements.evidenceList.replaceChildren();
-    if (!sources.length) {
-      const empty = document.createElement("div");
-      empty.className = "empty-evidence";
-      const mark = document.createElement("span");
-      mark.textContent = "↳";
-      const copy = document.createElement("p");
-      copy.textContent = "This response was a boundary refusal; it made no biographical claim.";
-      empty.append(mark, copy);
-      elements.evidenceList.append(empty);
+    if (status === "researching") {
+      el.strip.hidden = false;
+      el.stripTitle.textContent = payload.name
+        ? `Checking public sources for ${payload.name}`
+        : "Checking public sources";
+      el.stripDetail.textContent =
+        payload.disclosure || "Search engines only. No LinkedIn login, no data brokers.";
+      setRailState("researching");
       return;
     }
-    sources.forEach((source, index) => {
-      const node = document.createElement(source.startsWith("https://") ? "a" : "div");
-      node.className = "evidence-item";
-      if (node instanceof HTMLAnchorElement) {
-        node.href = source;
-        node.target = "_blank";
-        node.rel = "noopener noreferrer";
-      }
-      const number = document.createElement("span");
-      number.textContent = `SOURCE / ${String(index + 1).padStart(2, "0")}`;
-      const label = document.createElement("p");
-      label.textContent = source;
-      node.append(number, label);
-      elements.evidenceList.append(node);
-    });
-  }
 
-  function openDrawer(id) {
-    $$(".drawer.open").forEach((drawer) => {
-      drawer.classList.remove("open");
-      drawer.setAttribute("aria-hidden", "true");
-    });
-    const drawer = $(`#${id}`);
-    drawer.classList.add("open");
-    drawer.setAttribute("aria-hidden", "false");
-    elements.backdrop.classList.remove("hidden");
-    $("button", drawer)?.focus();
-  }
-
-  function closeDrawers() {
-    $$(".drawer.open").forEach((drawer) => {
-      drawer.classList.remove("open");
-      drawer.setAttribute("aria-hidden", "true");
-    });
-    elements.backdrop.classList.add("hidden");
-  }
-
-  function handleResearch(event) {
-    const status = event.status || "idle";
-    elements.researchBar.dataset.state = status;
-    elements.researchTitle.textContent = event.message || researchTitle(status);
-    elements.researchDisclosure.textContent = event.disclosure || "Public sources only.";
-    elements.researchReview.classList.toggle("hidden", status !== "candidates");
-    elements.researchOptout.classList.toggle(
-      "hidden",
-      !["researching", "candidates", "confirmed"].includes(status),
-    );
     if (status === "candidates") {
-      state.candidates = event.candidates || [];
-      renderCandidates(state.candidates);
-      openDrawer("research-drawer");
-    }
-    if (status === "confirmed") {
-      elements.gateMap.dataset.state = "open";
-      elements.gateLock.textContent = "AUTHORISED";
-      closeDrawers();
-      toast("Context confirmed. Tailoring is now enabled.");
-    }
-    if (["skipped", "opted_out", "empty"].includes(status)) {
-      elements.gateMap.dataset.state = "locked";
-      elements.gateLock.textContent = "LOCKED";
-    }
-  }
-
-  function researchTitle(status) {
-    const labels = {
-      idle: "Public context gate",
-      researching: "Researching public sources…",
-      candidates: "Possible matches need your confirmation",
-      confirmed: "Public context explicitly confirmed",
-      skipped: "Research skipped — full chat active",
-      opted_out: "Research stopped and purged",
-      empty: "No useful public match found",
-    };
-    return labels[status] || "Public context gate";
-  }
-
-  function renderCandidates(candidates) {
-    elements.candidateList.replaceChildren();
-    if (!candidates.length) {
-      const empty = document.createElement("p");
-      empty.className = "drawer-intro";
-      empty.textContent = "No useful candidates were returned. Chat is unaffected.";
-      elements.candidateList.append(empty);
+      state.candidates = payload.candidates || [];
+      el.strip.hidden = false;
+      el.stripTitle.textContent = `${state.candidates.length} possible ${
+        state.candidates.length === 1 ? "match" : "matches"
+      }`;
+      el.stripDetail.textContent = "Tell me which one is you and I'll tailor what I show.";
+      renderCandidates();
+      setRailState("candidates");
       return;
     }
-    candidates.forEach((candidate) => {
-      const card = document.createElement("article");
-      card.className = "candidate";
-      const top = document.createElement("div");
-      top.className = "candidate-top";
-      let avatar;
-      if (candidate.photo_url) {
-        avatar = document.createElement("img");
-        avatar.src = candidate.photo_url;
-        avatar.alt = "Public profile image";
-        avatar.referrerPolicy = "no-referrer";
-        avatar.addEventListener("error", () => {
-          const fallback = avatarNode(candidate.initials);
-          avatar.replaceWith(fallback);
-        });
-      } else {
-        avatar = avatarNode(candidate.initials);
-      }
-      avatar.classList.add("candidate-avatar");
-      const copy = document.createElement("div");
-      copy.className = "candidate-copy";
-      const name = document.createElement("strong");
-      name.textContent = candidate.name;
-      const headline = document.createElement("span");
-      headline.textContent = [candidate.headline, candidate.company].filter(Boolean).join(" · ");
-      copy.append(name, headline);
-      const confidence = document.createElement("span");
-      confidence.className = "confidence";
-      confidence.textContent = `${candidate.confidence}%`;
-      confidence.title = "Computed confidence, not model-generated";
-      top.append(avatar, copy, confidence);
 
-      const why = document.createElement("div");
-      why.className = "candidate-why";
-      why.textContent = `Why ${candidate.confidence}%: ${(candidate.why || []).join(" · ")}`;
-      const bottom = document.createElement("div");
-      bottom.className = "candidate-bottom";
-      const source = document.createElement("a");
-      source.className = "candidate-source";
-      source.href = candidate.source_link;
-      source.target = "_blank";
-      source.rel = "noopener noreferrer";
-      source.textContent = `${candidate.source_label} ↗`;
-      const confirm = document.createElement("button");
-      confirm.className = "confirm-button";
-      confirm.type = "button";
-      confirm.textContent = "THIS IS ME → CONFIRM";
-      confirm.addEventListener("click", () => confirmCandidate(candidate.id, confirm));
-      bottom.append(source, confirm);
-      card.append(top, why, bottom);
-      elements.candidateList.append(card);
-    });
+    if (status === "confirmed") {
+      el.strip.hidden = true;
+      setRailState("active");
+      return;
+    }
+
+    if (status === "empty") {
+      el.strip.hidden = false;
+      el.stripTitle.textContent = "Nothing found publicly";
+      el.stripDetail.textContent = "That's fine — the conversation is unaffected.";
+      setRailState("idle");
+      return;
+    }
+
+    el.strip.hidden = true;
+    setRailState("idle");
   }
 
-  function avatarNode(initials) {
-    const avatar = document.createElement("div");
-    avatar.textContent = initials || "?";
-    return avatar;
+  function renderSources() {
+    const items = [...state.sources.values()];
+    const done = items.filter((item) => item.status !== "running").length;
+    el.sourceProgress.textContent = items.length ? `${done}/${items.length}` : "";
+    el.sourceList.innerHTML = items
+      .map(
+        (item) => `
+        <li class="source-item" data-status="${esc(item.status)}">
+          <span class="name">${esc(item.source)}</span>
+          <span class="state">${esc(item.status)}</span>
+        </li>`,
+      )
+      .join("");
   }
 
-  async function confirmCandidate(id, button) {
-    button.disabled = true;
-    button.textContent = "CONFIRMING…";
+  /* ---------- candidates ---------- */
+
+  function renderCandidates() {
+    el.candidateCount.textContent = String(state.candidates.length);
+    el.candidateList.innerHTML = state.candidates
+      .map((candidate, index) => {
+        const avatar = candidate.avatar || {};
+        const photo = avatar.url || candidate.photo_url;
+        const initials = avatar.initials || candidate.initials || initialsOf(candidate.name);
+        const why = Array.isArray(candidate.why) ? candidate.why.join(" · ") : candidate.why;
+        return `
+          <article class="candidate">
+            <div class="cand-top">
+              ${
+                photo
+                  ? `<img class="person-avatar" src="${esc(photo)}" alt="" loading="lazy"
+                       onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'person-avatar initials',textContent:'${esc(
+                         initials,
+                       )}'}))">`
+                  : `<span class="person-avatar initials">${esc(initials)}</span>`
+              }
+              <div class="cand-id">
+                <strong>${esc(candidate.name)}</strong>
+                <span>${esc(candidate.headline || candidate.company || "")}</span>
+              </div>
+              <span class="score">${esc(candidate.confidence ?? "?")}%</span>
+            </div>
+            ${why ? `<p class="why">Why ${esc(candidate.confidence)}%: ${esc(why)}</p>` : ""}
+            <div class="cand-foot">
+              <span class="origin">${esc(candidate.source_label || "public result")}</span>
+              <button type="button" class="primary-btn" data-confirm="${index}">This is me</button>
+            </div>
+          </article>`;
+      })
+      .join("");
+  }
+
+  el.candidateList.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-confirm]");
+    if (!button) return;
+    confirmCandidate(state.candidates[Number(button.dataset.confirm)]);
+  });
+
+  async function confirmCandidate(candidate) {
+    if (!candidate || !state.sessionId) return;
     try {
       const result = await api(`/api/sessions/${state.sessionId}/confirm`, {
         method: "POST",
-        body: JSON.stringify({ candidate_id: id }),
+        body: JSON.stringify({ candidate_id: candidate.id }),
       });
-      handleResearch({
-        status: "confirmed",
-        message: `Confirmed ${result.candidate.name}. Context tailoring is active.`,
-        disclosure: "You authorised this context. Stop & purge remains available.",
-      });
+      applyActive(result);
+      renderResearchState({ status: "confirmed" });
+      toast("Thanks — I'll tailor what I show you.");
     } catch (error) {
-      toast(error.message);
-      button.disabled = false;
-      button.textContent = "THIS IS ME → CONFIRM";
+      toast(error.message, "error");
     }
   }
 
-  async function submitIdentity(skip = false) {
-    if (state.identityHandled || !state.sessionId) return;
-    state.identityHandled = true;
-    const name = skip ? "" : $("#visitor-name").value.trim();
-    const company = skip ? "" : $("#visitor-company").value.trim();
-    closeOnboarding();
-    try {
-      const path = skip || !name
-        ? `/api/sessions/${state.sessionId}/skip`
-        : `/api/sessions/${state.sessionId}/identity`;
-      const result = await api(path, {
-        method: "POST",
-        body: JSON.stringify(skip || !name ? {} : { name, company: company || null }),
-      });
-      if (result.status === "skipped") {
-        handleResearch({
-          status: "skipped",
-          message: "Research skipped — full chat active",
-          disclosure: "Nothing was looked up. Every conversation feature remains available.",
-        });
-      }
-    } catch (error) {
-      toast(`Could not start research: ${error.message}. Chat is still available.`);
+  /* ---------- active person ---------- */
+
+  function applyActive(payload) {
+    const candidate = payload.candidate || payload;
+    state.active = candidate;
+
+    el.activeConfidence.textContent = candidate.confidence ? `${candidate.confidence}%` : "";
+    el.activeName.textContent = candidate.name || "";
+    el.activeRole.textContent =
+      val(candidate.role) || candidate.headline || val(candidate.company_detail) || candidate.company || "";
+    el.activeLocation.textContent = val(candidate.location) || "";
+
+    const avatar = candidate.avatar || {};
+    const photo = avatar.url || candidate.photo_url;
+    const initials = avatar.initials || candidate.initials || initialsOf(candidate.name);
+    if (photo) {
+      el.activeAvatar.src = photo;
+      el.activeAvatar.hidden = false;
+      el.activeInitials.hidden = true;
+      el.activeAvatar.onerror = () => {
+        el.activeAvatar.hidden = true;
+        el.activeInitials.hidden = false;
+      };
+    } else {
+      el.activeAvatar.hidden = true;
+      el.activeInitials.hidden = false;
     }
+    el.activeInitials.textContent = initials;
+
+    renderProfiles(candidate.profiles || []);
+    renderEmail(candidate.email);
+    renderCompany(payload.dossier || candidate.dossier);
+    renderRoles(payload.roles || []);
+    renderOutreach(payload.outreach || payload);
+  }
+
+  function renderProfiles(profiles) {
+    if (!profiles.length) {
+      el.activeProfiles.innerHTML = "";
+      return;
+    }
+    el.activeProfiles.innerHTML = profiles
+      .map(
+        (profile) => `
+        <li><a href="${esc(profile.url)}" target="_blank" rel="noopener noreferrer"
+               data-verified="${profile.verified ? "true" : "false"}">
+          ${esc(profile.kind.replace(/_/g, " "))}${profile.handle ? ` · ${esc(profile.handle)}` : ""}
+        </a></li>`,
+      )
+      .join("");
+  }
+
+  function renderEmail(email) {
+    if (!email || !email.address) {
+      el.emailRow.hidden = true;
+      return;
+    }
+    el.emailRow.hidden = false;
+    el.emailLink.textContent = email.address;
+    el.emailLink.href = `mailto:${email.address}`;
+    el.emailStatus.textContent = email.status || "";
+    el.emailStatus.dataset.status = email.status || "inferred";
+    el.emailStatus.title = email.why || "";
+  }
+
+  function factRow(label, field) {
+    const value = val(field);
+    if (!value) return "";
+    const source = srcOf(field);
+    const rendered = source
+      ? `<a href="${esc(source)}" target="_blank" rel="noopener noreferrer">${esc(value)}</a>`
+      : esc(value);
+    return `<div class="fact"><dt>${esc(label)}</dt><dd>${rendered}</dd></div>`;
+  }
+
+  function renderCompany(dossier) {
+    const company = dossier?.company;
+    if (!company) {
+      el.companyBlock.hidden = true;
+      return;
+    }
+    const rows = [
+      factRow("Domain", company.domain),
+      factRow("Site", company.site),
+      factRow("Careers", company.careers_page),
+      factRow("Blog", company.engineering_blog),
+      factRow("GitHub", company.github_org),
+      factRow("Stack", company.technology_stack),
+      factRow("Funding", company.funding),
+    ]
+      .filter(Boolean)
+      .join("");
+
+    const news = Array.isArray(company.news)
+      ? company.news
+          .slice(0, 3)
+          .map(
+            (item) =>
+              `<div class="fact"><dt>News</dt><dd>${
+                srcOf(item)
+                  ? `<a href="${esc(srcOf(item))}" target="_blank" rel="noopener noreferrer">${esc(
+                      val(item),
+                    )}</a>`
+                  : esc(val(item))
+              }</dd></div>`,
+          )
+          .join("")
+      : "";
+
+    if (!rows && !news) {
+      el.companyBlock.hidden = true;
+      return;
+    }
+    el.companyBlock.hidden = false;
+    el.companyBody.innerHTML = rows + news;
+  }
+
+  function renderRoles(rolesPayload) {
+    const roles = Array.isArray(rolesPayload)
+      ? rolesPayload
+      : Object.values(rolesPayload || {}).flatMap((entry) => entry.roles || []);
+    if (!roles.length) {
+      el.rolesBlock.hidden = true;
+      return;
+    }
+    el.rolesBlock.hidden = false;
+    el.rolesCount.textContent = String(roles.length);
+    el.rolesBody.innerHTML = roles
+      .slice(0, 6)
+      .map(
+        (role) => `
+        <div class="role">
+          <div class="role-top">
+            <strong>${esc(role.title)}</strong>
+            <span class="role-fit">${esc(role.fit_score ?? "")}${role.fit_score ? "%" : ""}</span>
+          </div>
+          <span class="meta">${esc(
+            [role.team, role.location, role.ats].filter(Boolean).join(" · "),
+          )}</span>
+          ${
+            role.canonical_apply_url
+              ? `<a href="${esc(role.canonical_apply_url)}" target="_blank" rel="noopener noreferrer">View requisition ↗</a>`
+              : ""
+          }
+        </div>`,
+      )
+      .join("");
+  }
+
+  /* ---------- outreach ---------- */
+
+  function renderOutreach(payload) {
+    const drafts = payload?.drafts || [];
+    state.drafts = drafts;
+    state.draftIndex = 0;
+    state.variantIndex = 0;
+
+    if (!drafts.length) {
+      el.outreachBlock.hidden = true;
+      return;
+    }
+    el.outreachBlock.hidden = false;
+    el.outreachDecision.textContent = payload.decision || "";
+    renderVariants();
+  }
+
+  function currentDraft() {
+    return state.drafts[state.draftIndex] || null;
+  }
+
+  function currentVariant() {
+    const draft = currentDraft();
+    if (!draft) return null;
+    const variants = draft.variants || [];
+    return variants[state.variantIndex] || variants[0] || null;
+  }
+
+  function renderVariants() {
+    const draft = currentDraft();
+    if (!draft) return;
+    const variants = draft.variants || [];
+
+    el.variantTabs.innerHTML = variants
+      .map(
+        (variant, index) =>
+          `<button type="button" role="tab" class="variant-tab"
+             aria-selected="${index === state.variantIndex}"
+             data-variant="${index}">${esc(variant.id || variant.tone || `v${index + 1}`)}</button>`,
+      )
+      .join("");
+
+    const variant = currentVariant();
+    el.draftBody.innerHTML = variant
+      ? `<div class="subject">${esc(variant.subject || "(no subject)")}</div>
+         <div class="body">${esc(variant.body || "")}</div>`
+      : `<p class="fineprint tight">No draft prepared.</p>`;
+
+    const note = [];
+    if (draft.recipient) note.push(`To ${draft.recipient}`);
+    if (draft.template) note.push(`${draft.template} template`);
+    if (payloadSmtpOff()) note.push("SMTP off — opens your mail client instead");
+    el.outreachNote.textContent = note.join(" · ");
+  }
+
+  let smtpConfigured = false;
+  const payloadSmtpOff = () => !smtpConfigured;
+
+  el.variantTabs.addEventListener("click", (event) => {
+    const tab = event.target.closest("[data-variant]");
+    if (!tab) return;
+    state.variantIndex = Number(tab.dataset.variant);
+    renderVariants();
+  });
+
+  // Sending is owner-authenticated server-side. From the visitor page this
+  // deliberately falls back to a prefilled compose window rather than pretending
+  // it can dispatch mail on the owner's behalf.
+  el.sendEmail.addEventListener("click", () => {
+    const draft = currentDraft();
+    const variant = currentVariant();
+    if (!draft || !variant) return;
+    const to = encodeURIComponent(draft.recipient || "");
+    const subject = encodeURIComponent(variant.subject || "");
+    const body = encodeURIComponent(variant.body || "");
+    window.open(`mailto:${to}?subject=${subject}&body=${body}`, "_blank");
+    toast("Opened your mail client with the draft.");
+  });
+
+  el.openLinkedin.addEventListener("click", () => {
+    const profiles = state.active?.profiles || [];
+    const linkedin = profiles.find((profile) => profile.kind === "linkedin");
+    if (!linkedin) {
+      toast("No public LinkedIn profile was observed.", "error");
+      return;
+    }
+    window.open(linkedin.url, "_blank", "noopener");
+  });
+
+  /* ---------- chat ---------- */
+
+  function addMessage(role, text, sources) {
+    const wrapper = document.createElement("div");
+    wrapper.className = `msg ${role}`;
+    const chips = (sources || [])
+      .map((source) => `<span class="src-chip">${esc(source)}</span>`)
+      .join("");
+    wrapper.innerHTML = `
+      <span class="msg-role">${role === "twin" ? "PK.twin / verified" : "You"}</span>
+      <div class="msg-body">${esc(text)}</div>
+      ${chips ? `<div class="msg-sources">${chips}</div>` : ""}`;
+    el.messages.appendChild(wrapper);
+    el.messages.scrollTop = el.messages.scrollHeight;
+    return wrapper;
+  }
+
+  function renderEvidence(sources) {
+    el.sourceCount.textContent = String(sources.length).padStart(2, "0");
+    el.evidenceList.innerHTML = sources.length
+      ? sources
+          .map(
+            (source, index) => `
+          <div class="evidence-item">
+            <span class="label">Source / ${String(index + 1).padStart(2, "0")}</span>
+            <span class="value">${esc(source)}</span>
+          </div>`,
+          )
+          .join("")
+      : `<p class="fineprint tight">Sources for the twin's latest answer appear here.</p>`;
   }
 
   async function sendMessage(text) {
-    const message = text.trim();
-    if (!message || !state.sessionId || elements.send.disabled) return;
-    elements.input.value = "";
-    resizeInput();
-    elements.starters.classList.add("hidden");
-    addMessage("user", message);
-    const typing = addTyping();
-    elements.send.disabled = true;
+    if (!text.trim() || state.busy || !state.sessionId) return;
+    state.busy = true;
+    el.send.disabled = true;
+    addMessage("visitor", text);
+    el.input.value = "";
+    el.input.style.height = "auto";
+    const pending = addMessage("twin", "Checking the evidence…");
+    pending.classList.add("pending");
+
     try {
       const result = await api(`/api/sessions/${state.sessionId}/chat`, {
         method: "POST",
-        body: JSON.stringify({ message }),
+        body: JSON.stringify({ message: text }),
       });
-      typing.remove();
-      addMessage("assistant", result.answer, result.sources, result.refusal);
-      if (result.tailored_for) toast(`Answer tailored to confirmed context: ${result.tailored_for}`);
-    } catch (error) {
-      typing.remove();
-      addMessage("assistant", error.message, [], true);
-    } finally {
-      elements.send.disabled = false;
-      elements.input.focus();
-    }
-  }
-
-  function resizeInput() {
-    elements.input.style.height = "auto";
-    elements.input.style.height = `${Math.min(elements.input.scrollHeight, 150)}px`;
-  }
-
-  async function optOut() {
-    try {
-      await api(`/api/sessions/${state.sessionId}/research/opt-out`, {
-        method: "POST",
-        body: "{}",
-      });
-      state.candidates = [];
-      handleResearch({
-        status: "opted_out",
-        message: "Research stopped and purged",
-        disclosure: "No research context is available to this conversation.",
-      });
-      closeDrawers();
-      toast("Session research was purged.");
-    } catch (error) {
-      toast(error.message);
-    }
-  }
-
-  async function runJobFit(event) {
-    event.preventDefault();
-    const description = elements.jdInput.value.trim();
-    if (description.length < 20) return;
-    const button = $("button[type=submit]", elements.jdForm);
-    button.disabled = true;
-    button.firstChild.textContent = "Comparing evidence… ";
-    try {
-      const result = await api(`/api/sessions/${state.sessionId}/jd-fit`, {
-        method: "POST",
-        body: JSON.stringify({ description }),
-      });
-      renderJobFit(result);
-    } catch (error) {
-      toast(error.message);
-    } finally {
-      button.disabled = false;
-      button.firstChild.textContent = "Run evidence comparison ";
-    }
-  }
-
-  function renderJobFit(result) {
-    elements.jdResults.replaceChildren();
-    const score = document.createElement("div");
-    score.className = "fit-score";
-    const number = document.createElement("strong");
-    number.textContent = `${result.coverage_percent}%`;
-    const summary = document.createElement("p");
-    summary.textContent = result.summary;
-    score.append(number, summary);
-    elements.jdResults.append(score);
-
-    const matched = fitSection("DIRECTLY EVIDENCED");
-    result.matched.forEach((item) => {
-      const row = document.createElement("div");
-      row.className = "fit-row";
-      const title = document.createElement("strong");
-      title.textContent = `${item.requirement} · ${shortSource(item.source)}`;
-      const evidence = document.createElement("p");
-      evidence.textContent = item.evidence;
-      row.append(title, evidence);
-      matched.append(row);
-    });
-    if (!result.matched.length) matched.append(document.createTextNode("No direct matches detected."));
-    elements.jdResults.append(matched);
-
-    const gaps = fitSection("NOT EVIDENCED IN THE CV");
-    const tags = document.createElement("div");
-    tags.className = "gap-tags";
-    result.not_evidenced.forEach((gap) => {
-      const tag = document.createElement("span");
-      tag.textContent = gap;
-      tags.append(tag);
-    });
-    if (!result.not_evidenced.length) tags.append(document.createTextNode("No recognised gaps detected."));
-    gaps.append(tags);
-    elements.jdResults.append(gaps);
-    const caveat = document.createElement("p");
-    caveat.className = "fit-caveat";
-    caveat.textContent = result.caveat;
-    elements.jdResults.append(caveat);
-  }
-
-  function fitSection(title) {
-    const section = document.createElement("section");
-    section.className = "fit-section";
-    const heading = document.createElement("h3");
-    heading.textContent = title;
-    section.append(heading);
-    return section;
-  }
-
-  async function loadProjects() {
-    openDrawer("projects-drawer");
-    if (state.projectsLoaded) return;
-    try {
-      const result = await api("/api/github");
-      elements.projectGrid.replaceChildren();
-      result.repositories.forEach((repo) => {
-        const card = document.createElement("a");
-        card.className = "project-card";
-        card.href = repo.url;
-        card.target = "_blank";
-        card.rel = "noopener noreferrer";
-        const top = document.createElement("div");
-        top.className = "project-top";
-        const name = document.createElement("strong");
-        name.textContent = repo.name;
-        const live = document.createElement("span");
-        live.className = `live-badge${repo.live ? "" : " offline"}`;
-        live.textContent = repo.live ? "● LIVE" : "○ OFFLINE";
-        top.append(name, live);
-        const description = document.createElement("p");
-        description.textContent = repo.description || "No description supplied.";
-        const stats = document.createElement("div");
-        stats.className = "repo-stats";
-        stats.textContent = repo.live
-          ? `☆ ${repo.stars} ⑂ ${repo.forks} ◌ ${repo.language || "n/a"}`
-          : "Live stats unavailable";
-        const topics = document.createElement("div");
-        topics.className = "repo-topics";
-        (repo.topics || []).slice(0, 5).forEach((topic) => {
-          const tag = document.createElement("span");
-          tag.textContent = `#${topic}`;
-          topics.append(tag);
-        });
-        card.append(top, description, stats, topics);
-        elements.projectGrid.append(card);
-      });
-      state.projectsLoaded = true;
-    } catch (error) {
-      elements.projectGrid.textContent = `Live metadata unavailable: ${error.message}`;
-    }
-  }
-
-  function connectEvents() {
-    state.eventSource?.close();
-    state.eventSource = new EventSource(`/api/sessions/${state.sessionId}/events`);
-    state.eventSource.addEventListener("research", (event) => {
-      try {
-        handleResearch(JSON.parse(event.data));
-      } catch (_error) {
-        // Malformed event data is ignored; it never reaches model context.
+      pending.remove();
+      addMessage("twin", result.answer, result.sources);
+      renderEvidence(result.sources || []);
+      if (typeof result.budget_remaining === "number") {
+        el.budget.textContent = `${result.budget_remaining.toLocaleString()} tokens left`;
       }
-    });
-  }
-
-  async function initialise() {
-    try {
-      const [session, health] = await Promise.all([
-        api("/api/sessions", { method: "POST", body: "{}" }),
-        api("/api/health"),
-      ]);
-      state.sessionId = session.session_id;
-      elements.providerLabel.textContent = health.provider === "scripted" ? "OFFLINE SAFE" : "MODEL ONLINE";
-      addMessage("assistant", session.greeting, ["Policy › Grounding boundary"]);
-      connectEvents();
-      $("#visitor-name").focus();
     } catch (error) {
-      elements.placeholder.textContent = `Could not start a session: ${error.message}`;
-      elements.onboarding.classList.add("hidden");
-      elements.send.disabled = true;
+      pending.remove();
+      addMessage("twin", `I couldn't answer that: ${error.message}`);
+    } finally {
+      state.busy = false;
+      el.send.disabled = false;
+      el.input.focus();
     }
   }
 
-  function setTheme(theme) {
-    document.documentElement.dataset.theme = theme;
-    $("#theme-icon").textContent = theme === "dark" ? "☼" : "◐";
-    localStorage.setItem("twin-theme", theme);
-  }
+  el.composer.addEventListener("submit", (event) => {
+    event.preventDefault();
+    sendMessage(el.input.value);
+  });
 
-  elements.identityForm.addEventListener("submit", (event) => {
-    event.preventDefault();
-    submitIdentity(false);
-  });
-  elements.skipName.addEventListener("click", () => submitIdentity(true));
-  elements.onboardingClose.addEventListener("click", () => submitIdentity(true));
-  elements.composer.addEventListener("submit", (event) => {
-    event.preventDefault();
-    sendMessage(elements.input.value);
-  });
-  elements.input.addEventListener("input", resizeInput);
-  elements.input.addEventListener("keydown", (event) => {
+  el.input.addEventListener("keydown", (event) => {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
-      elements.composer.requestSubmit();
+      sendMessage(el.input.value);
     }
-  });
-  $$('[data-prompt]').forEach((button) => button.addEventListener("click", () => sendMessage(button.dataset.prompt)));
-  elements.researchReview.addEventListener("click", () => openDrawer("research-drawer"));
-  elements.researchOptout.addEventListener("click", optOut);
-  $("#jd-button").addEventListener("click", () => openDrawer("jd-drawer"));
-  $("#projects-button").addEventListener("click", loadProjects);
-  elements.jdForm.addEventListener("submit", runJobFit);
-  elements.backdrop.addEventListener("click", closeDrawers);
-  $$('[data-close-drawer]').forEach((button) => button.addEventListener("click", closeDrawers));
-  document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") closeDrawers();
-  });
-  $("#theme-button").addEventListener("click", () => {
-    setTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark");
   });
 
-  const savedTheme = localStorage.getItem("twin-theme");
-  setTheme(savedTheme || (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"));
-  if (location.pathname === "/embed") document.body.classList.add("embed-mode");
-  window.addEventListener("pagehide", () => {
-    state.eventSource?.close();
-    if (state.sessionId) {
-      fetch(`/api/sessions/${state.sessionId}`, { method: "DELETE", keepalive: true }).catch(() => {});
+  el.input.addEventListener("input", () => {
+    el.input.style.height = "auto";
+    el.input.style.height = `${Math.min(el.input.scrollHeight, 160)}px`;
+  });
+
+  el.starters.innerHTML = STARTERS.map(
+    (text) => `<button type="button" class="starter">${esc(text)}</button>`,
+  ).join("");
+  el.starters.addEventListener("click", (event) => {
+    const button = event.target.closest(".starter");
+    if (button) sendMessage(button.textContent);
+  });
+
+  /* ---------- SSE ---------- */
+
+  function openEvents() {
+    if (state.events) state.events.close();
+    const source = new EventSource(`/api/sessions/${state.sessionId}/events`);
+    state.events = source;
+
+    source.addEventListener("research", (event) => {
+      const payload = JSON.parse(event.data);
+      renderResearchState(payload);
+    });
+
+    source.addEventListener("research.progress", (event) => {
+      const payload = JSON.parse(event.data);
+      state.sources.set(payload.source, payload);
+      renderSources();
+    });
+
+    source.addEventListener("research.dossier", (event) => {
+      const payload = JSON.parse(event.data);
+      if (payload.candidates?.length) {
+        state.candidates = payload.candidates;
+        renderCandidates();
+      }
+    });
+
+    source.addEventListener("roles.ready", (event) => {
+      state.roles = JSON.parse(event.data).roles || {};
+      if (state.active) renderRoles(state.roles);
+    });
+
+    source.addEventListener("outreach.ready", (event) => {
+      renderOutreach(JSON.parse(event.data));
+    });
+
+    source.addEventListener("outreach.action", (event) => {
+      const payload = JSON.parse(event.data);
+      if (payload.status === "sent") toast("Outreach email sent.");
+    });
+
+    source.onerror = () => {
+      /* EventSource reconnects on its own; a dropped stream must not break chat. */
+    };
+  }
+
+  /* ---------- opt out ---------- */
+
+  async function optOut() {
+    if (!state.sessionId) return;
+    try {
+      await api(`/api/sessions/${state.sessionId}/research/opt-out`, { method: "POST" });
+      state.candidates = [];
+      state.active = null;
+      state.sources.clear();
+      renderResearchState({ status: "opted_out" });
+      toast("Stopped. Everything found was erased.");
+    } catch (error) {
+      toast(error.message, "error");
+    }
+  }
+
+  [el.stripOptout, el.candidatesOptout, el.activeOptout].forEach((button) =>
+    button.addEventListener("click", optOut),
+  );
+
+  el.stripView.addEventListener("click", () => {
+    const rail = document.querySelector('.rail-state:not([hidden])');
+    rail?.scrollIntoView({ behavior: "smooth", block: "center" });
+  });
+
+  /* ---------- onboarding ---------- */
+
+  el.identityForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const name = el.visitorName.value.trim();
+    const company = el.visitorCompany.value.trim();
+    el.onboarding.hidden = true;
+    if (!name) return skip();
+    try {
+      await api(`/api/sessions/${state.sessionId}/identity`, {
+        method: "POST",
+        body: JSON.stringify({ name, company: company || null }),
+      });
+    } catch (error) {
+      toast(error.message, "error");
     }
   });
-  initialise();
+
+  async function skip() {
+    el.onboarding.hidden = true;
+    try {
+      await api(`/api/sessions/${state.sessionId}/skip`, { method: "POST" });
+      renderResearchState({ status: "skipped" });
+    } catch {
+      /* Skipping must never block the conversation. */
+    }
+  }
+
+  el.skipButton.addEventListener("click", skip);
+
+  /* ---------- drawer: work + role fit ---------- */
+
+  function openDrawer(title, html) {
+    el.drawerTitle.textContent = title;
+    el.drawerBody.innerHTML = html;
+    el.drawer.hidden = false;
+  }
+
+  el.drawerClose.addEventListener("click", () => (el.drawer.hidden = true));
+  el.drawer.addEventListener("click", (event) => {
+    if (event.target === el.drawer) el.drawer.hidden = true;
+  });
+
+  el.projectsButton.addEventListener("click", async () => {
+    openDrawer("Selected work", `<p class="fineprint tight">Loading live repository data…</p>`);
+    try {
+      const data = await api("/api/github");
+      const repos = data.repositories || data.repos || [];
+      openDrawer(
+        "Selected work",
+        repos
+          .map(
+            (repo) => `
+          <div class="repo">
+            <strong><a href="${esc(repo.url || repo.html_url)}" target="_blank" rel="noopener noreferrer">${esc(
+              repo.name,
+            )}</a></strong>
+            <p>${esc(repo.description || "")}</p>
+            ${
+              repo.topics?.length
+                ? `<div class="topics">${repo.topics
+                    .map((topic) => `<span>${esc(topic)}</span>`)
+                    .join("")}</div>`
+                : ""
+            }
+          </div>`,
+          )
+          .join(""),
+      );
+    } catch (error) {
+      openDrawer("Selected work", `<p class="fineprint tight">${esc(error.message)}</p>`);
+    }
+  });
+
+  el.jdButton.addEventListener("click", () => {
+    openDrawer(
+      "Role fit",
+      `<form class="jd-form" id="jd-form">
+         <textarea id="jd-input" placeholder="Paste the job description…"></textarea>
+         <div class="modal-actions"><button type="submit" class="primary-btn">Analyse</button></div>
+       </form>
+       <div id="jd-results"></div>`,
+    );
+    $("#jd-form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const description = $("#jd-input").value.trim();
+      if (!description) return;
+      const results = $("#jd-results");
+      results.innerHTML = `<p class="fineprint tight">Checking against the CV corpus…</p>`;
+      try {
+        const fit = await api(`/api/sessions/${state.sessionId}/jd-fit`, {
+          method: "POST",
+          body: JSON.stringify({ description }),
+        });
+        results.innerHTML = `
+          <div class="repo"><strong>Summary</strong><p>${esc(fit.summary || "")}</p></div>
+          ${(fit.matched || fit.matched_requirements || [])
+            .map(
+              (item) =>
+                `<div class="repo"><strong>✓ ${esc(
+                  item.requirement || item,
+                )}</strong><p>${esc(item.source || "")}</p></div>`,
+            )
+            .join("")}
+          ${(fit.unevidenced || fit.unevidenced_requirements || [])
+            .map((item) => `<div class="repo"><strong>— ${esc(item.requirement || item)}</strong><p>Not evidenced in the CV.</p></div>`)
+            .join("")}
+          ${fit.caveat ? `<p class="fineprint">${esc(fit.caveat)}</p>` : ""}`;
+      } catch (error) {
+        results.innerHTML = `<p class="fineprint tight">${esc(error.message)}</p>`;
+      }
+    });
+  });
+
+  /* ---------- theme ---------- */
+
+  const storedTheme = localStorage.getItem("twin-theme");
+  if (storedTheme) document.documentElement.dataset.theme = storedTheme;
+
+  el.themeButton.addEventListener("click", () => {
+    const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+    document.documentElement.dataset.theme = next;
+    localStorage.setItem("twin-theme", next);
+  });
+
+  /* ---------- boot ---------- */
+
+  async function boot() {
+    try {
+      const health = await api("/api/health");
+      el.providerLabel.textContent = health.grounding || "Grounding online";
+      smtpConfigured = Boolean(health.smtp_configured);
+    } catch {
+      /* Health is decorative; the page still works without it. */
+    }
+
+    try {
+      const session = await api("/api/sessions", { method: "POST", body: "{}" });
+      state.sessionId = session.session_id;
+      addMessage("twin", session.greeting, ["CV › Grounding contract"]);
+      renderResearchState(session.research || { status: "idle" });
+      openEvents();
+      el.onboarding.hidden = false;
+      el.visitorName.focus();
+    } catch (error) {
+      addMessage("twin", `The twin could not start a session: ${error.message}`);
+    }
+  }
+
+  boot();
 })();
