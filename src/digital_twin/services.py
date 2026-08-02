@@ -132,7 +132,7 @@ class ChatService:
             tailored_for = sanitize_external_text(str(label), max_length=100) or None
             if tailored_for and verified.grounded:
                 verified = VerifiedAnswer(
-                    f"Since you confirmed a {tailored_for} context, I’d foreground "
+                    f"Given the confirmed {tailored_for} context, I’d foreground "
                     "this:\n\n"
                     f"{verified.text}",
                     verified.sources,

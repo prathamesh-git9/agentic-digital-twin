@@ -1,0 +1,26 @@
+Verification date: 2026-08-02
+
+pytest -q
+.........................                                                [100%]
+25 passed, 1 warning in 1.05s
+
+ruff format --check .
+23 files already formatted
+
+ruff check .
+All checks passed!
+
+docker build -t digital-twin:local .
+Exit code: 0
+
+Container identity
+uid=100(twin) gid=101(twin) groups=101(twin)
+
+Rendered browser checks
+Desktop: 1440 x 1000
+Mobile viewport/document width: 390 / 390
+Synthetic rendered research candidates: 2
+Confirmed gate label: AUTHORISED
+Grok provider badge: MODEL ONLINE
+Grok evidence cards: 2
+Browser console errors after favicon route: 0

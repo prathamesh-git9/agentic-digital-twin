@@ -1,0 +1,95 @@
+{
+  "executed_at": "2026-08-02T20:48:33Z",
+  "runtime": {
+    "health": "ok",
+    "version": "0.1.0",
+    "offline_provider": "scripted",
+    "grounding": "authority-gated",
+    "container_user": "uid=100(twin) gid=101(twin) groups=101(twin)"
+  },
+  "optional_skip": {
+    "status": "skipped",
+    "chat_ready": true,
+    "answer_grounded": true,
+    "sources": ["CV › Summary"]
+  },
+  "safety": {
+    "prompt_injection_refused": true,
+    "prompt_injection_source": "Policy › Grounding boundary",
+    "contractual_request_refused": true,
+    "contractual_sources": [
+      "Policy › Representation boundary",
+      "CV › Contact"
+    ]
+  },
+  "jd_fit": {
+    "coverage_percent": 67,
+    "matched": ["Python", "Java", "FastAPI", "Docker"],
+    "not_evidenced": ["Kubernetes", "Terraform"]
+  },
+  "research": {
+    "public_provider_probe": {
+      "provider": "DuckDuckGo public HTML search",
+      "candidate_count": 4,
+      "identifying_payload_recorded": false,
+      "session_purged": true
+    },
+    "rendered_evidence_data": "synthetic",
+    "query": "Alex Demo (synthetic)",
+    "stated_company": "Example Labs (synthetic)",
+    "candidate_count": 2,
+    "first_candidate_confidence": 93,
+    "first_candidate_reasons": [
+      "name tokens matched 2/2",
+      "stated company appears in the public result",
+      "search result rank 1",
+      "source domain overlaps the stated company"
+    ],
+    "pre_confirmation_tailored_for": null,
+    "pre_confirmation_mentions_company": false,
+    "confirmation_status": "confirmed",
+    "post_confirmation_tailored_for": "Example Labs",
+    "opt_out_status": "opted_out"
+  },
+  "github": {
+    "source": "GitHub API",
+    "repository_count": 10,
+    "live_count": 10,
+    "sample": {
+      "name": "effect-broker",
+      "language": "Python",
+      "topics": [
+        "ai-agents",
+        "distributed-systems",
+        "durable-execution",
+        "idempotency",
+        "llm",
+        "python",
+        "reliability",
+        "sqlite"
+      ],
+      "recent_commit": "Add CAS-fenced effect cancellation"
+    }
+  },
+  "grok_live": {
+    "base_url": "https://api.x.ai/v1",
+    "model": "grok-4.5",
+    "credential_recorded": false,
+    "elapsed_seconds": 5.59,
+    "grounded": true,
+    "refusal": false,
+    "sources": [
+      "CV › Experience › Physics Wallah Pvt. Ltd. › Software Engineer Intern",
+      "CV › Experience › Freelance › Software Engineer, AI and Automation Systems"
+    ],
+    "rendered_provider_badge": "MODEL ONLINE",
+    "rendered_evidence_sources": 2,
+    "browser_console_errors": 0
+  },
+  "responsive_browser": {
+    "desktop_width": 1440,
+    "mobile_viewport_width": 390,
+    "mobile_document_width": 390,
+    "authority_gate_after_confirmation": "AUTHORISED"
+  }
+}

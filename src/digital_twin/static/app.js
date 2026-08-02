@@ -514,7 +514,7 @@
       ]);
       state.sessionId = session.session_id;
       elements.providerLabel.textContent = health.provider === "scripted" ? "OFFLINE SAFE" : "MODEL ONLINE";
-      addMessage("assistant", session.greeting, ["CV › Grounding contract"]);
+      addMessage("assistant", session.greeting, ["Policy › Grounding boundary"]);
       connectEvents();
       $("#visitor-name").focus();
     } catch (error) {
@@ -573,4 +573,3 @@
   });
   initialise();
 })();
-
