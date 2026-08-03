@@ -669,13 +669,19 @@ def create_app(
                 retain=False,
             )
 
+    # The shell must never be cached. It carries the version stamps for the
+    # stylesheet and script, so a stale copy pins the browser to old assets --
+    # including builds whose JavaScript failed to boot, which presents to the
+    # visitor as a chat that silently does nothing.
+    NO_STORE = {"Cache-Control": "no-store, must-revalidate"}
+
     @app.get("/", include_in_schema=False)
     async def index() -> FileResponse:
-        return FileResponse(STATIC_DIR / "index.html")
+        return FileResponse(STATIC_DIR / "index.html", headers=NO_STORE)
 
     @app.get("/embed", include_in_schema=False)
     async def embed() -> FileResponse:
-        return FileResponse(STATIC_DIR / "index.html")
+        return FileResponse(STATIC_DIR / "index.html", headers=NO_STORE)
 
     @app.get("/widget.js", include_in_schema=False)
     async def widget() -> FileResponse:
