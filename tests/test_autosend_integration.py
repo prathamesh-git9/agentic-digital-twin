@@ -85,6 +85,7 @@ def test_small_candidate_set_fans_out_without_waiting_for_selection(
         autosend=True,
         fanout_unselected=True,
         fanout_max=3,
+        inferred_send_max=1,
         daily_send_cap=10,
         smtp_host="smtp.gmail.com",
         smtp_port=587,

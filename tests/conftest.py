@@ -30,6 +30,7 @@ def app_factory() -> Callable[..., FastAPI]:
         github_service = overrides.pop("github_service", None)
         page_fetcher = overrides.pop("page_fetcher", None)
         mx_resolver = overrides.pop("mx_resolver", None)
+        email_harvester = overrides.pop("email_harvester", None)
         txt_resolver = overrides.pop("txt_resolver", None)
         mail_sender = overrides.pop("mail_sender", None)
         ats_client = overrides.pop("ats_client", None)
@@ -72,6 +73,7 @@ def app_factory() -> Callable[..., FastAPI]:
             github_service=github_service,
             page_fetcher=page_fetcher,
             mx_resolver=mx_resolver,
+            email_harvester=email_harvester,
             txt_resolver=txt_resolver,
             mail_sender=mail_sender,
             ats_client=ats_client,

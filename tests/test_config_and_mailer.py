@@ -20,6 +20,7 @@ def test_owner_provisioned_environment_names_map_exactly(monkeypatch) -> None:
         "TWIN_AUTOSEND": "true",
         "TWIN_FANOUT_UNSELECTED": "true",
         "TWIN_FANOUT_MAX": "3",
+        "TWIN_INFERRED_SEND_MAX": "2",
         "TWIN_DAILY_SEND_CAP": "7",
         "TWIN_LINKEDIN_AUTO": "true",
         "TWIN_PUSHOVER_ENABLED": "true",
@@ -40,6 +41,7 @@ def test_owner_provisioned_environment_names_map_exactly(monkeypatch) -> None:
     assert settings.autosend is True
     assert settings.fanout_unselected is True
     assert settings.fanout_max == 3
+    assert settings.inferred_send_max == 2
     assert settings.daily_send_cap == 7
     assert settings.linkedin_auto is True
     assert settings.pushover_enabled is True

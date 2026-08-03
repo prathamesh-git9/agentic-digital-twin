@@ -372,3 +372,75 @@ async def test_suppression_refuses_delivery_and_signed_opt_out_is_stable() -> No
 
     assert result.status == "suppressed"
     assert sender.messages == []
+
+
+async def test_once_only_person_cannot_bypass_with_a_new_profile_id_and_address() -> None:
+    settings = make_settings(outreach_candidate_daily_cap=5)
+    database = Database("sqlite://")
+    database.create_schema()
+    first_visit = database.create_visit("ip-1")
+    second_visit = database.create_visit("ip-2")
+    sender = FakeSender()
+    service, composer, _ = make_service(settings, database, sender)
+    first = make_candidate(1).model_copy(update={"name": "Sarah Chen"})
+    second = make_candidate(2).model_copy(
+        update={
+            "name": "Sarah Chen",
+            "email": CandidateEmail(
+                address="schen@acme.io",
+                status="verified",
+                confidence="high",
+                source_url="https://github.com/acme/repo/commit/abc",
+                why="published commit address",
+            ),
+        }
+    )
+
+    first_variants = composer.variants(
+        first,
+        first.email,
+        role=None,
+        template="single_match",  # type: ignore[arg-type]
+    )
+    first_draft = service.create_draft(
+        session_id=first_visit.id,
+        candidate=first,
+        email=first.email,  # type: ignore[arg-type]
+        variants=first_variants,
+        linkedin={},
+    )
+    first_result = await service.send(
+        draft=first_draft,
+        variant_id="warm",
+        decision=decide_send([first], fanout_unselected=True, fanout_max=3),
+        template="single_match",
+        approver="policy",
+        automatic=True,
+    )
+
+    second_variants = composer.variants(
+        second,
+        second.email,
+        role=None,
+        template="single_match",  # type: ignore[arg-type]
+    )
+    second_draft = service.create_draft(
+        session_id=second_visit.id,
+        candidate=second,
+        email=second.email,  # type: ignore[arg-type]
+        variants=second_variants,
+        linkedin={},
+    )
+    second_result = await service.send(
+        draft=second_draft,
+        variant_id="warm",
+        decision=decide_send([second], fanout_unselected=True, fanout_max=3),
+        template="single_match",
+        approver="policy",
+        automatic=True,
+    )
+
+    assert first_result.status == "sent"
+    assert second_result.status == "capped"
+    assert "Once-only" in second_result.reason
+    assert len(sender.messages) == 1

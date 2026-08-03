@@ -13,8 +13,9 @@ The interactive OpenAPI document is also available at `/docs`.
 - Confirmation authorises research context for chat and outreach preparation. The current
   owner send policy is separately configuration-driven and does not wait for confirmation.
 - `/owner`, `/outreach/approve`, `/outreach/send`, `/outreach/suppress`, LinkedIn action
-  endpoints, follow-up drafting, and `/api/owner/*` use HTTP Basic authentication. They return
-  `503` when owner credentials are not configured and `401` for invalid credentials.
+  endpoints, follow-up drafting, `/api/owner/outreach/bounces`, and `/api/owner/*` use HTTP
+  Basic authentication. They return `503` when owner credentials are not configured and `401`
+  for invalid credentials.
 - Public/fetched strings are inert data. Unsupported profile claims are removed by the
   grounding verifier.
 
@@ -25,9 +26,15 @@ An attributed field has this shape:
   "value": "Platform Engineer",
   "source_url": "https://public.example/profile",
   "confidence": "medium",
-  "why": "role line observed in the public result title"
+  "why": "role line observed in the public result title",
+  "source_kind": "public_profile",
+  "subject_name": "Sarah Chen",
+  "company_level": false
 }
 ```
+
+`source_kind`, optional `subject_name`, and `company_level` distinguish person evidence from
+published organisation contacts such as `security.txt` or public RDAP/WHOIS addresses.
 
 Unknown enrichment fields are `null` or absent from their collection; they are never guessed.
 
@@ -43,15 +50,26 @@ A candidate preserves the v1 card keys (`id`, `name`, `headline`, `company`, `ph
 - `profiles[]`: exactly `{kind, url, handle, source_url, verified}`. Kinds can include
   `linkedin`, `github`, `x`, `instagram`, `personal_site`, `company_bio`, and `speaker`.
   A link is included only when it was observed on a public result/page and tied to the name.
-- `email`: `{address, status, confidence, source_url, why}` or `null`. `status` is
-  `verified` only for a publicly published address or a positive configured verification API
-  result; a pattern-derived address is always `inferred`. MX alone never verifies a mailbox.
+- `submitted_name`: the visitor's search hint; `name` is the best public display name and is
+  never replaced by a fabricated surname.
+- `surname_resolved`: `true` only when public identity evidence establishes a surname. It is
+  explicitly `false` for an unresolved single-token name. `name_detail.source_url` identifies
+  the public result/profile/page that supplied `name`.
+- `name_variants[]`: derived display-name alternatives used for bidirectional nickname handling
+  and name-order-aware inference; the displayed `name` retains accents and punctuation.
+- `email`: the primary address for backward compatibility, or `null`.
+- `emails[]`: the complete ranked address set. Each item is
+  `{address, status, confidence, source_url, why, pattern, score, mx_valid, source_kind,
+  company_level}`. `status` is `verified` only for a publicly published address or a positive
+  configured verification API result; a pattern-derived address is always `inferred`. MX alone
+  never verifies a mailbox.
 
 `CandidateDossier` contains `candidate_id`, `person`, `company`, and attributed public
-`documents`. Person fields include headline, company, public profiles/email, talks, and recent
-mentions. Company fields include domain/site, careers page, engineering blog, GitHub org,
-observed email patterns, technology stack, news, funding, and feeds. Every fact carries its own
-source URL and confidence reason.
+`documents`. Public documents include observed HTTP links, link labels, and `email_addresses`
+decoded from `mailto:` links. Person fields include headline, company, public profiles/email,
+talks, and recent mentions. Company fields include domain/site, careers page, engineering blog,
+GitHub org, observed email patterns, technology stack, news, funding, and feeds. Every fact
+carries its own source URL and confidence reason.
 
 `RoleMatch` is:
 
@@ -112,6 +130,14 @@ It queues a non-blocking `new_visitor_session` owner notification when configure
 All fields are optional. A non-empty name returns `202` immediately and starts background
 public research; chat is already usable. It queues `research_started`. An empty name takes the
 same path as Skip. `POST /api/sessions/{id}/skip` explicitly skips and returns `200`.
+
+The submitted name is a search hint, not an email-local-part input. Search titles, attributed
+team/leadership pages, public GitHub profile names, and conference bios are ranked first. The
+highest-confidence compatible public display name and its own `source_url` are recorded before
+any address is inferred. Matching handles initials, fuzzy surname spelling, name-order changes,
+hyphenated/double surnames, and a small bidirectional nickname table (for example,
+Mike/Michael, Bob/Robert, and Sasha/Alexander). NFKD/diacritic folding is applied only while
+forming local parts; display names are unchanged.
 
 `GET /api/sessions/{id}/research` returns the last retained high-level research state. Progress
 and derived events are transient SSE events and do not replace this value.
@@ -177,13 +203,39 @@ matched requirements with CV sources, unevidenced requirements, a summary, and c
 Corporate verification means domain equality/subdomain equality only. It does not claim that a
 person works there beyond that observable address-domain check.
 
+## Email discovery
+
+Discovery is ordered and source-attributed:
+
+1. Harvest explicitly published person addresses from attributed page text and `mailto:` links,
+   personal/contact pages, team/about/leadership pages, press releases, speaker/CFP pages, the
+   public GitHub profile API, and public commit author metadata from the user's repositories.
+   `users.noreply.github.com` is discarded.
+2. Check `/.well-known/security.txt`, `/security.txt`, and public domain RDAP/WHOIS data for
+   organisation contacts. These remain `verified` because they are published, but are marked
+   `company_level:true`.
+3. Only when no published address exists, require a valid MX record and generate the complete
+   name/domain set: `first.last`, `firstlast`, `first_last`, `flast`, `f.last`, `first`, `last`,
+   `lastf`, `last.first`, `first-last`, `firstl`, initial-only forms, middle/middle-initial forms,
+   compound-surname alternatives, name-order alternatives, and bidirectional nickname forms.
+4. Rank each inferred item by a cached naming pattern observed from another attributed employee
+   address on that domain, then general pattern prevalence. Every inferred item includes
+   `pattern`, numeric `score`, `mx_valid:true`, and an explanatory `why`. A domain with no MX
+   returns no inferred candidates.
+
+`TWIN_EMAIL_VERIFICATION_PROVIDER=none` is the default. `hunter` plus
+`TWIN_EMAIL_VERIFICATION_API_KEY` enables the pluggable HTTP verifier. When available, its
+domain-search endpoint is consulted first for a known company pattern; a positive mailbox result
+can promote a top inferred item to `verified`. Provider failure degrades to honest inference.
+The application never performs SMTP `RCPT TO` probing.
+
 ## SendDecision and outreach
 
 The current owner policy is count-based:
 
 1. When `TWIN_FANOUT_UNSELECTED=true` and `1 <= candidate_count <= TWIN_FANOUT_MAX` (default
-   max `3`), `decision` is `auto` and every candidate with a usable published or MX-validated
-   inferred address is prepared for unattended delivery without selection.
+   max `3`), `decision` is `auto` and every candidate with a usable published or MX-enabled
+   inferred address set is prepared for unattended delivery without selection.
 2. A sole candidate at/above `TWIN_SEND_CONFIDENCE_THRESHOLD` (default `85`) uses
    `single_match`, which may say “You just talked to my digital twin.”
 3. Multiple candidates, or a lower-confidence sole candidate, use `fanout`. It says they
@@ -192,14 +244,31 @@ The current owner policy is count-based:
 4. More candidates than `TWIN_FANOUT_MAX`, or a disabled fanout flag, produce `review` and no
    unattended send.
 
+Address selection then applies independently to each authorised person:
+
+- Every distinct published/API-verified address is selected. If at least one exists, no inferred
+  address is selected.
+- Otherwise only the top `TWIN_INFERRED_SEND_MAX` inferred addresses are selected (default `3`;
+  `0` disables inferred delivery). The cap is enforced when drafts/automatic work are created,
+  not merely in the response.
+- Dedupe is case-insensitive. Dots and `+tag` aliases are collapsed only for Gmail/Googlemail,
+  where those are provider rules; punctuation remains significant on every other domain.
+- A recorded bounce suppresses the normalised address and subtracts from that pattern's future
+  score for the domain. Persistent bounce counts survive process restarts.
+
 Policy authorization is not sufficient for transport. Every SMTP attempt still requires
 `TWIN_AUTOSEND=true`, complete Gmail SMTP settings, a non-suppressed recipient, global
 `TWIN_DAILY_SEND_CAP` capacity, per-person/once-only capacity, and passing sender-domain
-SPF/DKIM/DMARC preflight. A missing address is a recorded refusal. CI forces all automation off.
+SPF/DKIM/DMARC preflight. Multiple addresses selected for one authorised person are one campaign
+for the per-person policy, while each actual message still consumes the global daily cap. A
+later campaign cannot bypass once-only protection by discovering another address or profile URL.
+A missing address is a recorded refusal. CI forces all automation off.
 
 `GET /api/sessions/{id}/outreach` returns the `SendDecision`, prepared drafts, and whether SMTP
 automation is configured. Each draft has 1–3 exact variants, its recipient confidence, LinkedIn
-drafts, template kind, and timestamps.
+drafts, template kind, and timestamps. Recipient fields are `recipient_status`,
+`recipient_pattern`, `recipient_score`, `recipient_why`, `recipient_source_url`,
+`recipient_source_kind`, and `recipient_company_level`.
 
 The owner review flow is:
 
@@ -212,11 +281,30 @@ The owner review flow is:
 
 Send results use `sent`, `compose`, `duplicate`, `suppressed`, `refused`, or `capped`, plus
 `transport`, `reason`, and optional DNS `preflight`. Each decision/reservation/result is appended
-to the audit with `decision`, `reason`, `template`, and variant metadata.
+to the audit with the attempted address's status, pattern, score, source URL/type, company-level
+flag, rationale, `decision`, `reason`, `template`, and variant metadata.
 
 `POST /outreach/suppress` (Basic auth) accepts `{"address":"...","reason":"..."}`.
 `GET /outreach/opt-out?token=...` is the signed link placed in every email; it immediately and
 idempotently suppresses the address.
+
+`POST /api/owner/outreach/bounces` (Basic auth) accepts:
+
+```json
+{
+  "address": "sarah.chen@acme.io",
+  "pattern": "first.last",
+  "reason": "provider hard bounce",
+  "session_id": "optional-session-id",
+  "candidate_id": "optional-candidate-id"
+}
+```
+
+If `pattern` is omitted, the endpoint reuses the latest audit metadata for that normalised
+address when available. It immediately adds the address to suppression, increments the durable
+domain/pattern bounce count, updates in-process ranking, and appends `email.bounced` to the audit.
+The response returns `status:"bounced"`, `suppressed:true`, `domain`, `pattern`, and
+`pattern_bounce_count`.
 
 `POST /api/sessions/{id}/outreach/follow-up` (Basic auth) accepts a parent `draft_id`. It only
 creates a review draft after the configured delay and after the initial message is logged sent;
@@ -257,7 +345,8 @@ proxies, CAPTCHA bypasses, or alternate accounts.
 | `GET` | `/api/owner/contacts` | CRM contacts: `visited → confirmed → drafted → sent → replied`. |
 | `POST` | `/api/owner/contacts/{id}/stage` | Sets one valid CRM stage, including owner-recorded `replied`. |
 | `GET` | `/api/owner/sessions/{id}/replay` | Contact timeline, messages/sources, and available research. |
-| `GET` | `/api/owner/outreach` | Append-only actions, decision metadata, variant counts, and `tracking_pixels:false`. |
+| `GET` | `/api/owner/outreach` | Append-only actions, decision/address metadata, sent/compose/failed/bounced variant counts, and `tracking_pixels:false`. |
+| `POST` | `/api/owner/outreach/bounces` | Suppresses a bounced address, learns its domain pattern penalty, and appends `email.bounced`. |
 
 ## SSE contract
 
@@ -307,6 +396,5 @@ When enabled, Pushover posts form data to
 sent/refused, LinkedIn action, and errors. Messages include only short known context. Pushover,
 webhook, and Telegram adapters are rate-limited, background-only, mockable, and non-fatal.
 
-The required tracked names are documented with empty values in `.env.example`; real values stay
-in ignored `.env`. No test or CI path performs SMTP, LinkedIn, public research, or notification
-network effects.
+Runtime settings use the `TWIN_` prefix; real secret values stay in ignored `.env`. No test or CI
+path performs SMTP, LinkedIn, public research, or notification network effects.
