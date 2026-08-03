@@ -8,7 +8,7 @@
     <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
     <!-- Version stamp: static assets ship without Cache-Control, so browsers
          apply heuristic freshness and can serve a stale stylesheet. -->
-    <link rel="stylesheet" href="/static/styles.css?v=27">
+    <link rel="stylesheet" href="/static/styles.css?v=28">
   </head>
   <body>
     <a class="skip-link" href="#composer-input">Skip to chat</a>
@@ -153,34 +153,28 @@
       </section>
 
       <aside class="rail rail-right">
-        <section class="panel stack-panel reveal">
-          <span class="panel-label">AI stack he works in</span>
-          <ul class="aistack">
-            <li><b>RAG</b><span>Hybrid BM25 + vector, fused with RRF, MMR diversity</span></li>
-            <li><b>MCP</b><span>Model Context Protocol servers across his repos</span></li>
-            <li><b>Tool calling</b><span>Function calling, orchestration, retries</span></li>
-            <li><b>Grounding</b><span>Claim-level verification against sources</span></li>
-            <li><b>Guardrails</b><span>Prompt-injection defence, layered oracles</span></li>
-            <li><b>Evals</b><span>Reproducible runs with regression baselines</span></li>
-            <li><b>Vector search</b><span>Embeddings, semantic retrieval, relevance floors</span></li>
-            <li><b>Agent runtimes</b><span>Durable execution, replay, human gates</span></li>
-          </ul>
+        <section class="panel reveal">
+          <span class="panel-label">AI stack</span>
+          <div class="tiles">
+            <span class="tile"><b>RAG</b><i>hybrid + RRF</i></span>
+            <span class="tile"><b>MCP</b><i>servers</i></span>
+            <span class="tile"><b>Tools</b><i>function calls</i></span>
+            <span class="tile"><b>Vectors</b><i>embeddings</i></span>
+            <span class="tile"><b>Evals</b><i>baselines</i></span>
+            <span class="tile"><b>Guardrails</b><i>injection</i></span>
+            <span class="tile"><b>Agents</b><i>durable</i></span>
+            <span class="tile"><b>Grounding</b><i>per claim</i></span>
+          </div>
         </section>
 
         <section class="panel reveal d1">
-          <span class="panel-label">This twin's own pipeline</span>
-          <ol class="pipeline">
-            <li><b>Retrieve</b><span>CV corpus + live GitHub</span></li>
-            <li><b>Tools</b><span>web search, scraping, repo search</span></li>
-            <li><b>Draft</b><span>in his own voice</span></li>
-            <li><b>Verify</b><span>every claim against its source</span></li>
-            <li><b>Cite</b><span>or admit it has no evidence</span></li>
-          </ol>
-        </section>
-
-        <section class="panel note reveal d2">
-          <span class="panel-label">Boundary</span>
-          <p>It will not negotiate salary, accept an offer, or commit to a start date. Those go to Prathamesh.</p>
+          <span class="panel-label">Live now</span>
+          <div class="live-rows">
+            <div><span class="k">Model</span><span class="v" id="rail-model">—</span></div>
+            <div><span class="k">Grounding</span><span class="v ok">per claim</span></div>
+            <div><span class="k">Repos</span><span class="v" id="rail-repos">10</span></div>
+            <div><span class="k">Sources</span><span class="v">CV + GitHub</span></div>
+          </div>
         </section>
       </aside>
 
@@ -356,6 +350,6 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-    <script src="/static/app.js?v=27" defer></script>
+    <script src="/static/app.js?v=28" defer></script>
   </body>
 </html>

@@ -549,6 +549,8 @@
     try {
       const h = await api("/api/health");
       if (h.model) el.modelNote.textContent = h.model;
+      const railModel = $("#rail-model");
+      if (railModel && h.model) railModel.textContent = h.model;
     } catch {}
 
     try {
