@@ -45,7 +45,7 @@
 
     <!-- Version stamp: /static is cached immutably when the URL carries ?v=, so
          bumping the stamp is how a changed asset reaches a returning browser. -->
-    <link rel="stylesheet" href="/static/styles.css?v=33">
+    <link rel="stylesheet" href="/static/styles.css?v=34">
   </head>
   <body>
     <a class="skip-link" href="#composer-input">Skip to chat</a>
@@ -192,7 +192,15 @@
           <span><b>MSc</b> Cybersecurity, 1:1</span>
           <span><b>Dublin</b> open to roles</span>
         </div>
+        <!-- The first screen is the twin and nothing else, so it has to say that
+             there is more below it rather than leaving the visitor to guess. -->
+        <a class="scroll-cue" href="#experience" aria-label="Skip to experience">
+          <span>The rest of the CV</span>
+          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M8 3v10M4 9l4 4 4-4" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
       </section>
+
+
 
       <aside class="rail rail-right">
         <section class="panel reveal">
@@ -426,7 +434,7 @@
 
     <!-- Defines the retrieval engine app.js reads. Deferred scripts run in order,
          so this is guaranteed to be in place before the application boots. -->
-    <script src="/static/twin-local.js?v=33" defer></script>
-    <script src="/static/app.js?v=33" defer></script>
+    <script src="/static/twin-local.js?v=34" defer></script>
+    <script src="/static/app.js?v=34" defer></script>
   </body>
 </html>
