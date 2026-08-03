@@ -45,7 +45,9 @@ class EventHub:
         )
 
     async def stream(self, session_id: str) -> AsyncIterator[str]:
-        queue: asyncio.Queue[dict[str, Any]] = asyncio.Queue(maxsize=8)
+        # Four bounded tool rounds can legally produce up to 64 call/result frames.
+        # Keep one complete turn while retaining the same ephemeral purge semantics.
+        queue: asyncio.Queue[dict[str, Any]] = asyncio.Queue(maxsize=64)
         self._subscribers[session_id].add(queue)
         try:
             yield self._encode(self.latest(session_id))

@@ -102,6 +102,7 @@ from .security import (
 )
 from .services import ChatService, JobFitAnalyzer
 from .supplemental import GitHubOrganizationSource, HackerNewsAlgoliaSource, RSSAtomReader
+from .tooling import ToolRegistry
 
 STATIC_DIR = Path(__file__).parent / "static"
 GREETING = (
@@ -198,7 +199,11 @@ def create_app(
     effective_page_fetcher = page_fetcher
     if effective_page_fetcher is None and production_research:
         effective_page_fetcher = ScraplingPageFetcher(
-            timeout=settings.research_source_timeout_seconds
+            timeout=settings.research_source_timeout_seconds,
+            allow_hosts=settings.parsed_fetch_page_allow_hosts,
+            deny_hosts=settings.parsed_fetch_page_deny_hosts,
+            max_bytes=settings.fetch_page_max_bytes,
+            max_redirects=settings.fetch_page_max_redirects,
         )
     supplemental = (
         (
@@ -225,13 +230,6 @@ def create_app(
         ),
     )
     events = EventHub()
-    chat = ChatService(
-        settings=settings,
-        database=database,
-        corpus=corpus,
-        github=github,
-        provider=provider,
-    )
     fit = JobFitAnalyzer(corpus)
     email_verifier = (
         HunterVerificationAdapter(
@@ -263,6 +261,25 @@ def create_app(
         corpus,
         client=ats_client
         or PublicATSClient(timeout=settings.research_source_timeout_seconds),
+    )
+    tools = ToolRegistry(
+        settings=settings,
+        database=database,
+        search=effective_search,
+        pages=effective_page_fetcher,
+        github=github,
+        research=research,
+        roles=role_service,
+        fit=fit,
+        corpus=corpus,
+    )
+    chat = ChatService(
+        settings=settings,
+        database=database,
+        corpus=corpus,
+        github=github,
+        provider=provider,
+        tools=tools,
     )
     tokens = ApprovalTokenService(
         settings.hash_secret, ttl_seconds=settings.outreach_approval_ttl_seconds
@@ -346,6 +363,7 @@ def create_app(
     app.state.research_results = research_results
     app.state.events = events
     app.state.chat_service = chat
+    app.state.tools = tools
     app.state.role_results = role_results
     app.state.send_decisions = send_decisions
     app.state.outreach = outreach
@@ -701,6 +719,8 @@ def create_app(
             if effective_provider == "openai-compatible"
             else None,
             "grounding": "authority-gated",
+            "tool_calling": bool(chat.agent and chat.agent.enabled),
+            "tools": tools.names if chat.agent and chat.agent.enabled else [],
         }
 
     @app.get("/api/contact")
@@ -1194,13 +1214,26 @@ def create_app(
         estimated = approximate_tokens(message) + sum(
             approximate_tokens(item.content) for item in history
         )
-        estimated += settings.max_output_tokens
+        provider_turns = (
+            settings.tool_max_iterations + 1
+            if chat.agent is not None and chat.agent.enabled
+            else 1
+        )
+        estimated += settings.max_output_tokens * provider_turns
         if visit.token_usage + estimated > settings.token_budget_per_session:
             raise HTTPException(
                 status_code=429,
                 detail="This session has reached its hard token budget.",
             )
-        verified, tailored_for, used = await chat.answer(visit, message)
+
+        async def publish_tool_event(event: dict[str, Any]) -> None:
+            await events.publish(session_id, event, retain=False)
+
+        verified, tailored_for, used, trace, tool_remaining = await chat.answer(
+            visit,
+            message,
+            publish=publish_tool_event,
+        )
         database.add_message(session_id, "user", message)
         database.add_message(session_id, "assistant", verified.text, verified.sources)
         database.update_visit(
@@ -1215,6 +1248,8 @@ def create_app(
             refusal=verified.refusal,
             tailored_for=tailored_for,
             budget_remaining=remaining,
+            tool_budget_remaining=tool_remaining,
+            trace=trace,
         )
 
     @app.post("/api/sessions/{session_id}/jd-fit", response_model=JobFitResponse)

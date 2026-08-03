@@ -52,6 +52,7 @@ class EvidenceItem:
     source: str
     text: str
     url: str | None = None
+    authority: str = "profile"
 
 
 class ProfileCorpus:

@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field, field_validator
 
 from .research import Candidate, CandidateDossier
 from .roles import RoleMatch
+from .tooling import ToolTrace
 
 
 class SessionResponse(BaseModel):
@@ -57,6 +58,8 @@ class ChatResponse(BaseModel):
     refusal: bool = False
     tailored_for: str | None = None
     budget_remaining: int
+    tool_budget_remaining: int
+    trace: list[ToolTrace] = []
 
 
 class JobDescriptionRequest(BaseModel):

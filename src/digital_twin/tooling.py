@@ -33,6 +33,7 @@ class ToolSource(BaseModel):
     label: str = Field(min_length=1, max_length=2_000)
     url: str | None = None
     text: str = Field(min_length=1, max_length=20_000)
+    authority: Literal["profile", "github", "external"] = "external"
 
 
 class ToolResult(BaseModel):
@@ -43,7 +44,10 @@ class ToolResult(BaseModel):
     cached: bool = False
 
     def evidence(self) -> list[EvidenceItem]:
-        return [EvidenceItem(row.label, row.text, row.url) for row in self.sources]
+        return [
+            EvidenceItem(row.label, row.text, row.url, authority=row.authority)
+            for row in self.sources
+        ]
 
 
 class ToolTrace(BaseModel):
@@ -498,6 +502,7 @@ class ToolRegistry:
                 label=f"GitHub > {hit.repository} > {hit.path}",
                 url=hit.permalink,
                 text=hit.excerpt,
+                authority="github",
             )
             for hit in hits
         ]
@@ -528,7 +533,12 @@ class ToolRegistry:
             summary=f"Loaded live metadata for {detail.name}.",
             data={"repository": detail.model_dump(mode="json")},
             sources=[
-                ToolSource(label=f"GitHub > {detail.name}", url=detail.url, text=text)
+                ToolSource(
+                    label=f"GitHub > {detail.name}",
+                    url=detail.url,
+                    text=text,
+                    authority="github",
+                )
             ],
         )
 
@@ -603,7 +613,8 @@ class ToolRegistry:
         arguments = JobFitArgs.model_validate(value)
         result = self.fit.analyze(arguments.description)
         sources = [
-            ToolSource(label=row.source, text=row.evidence) for row in result.matched
+            ToolSource(label=row.source, text=row.evidence, authority="profile")
+            for row in result.matched
         ]
         status: ToolStatus = "ok" if result.matched or result.not_evidenced else "empty"
         return ToolResult(
@@ -621,7 +632,13 @@ class ToolRegistry:
                 status="empty", summary="No matching structured CV section was found."
             )
         sources = [
-            ToolSource(label=row.source, url=row.url, text=row.text) for row in evidence
+            ToolSource(
+                label=row.source,
+                url=row.url,
+                text=row.text,
+                authority="profile",
+            )
+            for row in evidence
         ]
         return ToolResult(
             status="ok",
@@ -644,7 +661,14 @@ def _screen_result(result: ToolResult) -> ToolResult:
         text = sanitize_external_text(source.text, max_length=2_000)
         url = source.url if source.url and is_public_http_url(source.url) else None
         if label and text:
-            safe_sources.append(ToolSource(label=label, url=url, text=text))
+            safe_sources.append(
+                ToolSource(
+                    label=label,
+                    url=url,
+                    text=text,
+                    authority=source.authority,
+                )
+            )
     return result.model_copy(
         update={
             "summary": summary or "The tool returned no safe summary.",

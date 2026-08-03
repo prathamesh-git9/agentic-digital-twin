@@ -360,5 +360,12 @@ class GitHubService:
             )
             if repo.topics:
                 details.append(f"Topics: {', '.join(repo.topics)}.")
-            items.append(EvidenceItem(repo.url, " ".join(details), repo.url))
+            items.append(
+                EvidenceItem(
+                    repo.url,
+                    " ".join(details),
+                    repo.url,
+                    authority="github",
+                )
+            )
         return items

@@ -4,6 +4,7 @@ import re
 
 import httpx
 
+from .agent import AgentEventCallback, AgentRunner
 from .config import Settings
 from .github import GitHubService
 from .grounding import (
@@ -21,6 +22,7 @@ from .security import (
     contains_prompt_injection,
     sanitize_external_text,
 )
+from .tooling import ToolRegistry, ToolTrace
 
 #: Identity questions carry no retrievable keywords — "who is prathamesh"
 #: reduces to a single token that never appears in the CV body — so they scored
@@ -55,19 +57,40 @@ class ChatService:
         corpus: ProfileCorpus,
         github: GitHubService,
         provider: AnswerProvider,
+        tools: ToolRegistry | None = None,
     ) -> None:
         self.settings = settings
         self.database = database
         self.corpus = corpus
         self.github = github
         self.provider = provider
+        self.tools = tools
         self.scripted_fallback = ScriptedProvider()
+        self.agent = (
+            AgentRunner(
+                settings=settings,
+                provider=provider,
+                tools=tools,
+                fallback=self.scripted_fallback,
+            )
+            if tools is not None
+            else None
+        )
         self.assembler = ContextAssembler()
         self.verifier = GroundingVerifier()
 
     async def answer(
-        self, visit: Visit, question: str
-    ) -> tuple[VerifiedAnswer, str | None, int]:
+        self,
+        visit: Visit,
+        question: str,
+        *,
+        publish: AgentEventCallback | None = None,
+    ) -> tuple[VerifiedAnswer, str | None, int, list[ToolTrace], int]:
+        tool_remaining = (
+            self.tools.remaining(visit.id)
+            if self.tools is not None
+            else self.settings.tool_budget_per_session
+        )
         if CONTRACTUAL_QUERY.search(question):
             answer = VerifiedAnswer(
                 (
@@ -79,7 +102,13 @@ class ChatService:
                 True,
                 True,
             )
-            return answer, None, approximate_tokens(question + answer.text)
+            return (
+                answer,
+                None,
+                approximate_tokens(question + answer.text),
+                [],
+                tool_remaining,
+            )
         if contains_prompt_injection(question):
             answer = VerifiedAnswer(
                 (
@@ -91,14 +120,22 @@ class ChatService:
                 True,
                 True,
             )
-            return answer, None, approximate_tokens(question + answer.text)
+            return (
+                answer,
+                None,
+                approximate_tokens(question + answer.text),
+                [],
+                tool_remaining,
+            )
         evidence = self.corpus.retrieve(question)
         if GENERIC_OVERVIEW.search(question):
             summaries = [
                 item for item in self.corpus.evidence if item.source == "CV › Summary"
             ]
             evidence = list(dict.fromkeys([*summaries, *evidence]))[:8]
-        if GITHUB_QUERY.search(question):
+        if GITHUB_QUERY.search(question) and not (
+            self.agent is not None and self.agent.enabled
+        ):
             try:
                 repos = await self.github.get_repositories()
                 evidence = [*self.github.evidence(repos), *evidence][:10]
@@ -126,10 +163,23 @@ class ChatService:
             confirmed_company_dossier=visit.confirmed_company_dossier,
         )
         request = GenerationRequest(question, context, evidence, confirmed)
-        try:
-            draft = await self.provider.generate(request)
-        except (httpx.HTTPError, TimeoutError, ValueError, KeyError):
-            draft = await self.scripted_fallback.generate(request)
+        trace: list[ToolTrace] = []
+        extra_token_usage = 0
+        if self.agent is not None and self.agent.enabled:
+            outcome = await self.agent.run(
+                session_id=visit.id,
+                request=request,
+                publish=publish,
+            )
+            draft = outcome.draft
+            evidence = outcome.evidence
+            trace = outcome.trace
+            extra_token_usage = outcome.extra_token_usage
+        else:
+            try:
+                draft = await self.provider.generate(request)
+            except (httpx.HTTPError, TimeoutError, ValueError, KeyError):
+                draft = await self.scripted_fallback.generate(request)
         verified = self.verifier.verify(draft, evidence)
 
         tailored_for = None
@@ -150,8 +200,17 @@ class ChatService:
                     verified.refusal,
                 )
 
-        used = approximate_tokens(context) + approximate_tokens(verified.text)
-        return verified, tailored_for, used
+        used = (
+            approximate_tokens(context)
+            + approximate_tokens(verified.text)
+            + extra_token_usage
+        )
+        tool_remaining = (
+            self.tools.remaining(visit.id)
+            if self.tools is not None
+            else self.settings.tool_budget_per_session
+        )
+        return verified, tailored_for, used, trace, tool_remaining
 
 
 COMMON_REQUIREMENTS = (
