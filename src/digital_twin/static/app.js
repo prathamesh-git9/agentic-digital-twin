@@ -419,6 +419,36 @@
     localStorage.setItem("twin-theme", next);
   });
 
+  /* ---------- landing sections ---------- */
+
+  $("#hero-start")?.addEventListener("click", () => {
+    el.input.scrollIntoView({ behavior: "smooth", block: "center" });
+    el.input.focus({ preventScroll: true });
+  });
+
+  // The work section is filled from live repository data rather than a
+  // hand-maintained list, so it cannot drift from what is actually published.
+  async function loadWorkCards() {
+    const host = $("#work-cards");
+    if (!host) return;
+    try {
+      const data = await api("/api/github");
+      const repos = data.repositories || data.repos || [];
+      if (!repos.length) return;
+      host.innerHTML = repos.map((r) => `
+        <article class="card">
+          <h3><a href="${esc(r.url || r.html_url)}" target="_blank" rel="noopener noreferrer">${esc(r.name)}</a></h3>
+          <p>${esc(r.description || "")}</p>
+          ${r.topics?.length
+            ? `<div class="topics">${r.topics.slice(0, 5)
+                .map((t) => `<span>${esc(t)}</span>`).join("")}</div>`
+            : ""}
+        </article>`).join("");
+    } catch {
+      host.closest(".section")?.remove();
+    }
+  }
+
   /* ---------- boot ---------- */
 
   (async function boot() {
@@ -433,9 +463,14 @@
       else el.contactLink.remove();
     } catch { el.contactLink.remove(); }
 
+    loadWorkCards();
+
     try {
       const s = await api("/api/sessions", { method: "POST", body: "{}" });
       state.sessionId = s.session_id;
+      // Open on the greeting so the console reads as a live conversation
+      // rather than an empty frame waiting to be earned.
+      if (s.greeting) turn("twin", s.greeting, ["CV › Grounding contract"]);
       openEvents();
       el.onboarding.hidden = false;
       el.visitorName.focus();
