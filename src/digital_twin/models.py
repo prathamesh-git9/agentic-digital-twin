@@ -109,6 +109,7 @@ class OutreachDraft(Base):
         ForeignKey("visits.id", ondelete="CASCADE"), index=True
     )
     candidate_id: Mapped[str] = mapped_column(String(64), index=True)
+    person_key: Mapped[str] = mapped_column(String(64), default="", index=True)
     recipient: Mapped[str] = mapped_column(String(320))
     recipient_status: Mapped[str] = mapped_column(String(24))
     recipient_pattern: Mapped[str | None] = mapped_column(String(64), nullable=True)
@@ -242,6 +243,7 @@ class Database:
         }
         additions = {
             "recipient_pattern": "VARCHAR(64)",
+            "person_key": "VARCHAR(64) NOT NULL DEFAULT ''",
             "recipient_score": "INTEGER",
             "recipient_why": "TEXT NOT NULL DEFAULT ''",
             "recipient_source_url": "TEXT NOT NULL DEFAULT ''",
@@ -364,6 +366,7 @@ class Database:
         *,
         session_id: str,
         candidate_id: str,
+        person_key: str = "",
         recipient: str,
         recipient_status: str,
         recipient_pattern: str | None = None,
@@ -383,6 +386,7 @@ class Database:
                 id=str(uuid4()),
                 session_id=session_id,
                 candidate_id=candidate_id,
+                person_key=person_key,
                 recipient=recipient,
                 recipient_status=recipient_status,
                 recipient_pattern=recipient_pattern,

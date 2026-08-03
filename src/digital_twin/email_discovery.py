@@ -149,6 +149,7 @@ class EmailDiscoveryResult(BaseModel):
     resolved_name: str
     surname_resolved: bool
     name_source_url: str | None = None
+    name_source_kind: str = "submitted_name"
     selected: CandidateEmail | None = None
     candidates: list[CandidateEmail] = Field(default_factory=list)
     mx_records: list[str] = Field(default_factory=list)
@@ -200,6 +201,7 @@ class EmailDiscoveryService:
                 resolved_name=resolution.display_name,
                 surname_resolved=resolution.surname_resolved,
                 name_source_url=resolution.source_url,
+                name_source_kind=resolution.source_kind,
                 selected=published[0],
                 candidates=published,
                 observed_pattern=observed,
@@ -216,6 +218,7 @@ class EmailDiscoveryService:
                 resolved_name=resolution.display_name,
                 surname_resolved=resolution.surname_resolved,
                 name_source_url=resolution.source_url,
+                name_source_kind=resolution.source_kind,
                 reason="No attributable company domain was observed.",
             )
         if domain in DISPOSABLE_DOMAINS:
@@ -224,6 +227,7 @@ class EmailDiscoveryService:
                 resolved_name=resolution.display_name,
                 surname_resolved=resolution.surname_resolved,
                 name_source_url=resolution.source_url,
+                name_source_kind=resolution.source_kind,
                 reason="Disposable domains are never used.",
             )
 
@@ -241,6 +245,7 @@ class EmailDiscoveryService:
                 resolved_name=resolution.display_name,
                 surname_resolved=resolution.surname_resolved,
                 name_source_url=resolution.source_url,
+                name_source_kind=resolution.source_kind,
                 observed_pattern=observed,
                 reason="The observed domain has no confirmed MX records.",
             )
@@ -258,6 +263,7 @@ class EmailDiscoveryService:
                 resolved_name=resolution.display_name,
                 surname_resolved=resolution.surname_resolved,
                 name_source_url=resolution.source_url,
+                name_source_kind=resolution.source_kind,
                 mx_records=mx_records,
                 observed_pattern=observed,
                 reason="No safe candidate address could be formed.",
@@ -271,6 +277,7 @@ class EmailDiscoveryService:
                 resolved_name=resolution.display_name,
                 surname_resolved=resolution.surname_resolved,
                 name_source_url=resolution.source_url,
+                name_source_kind=resolution.source_kind,
                 selected=verified,
                 candidates=addresses,
                 mx_records=mx_records,
@@ -284,6 +291,7 @@ class EmailDiscoveryService:
             resolved_name=resolution.display_name,
             surname_resolved=resolution.surname_resolved,
             name_source_url=resolution.source_url,
+            name_source_kind=resolution.source_kind,
             selected=addresses[0],
             candidates=addresses,
             mx_records=mx_records,
@@ -649,7 +657,7 @@ def attach_email_discovery(
             source_url=discovery.name_source_url,
             confidence="high",
             why="highest-confidence public display name used before email inference",
-            source_kind=(name_detail.source_kind if name_detail else "public_profile"),
+            source_kind=discovery.name_source_kind,
             subject_name=discovery.resolved_name,
         )
     return candidate.model_copy(

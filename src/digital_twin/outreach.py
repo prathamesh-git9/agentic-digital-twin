@@ -15,6 +15,7 @@ from pydantic import BaseModel
 from .config import Settings
 from .deliverability import DeliverabilityPreflight, DeliverabilityReport
 from .email_utils import recipient_key
+from .identity import parse_name_parts
 from .mailer import MailSender
 from .models import Database, OutreachDraft
 from .profile import ProfileCorpus
@@ -329,6 +330,7 @@ class OutreachService:
         draft = self.database.create_outreach_draft(
             session_id=session_id,
             candidate_id=candidate.id,
+            person_key=_person_key(candidate),
             recipient=email.address,
             recipient_status=email.status,
             recipient_pattern=email.pattern,
@@ -404,6 +406,7 @@ class OutreachService:
             "template": template,
             "variant": variant_id,
             "kind": draft.kind,
+            "person_key": draft.person_key,
             "recipient_status": draft.recipient_status,
             "pattern": draft.recipient_pattern,
             "score": draft.recipient_score,
@@ -544,7 +547,13 @@ class OutreachService:
         if len(today) >= self.settings.daily_send_cap:
             return "The global TWIN_DAILY_SEND_CAP has been reached."
         candidate_today = [
-            action for action in today if action.candidate_id == draft.candidate_id
+            action
+            for action in today
+            if action.metadata_value.get("person_key") == draft.person_key
+            or (
+                not action.metadata_value.get("person_key")
+                and action.candidate_id == draft.candidate_id
+            )
         ]
         current_campaign = [
             action
@@ -570,12 +579,17 @@ class OutreachService:
             return "Once-only initial outreach has already been sent to this person."
         prior_person_campaign = [
             action
-            for action in self.database.outreach_actions_for(
-                candidate_id=draft.candidate_id
-            )
+            for action in self.database.outreach_actions_for()
             if action.action == "email.sent"
             and action.session_id != draft.session_id
             and action.metadata_value.get("kind", "initial") == "initial"
+            and (
+                action.metadata_value.get("person_key") == draft.person_key
+                or (
+                    not action.metadata_value.get("person_key")
+                    and action.candidate_id == draft.candidate_id
+                )
+            )
         ]
         if prior_person_campaign and draft.kind == "initial":
             return "Once-only initial outreach has already been sent to this person."
@@ -606,6 +620,19 @@ class OutreachService:
 
 def body_hash(body: str) -> str:
     return hashlib.sha256(body.encode()).hexdigest()
+
+
+def _person_key(candidate: Candidate) -> str:
+    parts = parse_name_parts(candidate.name)
+    canonical_name = "|".join(
+        value for value in (parts.first, *parts.middle, parts.last) if value
+    )
+    company = "".join(
+        character
+        for character in (candidate.company or "").casefold()
+        if character.isalnum()
+    )
+    return hashlib.sha256(f"{canonical_name}|{company}".encode()).hexdigest()
 
 
 def _b64decode(value: str) -> bytes:

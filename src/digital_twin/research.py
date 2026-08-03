@@ -822,12 +822,13 @@ class ResearchEngine:
             "news",
             "funding",
         ):
-            for result in groups.get(source, [])[:1]:
+            for result in groups.get(source, [])[:3]:
                 host = (urlparse(result.url).hostname or "").casefold()
                 if not any(
                     value in host for value in ("linkedin.com", "github.com")
                 ) and (is_public_http_url(result.url)):
                     seed_urls.append(result.url)
+                    break
         seed_urls = list(dict.fromkeys(seed_urls))
         documents: list[PublicDocument] = []
         fetched: set[str] = set()
@@ -1146,6 +1147,7 @@ def _enrich_candidate(
                     why="address is explicitly published on an attributed public page",
                     score=100,
                     source_kind=source_kind,
+                    company_level=_is_company_level_address(normalized, document.url),
                 )
             )
     email = emails[0] if emails else None
@@ -1304,6 +1306,7 @@ def _build_dossier(
             if email.casefold() not in {
                 fact.value.casefold() for fact in person.public_emails
             }:
+                company_level = _is_company_level_address(email, result.url)
                 person.public_emails.append(
                     _fact(
                         normalize_address(email),
@@ -1311,7 +1314,8 @@ def _build_dossier(
                         "high",
                         "email address publicly displayed",
                         source_kind="public_page",
-                        subject_name=candidate.name,
+                        subject_name=None if company_level else candidate.name,
+                        company_level=company_level,
                     )
                 )
 

@@ -132,6 +132,7 @@ class PublicEmailHarvester:
                 *document.email_addresses,
                 *EMAIL_PATTERN.findall(document.text),
             ):
+                company_level = _company_level_address(address, document.url)
                 addresses.append(
                     AttributedFact(
                         value=normalize_address(address),
@@ -143,7 +144,8 @@ class PublicEmailHarvester:
                             if address in document.email_addresses
                             else _page_source_kind(document.url)
                         ),
-                        subject_name=candidate.name,
+                        subject_name=None if company_level else candidate.name,
+                        company_level=company_level,
                     )
                 )
         return EmailHarvestResult(addresses=addresses, names=names)
@@ -388,6 +390,23 @@ def _page_source_kind(url: str) -> str:
     if "press" in path:
         return "press_release"
     return "public_page"
+
+
+def _company_level_address(address: str, source_url: str) -> bool:
+    local = normalize_address(address).partition("@")[0]
+    return local in {
+        "abuse",
+        "admin",
+        "contact",
+        "hello",
+        "info",
+        "press",
+        "privacy",
+        "security",
+        "support",
+    } or any(
+        value in source_url.casefold() for value in ("security.txt", "rdap", "whois")
+    )
 
 
 def _valid_domain(value: str) -> bool:
