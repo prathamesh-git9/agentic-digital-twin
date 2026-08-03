@@ -38,6 +38,14 @@ def app_factory() -> Callable[..., FastAPI]:
         values: dict[str, Any] = {
             "environment": "test",
             "database_url": "sqlite://",
+            # Pinned so a developer's real .env can never point the suite at a
+            # live model: without these the settings fall through to the file
+            # and the tests start spending credits and asserting on generated
+            # prose instead of the scripted contract.
+            "provider": "scripted",
+            "llm_api_key": "",
+            "llm_base_url": "http://localhost:0",
+            "search_api_key": "",
             "profile_path": ROOT / "data" / "profile.yaml",
             "hash_secret": "test-hash-secret",
             "requests_per_minute": 50,

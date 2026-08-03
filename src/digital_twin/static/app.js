@@ -1,10 +1,9 @@
 /*
-  Digital Twin — frontend controller.
+  Single-column conversation controller.
 
-  The rail is a single state machine driven by the `research` SSE event, because
-  the visitor should never have to guess what the system knows. Research payloads
-  are rendered as inert card data only; authority is granted server-side by
-  POST /confirm, so nothing here can leak candidate context into the model.
+  Research results render as photo-first cards and outreach actions only.
+  Authority is still granted server-side by POST /confirm, so nothing here can
+  push candidate context into the model on its own.
 */
 (() => {
   "use strict";
@@ -12,579 +11,222 @@
   const $ = (sel, root = document) => root.querySelector(sel);
 
   const el = {
-    page: $("#page"),
-    messages: $("#messages"),
-    starters: $("#starters"),
-    composer: $("#composer"),
-    input: $("#composer-input"),
-    send: $("#send-button"),
-    budget: $("#budget-pill"),
-    providerLabel: $("#provider-label"),
-
-    strip: $("#research-strip"),
-    stripTitle: $("#strip-title"),
-    stripDetail: $("#strip-detail"),
-    stripView: $("#strip-view"),
-    stripOptout: $("#strip-optout"),
-
-    gate: $("#gate"),
-    gateStage: $("#gate-stage"),
-    sourceList: $("#source-list"),
-    sourceProgress: $("#source-progress"),
-
-    candidateList: $("#candidate-list"),
-    candidateCount: $("#candidate-count"),
-    candidatesOptout: $("#candidates-optout"),
-
-    activeConfidence: $("#active-confidence"),
-    activeAvatar: $("#active-avatar"),
-    activeInitials: $("#active-initials"),
-    activeName: $("#active-name"),
-    activeRole: $("#active-role"),
-    activeLocation: $("#active-location"),
-    activeProfiles: $("#active-profiles"),
-    emailRow: $("#active-email-row"),
-    emailLink: $("#active-email"),
-    emailStatus: $("#active-email-status"),
-    companyBlock: $("#company-block"),
-    companyBody: $("#company-body"),
-    rolesBlock: $("#roles-block"),
-    rolesBody: $("#roles-body"),
-    rolesCount: $("#roles-count"),
-    activeOptout: $("#active-optout"),
-
-    outreachBlock: $("#outreach-block"),
-    outreachDecision: $("#outreach-decision"),
-    variantTabs: $("#variant-tabs"),
-    draftBody: $("#draft-body"),
-    sendEmail: $("#send-email"),
-    openLinkedin: $("#open-linkedin"),
-    outreachNote: $("#outreach-note"),
-
-    evidenceList: $("#evidence-list"),
-    sourceCount: $("#source-count"),
-
-    onboarding: $("#onboarding"),
-    identityForm: $("#identity-form"),
-    visitorName: $("#visitor-name"),
-    visitorCompany: $("#visitor-company"),
+    bell: $("#bell"), bellDot: $("#bell-dot"),
+    feed: $("#feed"), feedList: $("#feed-list"), feedClose: $("#feed-close"),
+    intro: $("#intro"),
+    visitorCard: $("#visitor-card"), visitorPhoto: $("#visitor-photo"),
+    visitorInitials: $("#visitor-initials"), visitorNameOut: $("#visitor-name-out"),
+    visitorRole: $("#visitor-role"), visitorLinks: $("#visitor-links"),
+    sendEmail: $("#send-email"), openLinkedin: $("#open-linkedin"),
+    people: $("#people"), peopleTitle: $("#people-title"), peopleGrid: $("#people-grid"),
+    messages: $("#messages"), starters: $("#starters"),
+    composer: $("#composer"), input: $("#composer-input"), send: $("#send-button"),
+    contactLink: $("#contact-link"), modelNote: $("#model-note"),
+    onboarding: $("#onboarding"), identityForm: $("#identity-form"),
+    visitorName: $("#visitor-name"), visitorCompany: $("#visitor-company"),
     skipButton: $("#skip-button"),
-
-    drawer: $("#drawer"),
-    drawerTitle: $("#drawer-title"),
-    drawerBody: $("#drawer-body"),
+    drawer: $("#drawer"), drawerTitle: $("#drawer-title"), drawerBody: $("#drawer-body"),
     drawerClose: $("#drawer-close"),
-    projectsButton: $("#projects-button"),
-    jdButton: $("#jd-button"),
-
+    projectsButton: $("#projects-button"), jdButton: $("#jd-button"),
     themeButton: $("#theme-button"),
     toast: $("#toast"),
   };
 
   const state = {
-    sessionId: null,
-    events: null,
-    candidates: [],
-    sources: new Map(),
-    active: null,
-    drafts: [],
-    draftIndex: 0,
-    variantIndex: 0,
-    roles: {},
-    busy: false,
+    sessionId: null, events: null, candidates: [], active: null,
+    drafts: [], busy: false, unread: 0,
   };
 
   const STARTERS = [
     "Give me the 60-second overview.",
-    "What's the hardest problem he's solved?",
-    "How does he handle crash recovery?",
-    "Is he a fit for a platform team?",
+    "What's the hardest thing he's built?",
+    "Is he a fit for a backend role?",
+    "Show me his best project.",
   ];
 
-  /* ---------- helpers ---------- */
+  const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
-  const esc = (value) =>
-    String(value ?? "").replace(/[&<>"']/g, (c) =>
-      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]),
-    );
+  const val = (f) => (f && typeof f === "object" && "value" in f ? f.value : f);
 
-  // Attributed fields arrive as {value, source_url, ...} or as a bare scalar.
-  const val = (field) =>
-    field && typeof field === "object" && "value" in field ? field.value : field;
-
-  const srcOf = (field) =>
-    field && typeof field === "object" ? field.source_url || null : null;
-
-  const initialsOf = (name) =>
-    String(name || "?")
-      .split(/\s+/)
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((part) => part[0].toUpperCase())
-      .join("");
+  const initialsOf = (n) => String(n || "?").split(/\s+/).filter(Boolean).slice(0, 2)
+    .map((p) => p[0].toUpperCase()).join("");
 
   let toastTimer;
-  function toast(message, tone) {
-    el.toast.textContent = message;
-    if (tone) el.toast.dataset.tone = tone;
-    else delete el.toast.dataset.tone;
+  function toast(msg) {
+    el.toast.textContent = msg;
     el.toast.hidden = false;
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => (el.toast.hidden = true), 4200);
+    toastTimer = setTimeout(() => (el.toast.hidden = true), 3800);
   }
 
   async function api(path, options = {}) {
-    const response = await fetch(path, {
+    const res = await fetch(path, {
       headers: options.body ? { "Content-Type": "application/json" } : undefined,
       ...options,
     });
-    if (!response.ok) {
-      const detail = await response.json().catch(() => ({}));
-      throw new Error(detail.detail || `Request failed (${response.status})`);
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      throw new Error(d.detail || `Request failed (${res.status})`);
     }
-    return response.status === 204 ? null : response.json();
+    return res.status === 204 ? null : res.json();
   }
 
-  /* ---------- rail state machine ---------- */
+  /* ---------- activity feed ---------- */
 
-  const GATE_BY_STATE = {
-    idle: null,
-    skipped: null,
-    researching: "discovery",
-    candidates: "discovery",
-    empty: "discovery",
-    confirmed: "context",
-    opted_out: null,
-  };
-
-  function setRailState(name) {
-    document.querySelectorAll(".rail-state").forEach((section) => {
-      section.hidden = section.dataset.state !== name;
-    });
+  function note(text) {
+    const li = document.createElement("li");
+    const t = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    li.innerHTML = `<time>${esc(t)}</time><span>${esc(text)}</span>`;
+    el.feedList.prepend(li);
+    state.unread += 1;
+    el.bellDot.hidden = false;
   }
 
-  function renderResearchState(payload) {
-    const status = payload?.status || "idle";
-    el.page.dataset.research = status;
+  el.bell.addEventListener("click", () => {
+    el.feed.hidden = !el.feed.hidden;
+    if (!el.feed.hidden) { state.unread = 0; el.bellDot.hidden = true; }
+  });
+  el.feedClose.addEventListener("click", () => (el.feed.hidden = true));
 
-    // Gate visualisation: highlight how far authority has actually travelled.
-    const reached = GATE_BY_STATE[status];
-    const order = ["discovery", "confirm", "context"];
-    const reachedIndex = reached ? order.indexOf(reached) : -1;
-    el.gate.querySelectorAll(".gate-step").forEach((step, index) => {
-      step.dataset.active = String(index <= reachedIndex);
-    });
-    el.gateStage.textContent =
-      status === "confirmed" ? "Unlocked" : reachedIndex >= 0 ? "Proposed" : "Locked";
+  /* ---------- people ---------- */
 
-    if (status === "researching") {
-      el.strip.hidden = false;
-      el.stripTitle.textContent = payload.name
-        ? `Checking public sources for ${payload.name}`
-        : "Checking public sources";
-      el.stripDetail.textContent =
-        payload.disclosure || "Search engines only. No LinkedIn login, no data brokers.";
-      setRailState("researching");
-      return;
-    }
-
-    if (status === "candidates") {
-      state.candidates = payload.candidates || [];
-      el.strip.hidden = false;
-      el.stripTitle.textContent = `${state.candidates.length} possible ${
-        state.candidates.length === 1 ? "match" : "matches"
-      }`;
-      el.stripDetail.textContent = "Tell me which one is you and I'll tailor what I show.";
-      renderCandidates();
-      setRailState("candidates");
-      return;
-    }
-
-    if (status === "confirmed") {
-      el.strip.hidden = true;
-      setRailState("active");
-      return;
-    }
-
-    if (status === "empty") {
-      el.strip.hidden = false;
-      el.stripTitle.textContent = "Nothing found publicly";
-      el.stripDetail.textContent = "That's fine — the conversation is unaffected.";
-      setRailState("idle");
-      return;
-    }
-
-    el.strip.hidden = true;
-    setRailState("idle");
+  function renderPeople(candidates) {
+    state.candidates = candidates;
+    if (!candidates.length) { el.people.hidden = true; return; }
+    el.people.hidden = false;
+    el.peopleTitle.textContent =
+      candidates.length === 1 ? "Is this you?" : "Which one is you?";
+    el.peopleGrid.innerHTML = candidates.map((c, i) => {
+      const photo = c.avatar?.url || c.photo_url;
+      const ini = c.avatar?.initials || c.initials || initialsOf(c.name);
+      return `
+        <article class="person" data-pick="${i}" role="button" tabindex="0">
+          ${photo
+            ? `<img src="${esc(photo)}" alt="" loading="lazy"
+                 onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'initials',textContent:'${esc(ini)}'}))">`
+            : `<span class="initials">${esc(ini)}</span>`}
+          <strong>${esc(c.name)}</strong>
+          <span>${esc(c.headline || c.company || "")}</span>
+          ${c.confidence ? `<span class="pct">${esc(c.confidence)}% match</span>` : ""}
+        </article>`;
+    }).join("");
   }
 
-  function renderSources() {
-    const items = [...state.sources.values()];
-    const done = items.filter((item) => item.status !== "running").length;
-    el.sourceProgress.textContent = items.length ? `${done}/${items.length}` : "";
-    el.sourceList.innerHTML = items
-      .map(
-        (item) => `
-        <li class="source-item" data-status="${esc(item.status)}">
-          <span class="name">${esc(item.source)}</span>
-          <span class="state">${esc(item.status)}</span>
-        </li>`,
-      )
-      .join("");
+  function pick(index) {
+    const candidate = state.candidates[index];
+    if (!candidate) return;
+    api(`/api/sessions/${state.sessionId}/confirm`, {
+      method: "POST",
+      body: JSON.stringify({ candidate_id: candidate.id }),
+    }).then((result) => {
+      el.people.hidden = true;
+      showVisitor(result);
+      note(`Confirmed ${candidate.name}`);
+      toast("Thanks — I'll tailor what I show you.");
+    }).catch((e) => toast(e.message));
   }
 
-  /* ---------- candidates ---------- */
-
-  function renderCandidates() {
-    el.candidateCount.textContent = String(state.candidates.length);
-    el.candidateList.innerHTML = state.candidates
-      .map((candidate, index) => {
-        const avatar = candidate.avatar || {};
-        const photo = avatar.url || candidate.photo_url;
-        const initials = avatar.initials || candidate.initials || initialsOf(candidate.name);
-        const why = Array.isArray(candidate.why) ? candidate.why.join(" · ") : candidate.why;
-        return `
-          <article class="candidate">
-            <div class="cand-top">
-              ${
-                photo
-                  ? `<img class="person-avatar" src="${esc(photo)}" alt="" loading="lazy"
-                       onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'person-avatar initials',textContent:'${esc(
-                         initials,
-                       )}'}))">`
-                  : `<span class="person-avatar initials">${esc(initials)}</span>`
-              }
-              <div class="cand-id">
-                <strong>${esc(candidate.name)}</strong>
-                <span>${esc(candidate.headline || candidate.company || "")}</span>
-              </div>
-              <span class="score">${esc(candidate.confidence ?? "?")}%</span>
-            </div>
-            ${why ? `<p class="why">Why ${esc(candidate.confidence)}%: ${esc(why)}</p>` : ""}
-            <div class="cand-foot">
-              <span class="origin">${esc(candidate.source_label || "public result")}</span>
-              <button type="button" class="primary-btn" data-confirm="${index}">This is me</button>
-            </div>
-          </article>`;
-      })
-      .join("");
-  }
-
-  el.candidateList.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-confirm]");
-    if (!button) return;
-    confirmCandidate(state.candidates[Number(button.dataset.confirm)]);
+  el.peopleGrid.addEventListener("click", (e) => {
+    const card = e.target.closest("[data-pick]");
+    if (card) pick(Number(card.dataset.pick));
+  });
+  el.peopleGrid.addEventListener("keydown", (e) => {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    const card = e.target.closest("[data-pick]");
+    if (card) { e.preventDefault(); pick(Number(card.dataset.pick)); }
   });
 
-  async function confirmCandidate(candidate) {
-    if (!candidate || !state.sessionId) return;
-    try {
-      const result = await api(`/api/sessions/${state.sessionId}/confirm`, {
-        method: "POST",
-        body: JSON.stringify({ candidate_id: candidate.id }),
-      });
-      applyActive(result);
-      renderResearchState({ status: "confirmed" });
-      toast("Thanks — I'll tailor what I show you.");
-    } catch (error) {
-      toast(error.message, "error");
-    }
-  }
+  /* ---------- visitor card ---------- */
 
-  /* ---------- active person ---------- */
+  function showVisitor(payload) {
+    const c = payload.candidate || payload;
+    state.active = c;
+    state.drafts = payload.outreach?.drafts || payload.drafts || [];
 
-  function applyActive(payload) {
-    const candidate = payload.candidate || payload;
-    state.active = candidate;
+    el.visitorCard.hidden = false;
+    el.visitorNameOut.textContent = c.name || "";
+    el.visitorRole.textContent =
+      val(c.role) || c.headline || val(c.company_detail) || c.company || "";
 
-    el.activeConfidence.textContent = candidate.confidence ? `${candidate.confidence}%` : "";
-    el.activeName.textContent = candidate.name || "";
-    el.activeRole.textContent =
-      val(candidate.role) || candidate.headline || val(candidate.company_detail) || candidate.company || "";
-    el.activeLocation.textContent = val(candidate.location) || "";
-
-    const avatar = candidate.avatar || {};
-    const photo = avatar.url || candidate.photo_url;
-    const initials = avatar.initials || candidate.initials || initialsOf(candidate.name);
+    const photo = c.avatar?.url || c.photo_url;
     if (photo) {
-      el.activeAvatar.src = photo;
-      el.activeAvatar.hidden = false;
-      el.activeInitials.hidden = true;
-      el.activeAvatar.onerror = () => {
-        el.activeAvatar.hidden = true;
-        el.activeInitials.hidden = false;
+      el.visitorPhoto.src = photo;
+      el.visitorPhoto.hidden = false;
+      el.visitorInitials.hidden = true;
+      el.visitorPhoto.onerror = () => {
+        el.visitorPhoto.hidden = true;
+        el.visitorInitials.hidden = false;
       };
     } else {
-      el.activeAvatar.hidden = true;
-      el.activeInitials.hidden = false;
+      el.visitorPhoto.hidden = true;
+      el.visitorInitials.hidden = false;
     }
-    el.activeInitials.textContent = initials;
+    el.visitorInitials.textContent = c.avatar?.initials || initialsOf(c.name);
 
-    renderProfiles(candidate.profiles || []);
-    renderEmail(candidate.email);
-    renderCompany(payload.dossier || candidate.dossier);
-    renderRoles(payload.roles || []);
-    renderOutreach(payload.outreach || payload);
+    const links = (c.profiles || []).map((p) =>
+      `<a href="${esc(p.url)}" target="_blank" rel="noopener noreferrer">${esc(
+        p.kind.replace(/_/g, " "))}</a>`);
+    if (c.email?.address) links.push(`<span class="chip">${esc(c.email.address)}</span>`);
+    el.visitorLinks.innerHTML = links.join("");
+
+    el.sendEmail.hidden = !c.email?.address;
+    el.openLinkedin.hidden = !(c.profiles || []).some((p) => p.kind === "linkedin");
   }
 
-  function renderProfiles(profiles) {
-    if (!profiles.length) {
-      el.activeProfiles.innerHTML = "";
-      return;
-    }
-    el.activeProfiles.innerHTML = profiles
-      .map(
-        (profile) => `
-        <li><a href="${esc(profile.url)}" target="_blank" rel="noopener noreferrer"
-               data-verified="${profile.verified ? "true" : "false"}">
-          ${esc(profile.kind.replace(/_/g, " "))}${profile.handle ? ` · ${esc(profile.handle)}` : ""}
-        </a></li>`,
-      )
-      .join("");
-  }
-
-  function renderEmail(email) {
-    if (!email || !email.address) {
-      el.emailRow.hidden = true;
-      return;
-    }
-    el.emailRow.hidden = false;
-    el.emailLink.textContent = email.address;
-    el.emailLink.href = `mailto:${email.address}`;
-    el.emailStatus.textContent = email.status || "";
-    el.emailStatus.dataset.status = email.status || "inferred";
-    el.emailStatus.title = email.why || "";
-  }
-
-  function factRow(label, field) {
-    const value = val(field);
-    if (!value) return "";
-    const source = srcOf(field);
-    const rendered = source
-      ? `<a href="${esc(source)}" target="_blank" rel="noopener noreferrer">${esc(value)}</a>`
-      : esc(value);
-    return `<div class="fact"><dt>${esc(label)}</dt><dd>${rendered}</dd></div>`;
-  }
-
-  function renderCompany(dossier) {
-    const company = dossier?.company;
-    if (!company) {
-      el.companyBlock.hidden = true;
-      return;
-    }
-    const rows = [
-      factRow("Domain", company.domain),
-      factRow("Site", company.site),
-      factRow("Careers", company.careers_page),
-      factRow("Blog", company.engineering_blog),
-      factRow("GitHub", company.github_org),
-      factRow("Stack", company.technology_stack),
-      factRow("Funding", company.funding),
-    ]
-      .filter(Boolean)
-      .join("");
-
-    const news = Array.isArray(company.news)
-      ? company.news
-          .slice(0, 3)
-          .map(
-            (item) =>
-              `<div class="fact"><dt>News</dt><dd>${
-                srcOf(item)
-                  ? `<a href="${esc(srcOf(item))}" target="_blank" rel="noopener noreferrer">${esc(
-                      val(item),
-                    )}</a>`
-                  : esc(val(item))
-              }</dd></div>`,
-          )
-          .join("")
-      : "";
-
-    if (!rows && !news) {
-      el.companyBlock.hidden = true;
-      return;
-    }
-    el.companyBlock.hidden = false;
-    el.companyBody.innerHTML = rows + news;
-  }
-
-  function renderRoles(rolesPayload) {
-    const roles = Array.isArray(rolesPayload)
-      ? rolesPayload
-      : Object.values(rolesPayload || {}).flatMap((entry) => entry.roles || []);
-    if (!roles.length) {
-      el.rolesBlock.hidden = true;
-      return;
-    }
-    el.rolesBlock.hidden = false;
-    el.rolesCount.textContent = String(roles.length);
-    el.rolesBody.innerHTML = roles
-      .slice(0, 6)
-      .map(
-        (role) => `
-        <div class="role">
-          <div class="role-top">
-            <strong>${esc(role.title)}</strong>
-            <span class="role-fit">${esc(role.fit_score ?? "")}${role.fit_score ? "%" : ""}</span>
-          </div>
-          <span class="meta">${esc(
-            [role.team, role.location, role.ats].filter(Boolean).join(" · "),
-          )}</span>
-          ${
-            role.canonical_apply_url
-              ? `<a href="${esc(role.canonical_apply_url)}" target="_blank" rel="noopener noreferrer">View requisition ↗</a>`
-              : ""
-          }
-        </div>`,
-      )
-      .join("");
-  }
-
-  /* ---------- outreach ---------- */
-
-  function renderOutreach(payload) {
-    const drafts = payload?.drafts || [];
-    state.drafts = drafts;
-    state.draftIndex = 0;
-    state.variantIndex = 0;
-
-    if (!drafts.length) {
-      el.outreachBlock.hidden = true;
-      return;
-    }
-    el.outreachBlock.hidden = false;
-    el.outreachDecision.textContent = payload.decision || "";
-    renderVariants();
-  }
-
-  function currentDraft() {
-    return state.drafts[state.draftIndex] || null;
-  }
-
-  function currentVariant() {
-    const draft = currentDraft();
-    if (!draft) return null;
-    const variants = draft.variants || [];
-    return variants[state.variantIndex] || variants[0] || null;
-  }
-
-  function renderVariants() {
-    const draft = currentDraft();
-    if (!draft) return;
-    const variants = draft.variants || [];
-
-    el.variantTabs.innerHTML = variants
-      .map(
-        (variant, index) =>
-          `<button type="button" role="tab" class="variant-tab"
-             aria-selected="${index === state.variantIndex}"
-             data-variant="${index}">${esc(variant.id || variant.tone || `v${index + 1}`)}</button>`,
-      )
-      .join("");
-
-    const variant = currentVariant();
-    el.draftBody.innerHTML = variant
-      ? `<div class="subject">${esc(variant.subject || "(no subject)")}</div>
-         <div class="body">${esc(variant.body || "")}</div>`
-      : `<p class="fineprint tight">No draft prepared.</p>`;
-
-    const note = [];
-    if (draft.recipient) note.push(`To ${draft.recipient}`);
-    if (draft.template) note.push(`${draft.template} template`);
-    if (payloadSmtpOff()) note.push("SMTP off — opens your mail client instead");
-    el.outreachNote.textContent = note.join(" · ");
-  }
-
-  let smtpConfigured = false;
-  const payloadSmtpOff = () => !smtpConfigured;
-
-  el.variantTabs.addEventListener("click", (event) => {
-    const tab = event.target.closest("[data-variant]");
-    if (!tab) return;
-    state.variantIndex = Number(tab.dataset.variant);
-    renderVariants();
-  });
-
-  // Sending is owner-authenticated server-side. From the visitor page this
-  // deliberately falls back to a prefilled compose window rather than pretending
-  // it can dispatch mail on the owner's behalf.
   el.sendEmail.addEventListener("click", () => {
-    const draft = currentDraft();
-    const variant = currentVariant();
-    if (!draft || !variant) return;
-    const to = encodeURIComponent(draft.recipient || "");
-    const subject = encodeURIComponent(variant.subject || "");
-    const body = encodeURIComponent(variant.body || "");
-    window.open(`mailto:${to}?subject=${subject}&body=${body}`, "_blank");
-    toast("Opened your mail client with the draft.");
+    const draft = state.drafts[0];
+    const variant = draft?.variants?.[0];
+    const to = state.active?.email?.address || draft?.recipient || "";
+    if (!to) return;
+    window.open(
+      `mailto:${to}?subject=${encodeURIComponent(variant?.subject || "")}` +
+      `&body=${encodeURIComponent(variant?.body || "")}`, "_blank");
+    note(`Opened an email to ${to}`);
   });
 
   el.openLinkedin.addEventListener("click", () => {
-    const profiles = state.active?.profiles || [];
-    const linkedin = profiles.find((profile) => profile.kind === "linkedin");
-    if (!linkedin) {
-      toast("No public LinkedIn profile was observed.", "error");
-      return;
-    }
-    window.open(linkedin.url, "_blank", "noopener");
+    const p = (state.active?.profiles || []).find((x) => x.kind === "linkedin");
+    if (p) window.open(p.url, "_blank", "noopener");
   });
 
   /* ---------- chat ---------- */
 
-  function addMessage(role, text, sources) {
-    const wrapper = document.createElement("div");
-    wrapper.className = `msg ${role}`;
-    const chips = (sources || [])
-      .map((source) => `<span class="src-chip">${esc(source)}</span>`)
-      .join("");
-    wrapper.innerHTML = `
-      <span class="msg-role">${role === "twin" ? "PK.twin / verified" : "You"}</span>
-      <div class="msg-body">${esc(text)}</div>
-      ${chips ? `<div class="msg-sources">${chips}</div>` : ""}`;
-    el.messages.appendChild(wrapper);
-    el.messages.scrollTop = el.messages.scrollHeight;
-    return wrapper;
+  function turn(role, text, cites) {
+    const div = document.createElement("div");
+    div.className = `turn ${role}`;
+    const chips = (cites || []).map((c) => `<span class="cite">${esc(c)}</span>`).join("");
+    div.innerHTML = `
+      ${role === "twin" ? `<img class="who-pic" src="/static/prathamesh.jpg" alt="">` : ""}
+      <div class="bubble">
+        <div class="text">${esc(text)}</div>
+        ${chips ? `<div class="cites">${chips}</div>` : ""}
+      </div>`;
+    el.messages.appendChild(div);
+    div.scrollIntoView({ behavior: "smooth", block: "end" });
+    return div;
   }
 
-  function renderEvidence(sources) {
-    el.sourceCount.textContent = String(sources.length).padStart(2, "0");
-    el.evidenceList.innerHTML = sources.length
-      ? sources
-          .map(
-            (source, index) => `
-          <div class="evidence-item">
-            <span class="label">Source / ${String(index + 1).padStart(2, "0")}</span>
-            <span class="value">${esc(source)}</span>
-          </div>`,
-          )
-          .join("")
-      : `<p class="fineprint tight">Sources for the twin's latest answer appear here.</p>`;
-  }
-
-  async function sendMessage(text) {
+  async function ask(text) {
     if (!text.trim() || state.busy || !state.sessionId) return;
     state.busy = true;
     el.send.disabled = true;
-    addMessage("visitor", text);
+    el.intro.hidden = true;
+    turn("you", text);
     el.input.value = "";
     el.input.style.height = "auto";
-    const pending = addMessage("twin", "Checking the evidence…");
+    const pending = turn("twin", "Thinking…");
     pending.classList.add("pending");
 
     try {
-      const result = await api(`/api/sessions/${state.sessionId}/chat`, {
-        method: "POST",
-        body: JSON.stringify({ message: text }),
+      const r = await api(`/api/sessions/${state.sessionId}/chat`, {
+        method: "POST", body: JSON.stringify({ message: text }),
       });
       pending.remove();
-      addMessage("twin", result.answer, result.sources);
-      renderEvidence(result.sources || []);
-      if (typeof result.budget_remaining === "number") {
-        el.budget.textContent = `${result.budget_remaining.toLocaleString()} tokens left`;
-      }
-    } catch (error) {
+      turn("twin", r.answer, r.sources);
+    } catch (e) {
       pending.remove();
-      addMessage("twin", `I couldn't answer that: ${error.message}`);
+      turn("twin", `Sorry — ${e.message}`);
     } finally {
       state.busy = false;
       el.send.disabled = false;
@@ -592,220 +234,128 @@
     }
   }
 
-  el.composer.addEventListener("submit", (event) => {
-    event.preventDefault();
-    sendMessage(el.input.value);
+  el.composer.addEventListener("submit", (e) => { e.preventDefault(); ask(el.input.value); });
+  el.input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); ask(el.input.value); }
   });
-
-  el.input.addEventListener("keydown", (event) => {
-    if (event.key === "Enter" && !event.shiftKey) {
-      event.preventDefault();
-      sendMessage(el.input.value);
-    }
-  });
-
   el.input.addEventListener("input", () => {
     el.input.style.height = "auto";
-    el.input.style.height = `${Math.min(el.input.scrollHeight, 160)}px`;
+    el.input.style.height = `${Math.min(el.input.scrollHeight, 170)}px`;
   });
 
-  el.starters.innerHTML = STARTERS.map(
-    (text) => `<button type="button" class="starter">${esc(text)}</button>`,
-  ).join("");
-  el.starters.addEventListener("click", (event) => {
-    const button = event.target.closest(".starter");
-    if (button) sendMessage(button.textContent);
+  el.starters.innerHTML = STARTERS.map((s) => `<button type="button">${esc(s)}</button>`).join("");
+  el.starters.addEventListener("click", (e) => {
+    if (e.target.tagName === "BUTTON") ask(e.target.textContent);
   });
 
-  /* ---------- SSE ---------- */
+  /* ---------- events ---------- */
 
   function openEvents() {
-    if (state.events) state.events.close();
-    const source = new EventSource(`/api/sessions/${state.sessionId}/events`);
-    state.events = source;
+    const src = new EventSource(`/api/sessions/${state.sessionId}/events`);
+    state.events = src;
 
-    source.addEventListener("research", (event) => {
-      const payload = JSON.parse(event.data);
-      renderResearchState(payload);
-    });
-
-    source.addEventListener("research.progress", (event) => {
-      const payload = JSON.parse(event.data);
-      state.sources.set(payload.source, payload);
-      renderSources();
-    });
-
-    source.addEventListener("research.dossier", (event) => {
-      const payload = JSON.parse(event.data);
-      if (payload.candidates?.length) {
-        state.candidates = payload.candidates;
-        renderCandidates();
+    src.addEventListener("research", (e) => {
+      const p = JSON.parse(e.data);
+      if (p.status === "researching") note(`Looking up ${p.name || "your name"}`);
+      if (p.status === "candidates") {
+        renderPeople(p.candidates || []);
+        note(`Found ${(p.candidates || []).length} possible match(es)`);
       }
+      if (p.status === "empty") note("No public match found");
     });
 
-    source.addEventListener("roles.ready", (event) => {
-      state.roles = JSON.parse(event.data).roles || {};
-      if (state.active) renderRoles(state.roles);
+    src.addEventListener("research.dossier", (e) => {
+      const p = JSON.parse(e.data);
+      if (p.candidates?.length) renderPeople(p.candidates);
     });
 
-    source.addEventListener("outreach.ready", (event) => {
-      renderOutreach(JSON.parse(event.data));
+    src.addEventListener("outreach.ready", (e) => {
+      const p = JSON.parse(e.data);
+      state.drafts = p.drafts || [];
+      if (state.drafts.length) note("Outreach draft ready");
     });
 
-    source.addEventListener("outreach.action", (event) => {
-      const payload = JSON.parse(event.data);
-      if (payload.status === "sent") toast("Outreach email sent.");
+    src.addEventListener("outreach.action", (e) => {
+      const p = JSON.parse(e.data);
+      if (p.status === "sent") note("Email sent");
+      else if (p.reason) note(`Email not sent: ${p.reason}`);
     });
 
-    source.onerror = () => {
-      /* EventSource reconnects on its own; a dropped stream must not break chat. */
-    };
+    src.onerror = () => { /* EventSource retries; chat must keep working. */ };
   }
-
-  /* ---------- opt out ---------- */
-
-  async function optOut() {
-    if (!state.sessionId) return;
-    try {
-      await api(`/api/sessions/${state.sessionId}/research/opt-out`, { method: "POST" });
-      state.candidates = [];
-      state.active = null;
-      state.sources.clear();
-      renderResearchState({ status: "opted_out" });
-      toast("Stopped. Everything found was erased.");
-    } catch (error) {
-      toast(error.message, "error");
-    }
-  }
-
-  [el.stripOptout, el.candidatesOptout, el.activeOptout].forEach((button) =>
-    button.addEventListener("click", optOut),
-  );
-
-  el.stripView.addEventListener("click", () => {
-    const rail = document.querySelector('.rail-state:not([hidden])');
-    rail?.scrollIntoView({ behavior: "smooth", block: "center" });
-  });
 
   /* ---------- onboarding ---------- */
 
-  el.identityForm.addEventListener("submit", async (event) => {
-    event.preventDefault();
+  el.identityForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
     const name = el.visitorName.value.trim();
     const company = el.visitorCompany.value.trim();
     el.onboarding.hidden = true;
-    if (!name) return skip();
+    if (!name) return;
     try {
       await api(`/api/sessions/${state.sessionId}/identity`, {
-        method: "POST",
-        body: JSON.stringify({ name, company: company || null }),
+        method: "POST", body: JSON.stringify({ name, company: company || null }),
       });
-    } catch (error) {
-      toast(error.message, "error");
-    }
+    } catch (err) { toast(err.message); }
   });
 
-  async function skip() {
+  el.skipButton.addEventListener("click", async () => {
     el.onboarding.hidden = true;
-    try {
-      await api(`/api/sessions/${state.sessionId}/skip`, { method: "POST" });
-      renderResearchState({ status: "skipped" });
-    } catch {
-      /* Skipping must never block the conversation. */
-    }
-  }
+    try { await api(`/api/sessions/${state.sessionId}/skip`, { method: "POST" }); } catch {}
+  });
 
-  el.skipButton.addEventListener("click", skip);
-
-  /* ---------- drawer: work + role fit ---------- */
+  /* ---------- drawer ---------- */
 
   function openDrawer(title, html) {
     el.drawerTitle.textContent = title;
     el.drawerBody.innerHTML = html;
     el.drawer.hidden = false;
   }
-
   el.drawerClose.addEventListener("click", () => (el.drawer.hidden = true));
-  el.drawer.addEventListener("click", (event) => {
-    if (event.target === el.drawer) el.drawer.hidden = true;
-  });
+  el.drawer.addEventListener("click", (e) => { if (e.target === el.drawer) el.drawer.hidden = true; });
 
   el.projectsButton.addEventListener("click", async () => {
-    openDrawer("Selected work", `<p class="fineprint tight">Loading live repository data…</p>`);
+    openDrawer("Selected work", "<p>Loading…</p>");
     try {
-      const data = await api("/api/github");
-      const repos = data.repositories || data.repos || [];
-      openDrawer(
-        "Selected work",
-        repos
-          .map(
-            (repo) => `
-          <div class="repo">
-            <strong><a href="${esc(repo.url || repo.html_url)}" target="_blank" rel="noopener noreferrer">${esc(
-              repo.name,
-            )}</a></strong>
-            <p>${esc(repo.description || "")}</p>
-            ${
-              repo.topics?.length
-                ? `<div class="topics">${repo.topics
-                    .map((topic) => `<span>${esc(topic)}</span>`)
-                    .join("")}</div>`
-                : ""
-            }
-          </div>`,
-          )
-          .join(""),
-      );
-    } catch (error) {
-      openDrawer("Selected work", `<p class="fineprint tight">${esc(error.message)}</p>`);
-    }
+      const d = await api("/api/github");
+      const repos = d.repositories || d.repos || [];
+      openDrawer("Selected work", repos.map((r) => `
+        <div class="repo">
+          <strong><a href="${esc(r.url || r.html_url)}" target="_blank" rel="noopener noreferrer">${esc(r.name)}</a></strong>
+          <p>${esc(r.description || "")}</p>
+        </div>`).join(""));
+    } catch (e) { openDrawer("Selected work", `<p>${esc(e.message)}</p>`); }
   });
 
   el.jdButton.addEventListener("click", () => {
-    openDrawer(
-      "Role fit",
-      `<form class="jd-form" id="jd-form">
-         <textarea id="jd-input" placeholder="Paste the job description…"></textarea>
-         <div class="modal-actions"><button type="submit" class="primary-btn">Analyse</button></div>
-       </form>
-       <div id="jd-results"></div>`,
-    );
-    $("#jd-form").addEventListener("submit", async (event) => {
-      event.preventDefault();
+    openDrawer("Role fit", `
+      <form class="jd-form" id="jd-form">
+        <textarea id="jd-input" placeholder="Paste the job description…"></textarea>
+        <div class="sheet-actions"><button type="submit" class="btn">Check fit</button></div>
+      </form><div id="jd-results"></div>`);
+    $("#jd-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
       const description = $("#jd-input").value.trim();
       if (!description) return;
-      const results = $("#jd-results");
-      results.innerHTML = `<p class="fineprint tight">Checking against the CV corpus…</p>`;
+      const out = $("#jd-results");
+      out.innerHTML = "<p>Checking…</p>";
       try {
         const fit = await api(`/api/sessions/${state.sessionId}/jd-fit`, {
-          method: "POST",
-          body: JSON.stringify({ description }),
+          method: "POST", body: JSON.stringify({ description }),
         });
-        results.innerHTML = `
-          <div class="repo"><strong>Summary</strong><p>${esc(fit.summary || "")}</p></div>
-          ${(fit.matched || fit.matched_requirements || [])
-            .map(
-              (item) =>
-                `<div class="repo"><strong>✓ ${esc(
-                  item.requirement || item,
-                )}</strong><p>${esc(item.source || "")}</p></div>`,
-            )
-            .join("")}
-          ${(fit.unevidenced || fit.unevidenced_requirements || [])
-            .map((item) => `<div class="repo"><strong>— ${esc(item.requirement || item)}</strong><p>Not evidenced in the CV.</p></div>`)
-            .join("")}
-          ${fit.caveat ? `<p class="fineprint">${esc(fit.caveat)}</p>` : ""}`;
-      } catch (error) {
-        results.innerHTML = `<p class="fineprint tight">${esc(error.message)}</p>`;
-      }
+        out.innerHTML = `<div class="repo"><strong>Summary</strong><p>${esc(fit.summary || "")}</p></div>` +
+          (fit.matched || fit.matched_requirements || []).map((m) =>
+            `<div class="repo"><strong>✓ ${esc(m.requirement || m)}</strong><p>${esc(m.source || "")}</p></div>`).join("") +
+          (fit.unevidenced || fit.unevidenced_requirements || []).map((m) =>
+            `<div class="repo"><strong>— ${esc(m.requirement || m)}</strong><p>Not in the CV.</p></div>`).join("");
+      } catch (err) { out.innerHTML = `<p>${esc(err.message)}</p>`; }
     });
   });
 
   /* ---------- theme ---------- */
 
-  const storedTheme = localStorage.getItem("twin-theme");
-  if (storedTheme) document.documentElement.dataset.theme = storedTheme;
-
+  const saved = localStorage.getItem("twin-theme");
+  if (saved) document.documentElement.dataset.theme = saved;
   el.themeButton.addEventListener("click", () => {
     const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
     document.documentElement.dataset.theme = next;
@@ -814,40 +364,26 @@
 
   /* ---------- boot ---------- */
 
-  async function boot() {
+  (async function boot() {
     try {
-      const health = await api("/api/health");
-      el.providerLabel.textContent = health.grounding || "Grounding online";
-      smtpConfigured = Boolean(health.smtp_configured);
-    } catch {
-      /* Health is decorative; the page still works without it. */
-    }
+      const h = await api("/api/health");
+      if (h.model) el.modelNote.textContent = h.model;
+    } catch {}
 
     try {
-      const contact = await api("/api/contact");
-      const link = $("#contact-link");
-      if (link && contact.email) {
-        link.href = `mailto:${contact.email}`;
-        link.textContent = "Email ↗";
-      } else if (link) {
-        link.remove();
-      }
-    } catch {
-      $("#contact-link")?.remove();
-    }
+      const c = await api("/api/contact");
+      if (c.email) el.contactLink.href = `mailto:${c.email}`;
+      else el.contactLink.remove();
+    } catch { el.contactLink.remove(); }
 
     try {
-      const session = await api("/api/sessions", { method: "POST", body: "{}" });
-      state.sessionId = session.session_id;
-      addMessage("twin", session.greeting, ["CV › Grounding contract"]);
-      renderResearchState(session.research || { status: "idle" });
+      const s = await api("/api/sessions", { method: "POST", body: "{}" });
+      state.sessionId = s.session_id;
       openEvents();
       el.onboarding.hidden = false;
       el.visitorName.focus();
-    } catch (error) {
-      addMessage("twin", `The twin could not start a session: ${error.message}`);
+    } catch (e) {
+      turn("twin", `Couldn't start a session: ${e.message}`);
     }
-  }
-
-  boot();
+  })();
 })();
