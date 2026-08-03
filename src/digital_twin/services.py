@@ -22,8 +22,16 @@ from .security import (
     sanitize_external_text,
 )
 
+#: Identity questions carry no retrievable keywords — "who is prathamesh"
+#: reduces to a single token that never appears in the CV body — so they scored
+#: zero evidence and refused. The most basic question about him must always
+#: reach the summary.
 GENERIC_OVERVIEW = re.compile(
-    r"\b(?:overview|background|introduce|about|summary)\b", re.I
+    r"\b(?:overview|background|introduce|about|summary|bio|profile)\b"
+    r"|\bwho\s+(?:is|are|am)\b"
+    r"|\btell\s+me\s+about\b"
+    r"|\b(?:yourself|himself)\b",
+    re.I,
 )
 GITHUB_QUERY = re.compile(
     r"\b(?:github|repo|repository|effect-broker|agent-runtime|effect-browser|"
