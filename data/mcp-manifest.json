@@ -1,0 +1,198 @@
+{
+  "schema_version": "1.0.0",
+  "repository": "https://github.com/prathamesh-git9/mcp-servers",
+  "transport": "stdio",
+  "sdk": "mcp==2.0.0",
+  "servers": [
+    {
+      "name": "grounded-cv",
+      "description": "Hybrid retrieval and evidence-bound claim verification over a structured CV.",
+      "tools": [
+        {
+          "name": "lookup",
+          "description": "Retrieve CV evidence with BM25, dense retrieval, and RRF."
+        },
+        {
+          "name": "verify_claim",
+          "description": "Return per-claim supported or unsupported verdicts with exact-span citations."
+        }
+      ],
+      "resources": [
+        {
+          "uri": "cv://profile",
+          "description": "Complete versioned structured profile."
+        },
+        {
+          "uri": "cv://corpus",
+          "description": "Atomic retrieval and citation corpus."
+        },
+        {
+          "uri": "cv://section/{section}",
+          "description": "One profile section as structured chunks."
+        }
+      ],
+      "prompts": [
+        {
+          "name": "answer-from-cv",
+          "description": "Prepare an evidence-only answer with exact citations."
+        }
+      ],
+      "install_command": "uvx --from git+https://github.com/prathamesh-git9/mcp-servers.git#subdirectory=packages/grounded-cv --with git+https://github.com/prathamesh-git9/mcp-servers.git#subdirectory=packages/common grounded-cv",
+      "eval": {
+        "query_count": 10,
+        "k": 5,
+        "recall_at_k": 1.0,
+        "mrr": 1.0,
+        "ndcg_at_k": 0.992
+      }
+    },
+    {
+      "name": "repo-intel",
+      "description": "Read-only public GitHub repository intelligence with optional token support.",
+      "tools": [
+        {
+          "name": "list_repositories",
+          "description": "List public repositories, topics, language, and activity counts."
+        },
+        {
+          "name": "repository_detail",
+          "description": "Get metadata, languages, README, and latest visible CI."
+        },
+        {
+          "name": "search_repository",
+          "description": "Search public repository code and README content."
+        },
+        {
+          "name": "latest_activity",
+          "description": "Return recent public commits, issues, and pull requests."
+        }
+      ],
+      "resources": [
+        {
+          "uri": "github://capabilities",
+          "description": "Read-only capabilities and authentication behavior."
+        },
+        {
+          "uri": "github://safety",
+          "description": "Trust, mutation, and timeout policy."
+        }
+      ],
+      "prompts": [
+        {
+          "name": "investigate-repository",
+          "description": "Build a source-backed repository assessment."
+        }
+      ],
+      "install_command": "uvx --from git+https://github.com/prathamesh-git9/mcp-servers.git#subdirectory=packages/repo-intel --with git+https://github.com/prathamesh-git9/mcp-servers.git#subdirectory=packages/common repo-intel",
+      "eval": null
+    },
+    {
+      "name": "web-research",
+      "description": "Robots-respecting public web search and main-content extraction.",
+      "tools": [
+        {
+          "name": "search_web",
+          "description": "Search the public web and return source URLs."
+        },
+        {
+          "name": "fetch_page",
+          "description": "Fetch and extract a public page after safety and robots checks."
+        },
+        {
+          "name": "research_web",
+          "description": "Search and extract a bounded set of permitted pages."
+        }
+      ],
+      "resources": [
+        {
+          "uri": "research://policy",
+          "description": "Machine-readable fetch boundaries."
+        },
+        {
+          "uri": "research://trust",
+          "description": "Untrusted-content handling rules."
+        }
+      ],
+      "prompts": [
+        {
+          "name": "source-backed-research",
+          "description": "Research while preserving evidence and trust boundaries."
+        }
+      ],
+      "install_command": "uvx --from git+https://github.com/prathamesh-git9/mcp-servers.git#subdirectory=packages/web-research --with git+https://github.com/prathamesh-git9/mcp-servers.git#subdirectory=packages/common web-research",
+      "eval": null
+    },
+    {
+      "name": "ats-jobs",
+      "description": "Public role discovery across six common applicant tracking systems.",
+      "tools": [
+        {
+          "name": "detect_board",
+          "description": "Detect and normalize a supported public ATS board URL."
+        },
+        {
+          "name": "list_roles",
+          "description": "List and filter currently public roles."
+        },
+        {
+          "name": "get_role",
+          "description": "Retrieve the complete public description for one role."
+        }
+      ],
+      "resources": [
+        {
+          "uri": "ats://providers",
+          "description": "Supported providers and authentication policy."
+        },
+        {
+          "uri": "ats://policy",
+          "description": "Read-only and trust policy."
+        }
+      ],
+      "prompts": [
+        {
+          "name": "find-open-roles",
+          "description": "Compare public roles with an explicit candidate profile."
+        }
+      ],
+      "install_command": "uvx --from git+https://github.com/prathamesh-git9/mcp-servers.git#subdirectory=packages/ats-jobs --with git+https://github.com/prathamesh-git9/mcp-servers.git#subdirectory=packages/common ats-jobs",
+      "eval": null
+    },
+    {
+      "name": "outcome-ledger",
+      "description": "Crash-aware SQLite idempotency state with honest unknown outcomes.",
+      "tools": [
+        {
+          "name": "begin",
+          "description": "Durably begin an intent and return its deterministic key."
+        },
+        {
+          "name": "record",
+          "description": "Record a proven outcome with conflict-safe replay."
+        },
+        {
+          "name": "status",
+          "description": "Return pending, recorded, or outcome_unknown."
+        }
+      ],
+      "resources": [
+        {
+          "uri": "ledger://semantics",
+          "description": "State-machine meanings and caller obligations."
+        },
+        {
+          "uri": "ledger://durability",
+          "description": "SQLite durability and key-generation guarantees."
+        }
+      ],
+      "prompts": [
+        {
+          "name": "perform-idempotently",
+          "description": "Plan an external effect around ledger reconciliation."
+        }
+      ],
+      "install_command": "uvx --from git+https://github.com/prathamesh-git9/mcp-servers.git#subdirectory=packages/outcome-ledger --with git+https://github.com/prathamesh-git9/mcp-servers.git#subdirectory=packages/common outcome-ledger",
+      "eval": null
+    }
+  ]
+}

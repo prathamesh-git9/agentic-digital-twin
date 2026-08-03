@@ -265,7 +265,12 @@ main { position: relative; z-index: 2; }
 .mcp-counts b { font-size: 17px; color: var(--ink); font-weight: 500; }
 .mcp-card .topics { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
 .mcp-card .topics span { font: 400 11px/1 var(--mono); color: var(--ink-3); border: 1px solid var(--line); border-radius: 999px; padding: 4px 9px; }
-.mcp-install { display: block; margin-top: 14px; font: 400 11.5px/1.6 var(--mono); color: var(--ink-3); background: var(--glass); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; word-break: break-all; }
+.mcp-eval b { color: var(--clay); }
+.mcp-basis { margin: 8px 0 0; font: 400 10.5px/1.5 var(--mono); color: var(--ink-3); }
+.mcp-detail { font: 400 11px/1 var(--mono); color: var(--ink-3); }
+/* The uvx invocations run past 200 characters. Scroll them rather than let a
+   card grow four lines taller than its neighbours. */
+.mcp-install { display: block; margin-top: 14px; font: 400 11.5px/1.6 var(--mono); color: var(--ink-3); background: var(--glass); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; max-height: 5.6em; overflow: auto; white-space: pre-wrap; word-break: break-all; }
 
 .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1px; margin-top: 44px; background: var(--line); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
 .card { background: var(--paper); padding: 24px; transition: background .2s var(--ease); }

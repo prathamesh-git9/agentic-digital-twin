@@ -68,20 +68,29 @@ def _mcp_manifest() -> dict[str, Any] | None:
     but CI has no such checkout, so the vendored copy is what actually ships.
     """
     vendored = ROOT / "data" / "mcp-manifest.json"
-    sibling = ROOT.parent / "mcp-servers" / "docs" / "manifest.json"
+    # Walk up rather than assume ROOT.parent: inside a git worktree the repo sits
+    # under .claude/worktrees/<name>, several levels below its sibling projects.
+    sibling = next(
+        (
+            found
+            for ancestor in (ROOT, *ROOT.parents)
+            if (found := ancestor / "mcp-servers" / "docs" / "manifest.json").is_file()
+        ),
+        None,
+    )
     for candidate in (sibling, vendored):
-        if not candidate.is_file():
+        if candidate is None or not candidate.is_file():
             continue
         try:
             loaded = json.loads(candidate.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError) as exc:
-            print(f"  {candidate.name} unreadable ({exc}); skipping")
+            print(f"  {candidate} unreadable ({exc}); skipping")
             continue
         if candidate is sibling:
             vendored.write_text(
                 json.dumps(loaded, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
             )
-            print(f"  vendored manifest from {sibling.parent.parent.name}")
+            print(f"  vendored manifest from {candidate}")
         return loaded
     return None
 

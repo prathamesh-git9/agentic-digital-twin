@@ -605,6 +605,8 @@
 
   /* ---------- MCP servers ---------- */
 
+  const QUALITY_METRICS = ["recall_at_k", "precision_at_k", "mrr", "ndcg_at_k", "map"];
+
   // Rendered from the manifest the mcp-servers repo publishes, so this panel
   // cannot claim a server that was not built. Absent manifest, absent panel.
   function renderMcp(manifest) {
@@ -615,10 +617,18 @@
     if (!Array.isArray(servers) || !servers.length) return;
 
     const count = (value) => (Array.isArray(value) ? value.length : 0);
-    $("#mcp-lede").textContent =
-      `${servers.length} servers speaking the Model Context Protocol — each exposing `
-      + `tools, resources and prompts with structured output schemas. Source and `
-      + `client configuration are public.`;
+    const repo = manifest?.repository;
+    const detail = [
+      manifest?.transport ? `${manifest.transport} transport` : null,
+      manifest?.sdk ? `SDK ${manifest.sdk}` : null,
+    ].filter(Boolean).join(" · ");
+    $("#mcp-lede").innerHTML =
+      `${esc(servers.length)} servers speaking the Model Context Protocol — each exposing `
+      + `tools, resources and prompts with structured output schemas, and none letting a `
+      + `low-level exception cross the protocol boundary.`
+      + (detail ? ` <span class="mcp-detail">${esc(detail)}</span>` : "")
+      + (repo ? ` <a href="${esc(repo)}" target="_blank" rel="noopener noreferrer">Source ↗</a>` : "");
+
     grid.innerHTML = servers.map((server) => {
       const counts = [
         [count(server.tools), "tools"],
@@ -628,6 +638,20 @@
       const names = (server.tools || []).slice(0, 6)
         .map((tool) => esc(typeof tool === "string" ? tool : tool.name || ""))
         .filter(Boolean);
+      // Measured retrieval quality is the whole reason to trust the RAG claim.
+      // Only quality metrics get a tile — the query count and k describe the
+      // experiment, and showing them as scores makes the numbers unreadable.
+      const scored = server.eval && typeof server.eval === "object" ? server.eval : null;
+      const at = scored?.k ?? "k";
+      const scores = QUALITY_METRICS
+        .filter((key) => typeof scored?.[key] === "number")
+        .map((key) => `<span><b>${scored[key].toFixed(3)}</b>${esc(
+          key.replace(/_at_k$/, `@${at}`).replace(/_/g, " "))}</span>`)
+        .join("");
+      const basis = scores && scored.query_count
+        ? `<p class="mcp-basis">measured over ${esc(scored.query_count)} fixture queries</p>`
+        : "";
+      const install = server.install_command || server.install;
       return `
         <article class="mcp-card">
           <h4>${esc(server.name || "server")}</h4>
@@ -635,9 +659,10 @@
           ${counts.length ? `<div class="mcp-counts">${counts
             .map(([n, label]) => `<span><b>${esc(n)}</b>${esc(label)}</span>`)
             .join("")}</div>` : ""}
+          ${scores ? `<div class="mcp-counts mcp-eval">${scores}</div>${basis}` : ""}
           ${names.length ? `<div class="topics">${names
             .map((name) => `<span>${name}</span>`).join("")}</div>` : ""}
-          ${server.install ? `<code class="mcp-install">${esc(server.install)}</code>` : ""}
+          ${install ? `<code class="mcp-install">${esc(install)}</code>` : ""}
         </article>`;
     }).join("");
     panel.hidden = false;
