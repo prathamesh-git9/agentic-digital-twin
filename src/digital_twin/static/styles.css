@@ -810,3 +810,18 @@ html[data-theme="dark"] {
 .live-rows .k { font-size: 11.5px; color: var(--ink-3); }
 .live-rows .v { font: 400 11.5px/1 var(--mono); color: var(--ink); }
 .live-rows .v.ok { color: var(--ok); }
+
+/* The veil painted a solid gradient the width of the column, which showed as a
+   visible rectangle over the scene in dark mode. Blur and mask alone. */
+.dock::before { background: none; }
+
+/* 10px was below comfortable for the rail labels. */
+.panel-label { font-size: 11px; }
+
+/* The dock veil was painting a solid gradient the width of the column, which
+   showed as a visible rectangle over the scene — obvious in dark. Blur and
+   mask alone achieve the separation without drawing an edge. */
+.dock::before { background: none; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+
+/* 10px was below comfortable for the rail labels. */
+.panel-label { font-size: 10.5px; letter-spacing: .14em; }

@@ -413,6 +413,8 @@
       if (c.phone) items.push([`tel:${c.phone}`, "Phone", c.phone]);
       if (c.location) items.push(["", "Based in", c.location]);
     } catch { /* fall through to the static links below */ }
+    // Always offered, independent of whether the contact endpoint responded.
+    items.push(["https://www.linkedin.com/in/prathameshkalamkar", "LinkedIn", "prathameshkalamkar"]);
     items.push(["https://github.com/prathamesh-git9", "GitHub", "prathamesh-git9"]);
     rows.innerHTML = items.map(([href, label, value]) =>
       href
