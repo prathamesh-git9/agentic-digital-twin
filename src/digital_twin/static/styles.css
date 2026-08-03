@@ -8,59 +8,61 @@
 */
 
 :root {
-  color-scheme: light;
-  --paper: #faf9f5;
-  --paper-2: #f2f0e9;
-  --raised: #ffffff;
-  --line: #e6e2d7;
-  --line-2: #d4cfc0;
-  --ink: #191917;
-  --ink-2: #4b4a44;
-  --ink-3: #7c7a70;
-  --clay: #cb6a48;
-  --clay-2: #b4573a;
-  --clay-ink: #ffffff;
-  --clay-soft: #f6ebe4;
-  --ok: #4a7c59;
-  --sky-top: #dfe8f0;
-  --sky-mid: #f0e6dc;
-  --sky-low: #f9efe4;
-  --sun-core: #f6c9a3;
-  --sun-halo: rgba(244, 189, 148, .34);
-  --ridge-4: #dcd8cd;
-  --ridge-3: #cfc9bb;
-  --ridge-2: #beb7a6;
-  --ridge-1: #a9a08c;
+  color-scheme: dark;
+  --paper: #16161a;
+  --paper-2: #1f1f25;
+  --raised: #1c1c21;
+  --line: #2b2b32;
+  --line-2: #3a3a42;
+  --ink: #f5f2ec;
+  --ink-2: #b6b1a6;
+  --ink-3: #8b8578;
+  --clay: #f0a92a;
+  --clay-2: #ffbe4d;
+  --clay-ink: #16161a;
+  --clay-soft: rgba(240, 169, 42, .13);
+  --ok: #7fb894;
+  /* Dusk: charcoal overhead falling to a warm band at the ridgeline. */
+  --sky-top: #101014;
+  --sky-mid: #1a1720;
+  --sky-low: #33241a;
+  --sun-core: #f0a92a;
+  --sun-halo: rgba(240, 169, 42, .2);
+  --ridge-4: #2b2833;
+  --ridge-3: #24222c;
+  --ridge-2: #1e1c24;
+  --ridge-1: #18171c;
   --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Charter, Georgia, serif;
   --sans: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
   --ease: cubic-bezier(.22, .68, .3, 1);
 }
 
-html[data-theme="dark"] {
-  color-scheme: dark;
-  --paper: #1b1a17;
-  --paper-2: #232220;
-  --raised: #262523;
-  --line: #34322d;
-  --line-2: #45423b;
-  --ink: #f3f0e8;
-  --ink-2: #bab5a9;
-  --ink-3: #8b8679;
-  --clay: #e08a63;
-  --clay-2: #ec9d78;
-  --clay-ink: #1b1a17;
-  --clay-soft: #33261f;
-  --ok: #7fae8c;
-  --sky-top: #14161d;
-  --sky-mid: #1b1a21;
-  --sky-low: #221e21;
-  --sun-core: #6b4535;
-  --sun-halo: rgba(140, 84, 60, .3);
-  --ridge-4: #232224;
-  --ridge-3: #201f21;
-  --ridge-2: #1d1c1e;
-  --ridge-1: #191819;
+/* Daylight variant: same amber, darkened so it holds contrast on warm paper. */
+html[data-theme="light"] {
+  color-scheme: light;
+  --paper: #faf7f0;
+  --paper-2: #f1ece1;
+  --raised: #fffdf8;
+  --line: #e6dfd1;
+  --line-2: #d3c9b6;
+  --ink: #1a1815;
+  --ink-2: #514c43;
+  --ink-3: #837c6f;
+  --clay: #b0760c;
+  --clay-2: #946105;
+  --clay-ink: #fffdf8;
+  --clay-soft: rgba(176, 118, 12, .11);
+  --ok: #3f7d58;
+  --sky-top: #dde3ea;
+  --sky-mid: #f0e5d3;
+  --sky-low: #fbf0dc;
+  --sun-core: #f5be55;
+  --sun-halo: rgba(240, 169, 42, .3);
+  --ridge-4: #ddd6c8;
+  --ridge-3: #cfc7b5;
+  --ridge-2: #bcb29c;
+  --ridge-1: #a3977e;
 }
 
 * { box-sizing: border-box; }
@@ -159,7 +161,9 @@ a { color: inherit; }
 .turn.you { display: flex; justify-content: flex-end; }
 .turn.you .label { display: none; }
 .turn.you .bubble { max-width: 82%; }
-.turn.you .text { background: var(--paper-2); border-radius: 16px 16px 4px 16px; padding: 12px 17px; font-size: 15.5px; }
+/* Needs its own surface plus a hairline: on charcoal, a slightly lighter fill
+   alone is indistinguishable from the page. */
+.turn.you .text { background: var(--raised); border: 1px solid var(--line-2); border-radius: 16px 16px 4px 16px; padding: 12px 17px; font-size: 15.5px; }
 
 .cites { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
 .cite { font: 400 11px/1 var(--mono); color: var(--ink-3); border: 1px solid var(--line); border-radius: 5px; padding: 5px 8px; }
