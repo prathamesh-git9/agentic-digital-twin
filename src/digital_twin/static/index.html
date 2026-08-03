@@ -3,12 +3,12 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Prathamesh Kalamkar's digital twin — ask it anything about his work.">
-    <title>Prathamesh Kalamkar</title>
+    <meta name="description" content="Kal is Prathamesh Kalamkar's digital twin — ask it anything about his work.">
+    <title>Kal — Prathamesh Kalamkar's digital twin</title>
     <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
     <!-- Version stamp: static assets ship without Cache-Control, so browsers
          apply heuristic freshness and can serve a stale stylesheet. -->
-    <link rel="stylesheet" href="/static/styles.css?v=22">
+    <link rel="stylesheet" href="/static/styles.css?v=23">
   </head>
   <body>
     <a class="skip-link" href="#composer-input">Skip to chat</a>
@@ -30,7 +30,7 @@
     <header class="bar">
       <a class="bar-left" href="/">
         <img class="face" src="/static/prathamesh.jpg" alt="" width="26" height="26">
-        <span class="name">Prathamesh Kalamkar</span>
+        <span class="name">Prathamesh Kalamkar</span><span class="tag-kal">Kal</span>
       </a>
       <nav class="bar-right">
         <a href="#experience">Experience</a>
@@ -56,7 +56,7 @@
              the chat from the page. -->
         <div id="intro">
           <h1 class="reveal">Meet Prathamesh<br><em>before you meet him.</em></h1>
-          <p class="reveal d1">I'm his digital twin. Ask me about his experience, what he's built, or whether he fits the role you're hiring for — every answer comes from his CV and public code.</p>
+          <p class="reveal d1">I'm <b>Kal</b>, his digital twin. Ask me about his experience, what he's built, or whether he fits the role you're hiring for — every answer comes from his CV and public code.</p>
           <div class="quickfacts reveal d2">
             <span><b>3.5+</b> years back-end</span>
             <span><b>10</b> systems shipped</span>
@@ -96,7 +96,7 @@
             </button>
           </form>
           <div class="suggestions" id="starters"></div>
-          <p class="dock-note"><span id="model-note"></span> · Contractual questions go to Prathamesh, not to me.</p>
+          <p class="dock-note"><span id="model-note"></span> · Kal answers from evidence. Contractual questions go to Prathamesh.</p>
         </div>
       </section>
 
@@ -208,15 +208,15 @@
         <div class="band-head reveal"><span class="kicker">Questions</span><h2>What people ask before they get in touch.</h2></div>
         <div class="faq reveal">
           <details><summary>Is this actually accurate?</summary><p>Every claim is retrieved from his CV or public repositories and cited underneath the answer. If something isn't evidenced, the twin says so rather than guessing.</p></details>
-          <details><summary>Can it negotiate or accept an offer?</summary><p>No. Salary, offers, start dates and anything contractual are refused by design and handed to Prathamesh directly.</p></details>
-          <details><summary>Why does it ask my name?</summary><p>So it can point you at the most relevant work. It's optional — skipping gives you the identical conversation.</p></details>
-          <details><summary>What is it built on?</summary><p>Python, FastAPI and SQLite with a provider-agnostic model layer. The source is public on GitHub, alongside the ten systems it talks about.</p></details>
+          <details><summary>Can Kal negotiate or accept an offer?</summary><p>No. Kal speaks about the work; it cannot commit anything on his behalf. Salary, offers, start dates and anything contractual are refused by design and handed to Prathamesh directly.</p></details>
+          <details><summary>Why does Kal ask my name?</summary><p>So it can point you at the most relevant work. It's optional — skipping gives you the identical conversation.</p></details>
+          <details><summary>What is Kal built on?</summary><p>Python, FastAPI and SQLite with a provider-agnostic model layer. The source is public on GitHub, alongside the ten systems it talks about.</p></details>
         </div>
       </section>
       <section class="band" id="cta">
         <div class="cta reveal">
           <h2>Still deciding?</h2>
-          <p>Ask the twin anything — it answers from the CV and the code, and tells you plainly when something isn't evidenced. Or skip it and talk to Prathamesh directly.</p>
+          <p>Ask Kal anything — it answers from the CV and the code, and tells you plainly when something isn't evidenced. Or skip it and talk to Prathamesh directly.</p>
           <div class="cta-row">
             <button class="btn" id="cta-ask" type="button">Ask a question</button>
             <button class="btn ghost" id="cta-contact" type="button">Contact him</button>
@@ -246,7 +246,7 @@
       <div class="over-scrim" data-close></div>
       <section class="over-panel">
         <div class="over-head"><h2 id="contact-title">Get in touch</h2><button type="button" class="q" id="contact-close">Close</button></div>
-        <p class="over-lede">Straight to Prathamesh — not the twin.</p>
+        <p class="over-lede">Straight to Prathamesh — not to Kal.</p>
         <div class="contact-rows" id="contact-rows"></div>
       </section>
     </div>
@@ -254,7 +254,7 @@
     <div class="modal" id="onboarding" role="dialog" aria-modal="true" aria-labelledby="onboarding-title" hidden>
       <section class="modal-card">
         <h2 id="onboarding-title">Who am I talking to?</h2>
-        <p>So I can point you at the most relevant work. Entirely optional.</p>
+        <p>I'm Kal, Prathamesh's twin. Knowing who you are lets me point you at the most relevant work. Entirely optional.</p>
         <form id="identity-form">
           <label class="sr-only" for="visitor-name">Your name</label>
           <input id="visitor-name" type="text" placeholder="Your name" autocomplete="name">
@@ -270,6 +270,6 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-    <script src="/static/app.js?v=22" defer></script>
+    <script src="/static/app.js?v=23" defer></script>
   </body>
 </html>

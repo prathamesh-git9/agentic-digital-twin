@@ -587,3 +587,12 @@ body { overflow-x: hidden; }
   .turn.you .bubble { max-width: 92%; }
   .thread { padding-bottom: 210px; }
 }
+
+/* The twin has a name so the boundary reads cleanly: Kal speaks about the
+   work, Prathamesh is who you contract with. */
+.tag-kal {
+  margin-left: 9px; font: 400 10.5px/1 var(--mono); letter-spacing: .12em;
+  text-transform: uppercase; color: var(--clay);
+  border: 1px solid var(--clay); border-radius: 999px; padding: 4px 8px;
+}
+.ask-hero > #intro p b { color: var(--ink); font-weight: 650; }

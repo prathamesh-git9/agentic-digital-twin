@@ -216,7 +216,7 @@
     const chips = (cites || []).map((c) => `<span class="cite">${esc(c)}</span>`).join("");
     div.innerHTML = `
       <div class="bubble">
-        <span class="label">${role === "twin" ? "Prathamesh" : "You"}</span>
+        <span class="label">${role === "twin" ? "Kal" : "You"}</span>
         <div class="text">${esc(text)}</div>
         ${chips ? `<div class="cites">${chips}</div>` : ""}
         ${role === "twin" && text
