@@ -99,6 +99,14 @@ class SuppressionRequest(BaseModel):
     reason: str = Field(default="requested", max_length=240)
 
 
+class BounceRequest(BaseModel):
+    address: str = Field(min_length=3, max_length=320)
+    pattern: str | None = Field(default=None, max_length=64)
+    reason: str = Field(default="hard bounce", min_length=1, max_length=240)
+    session_id: str | None = Field(default=None, max_length=64)
+    candidate_id: str | None = Field(default=None, max_length=64)
+
+
 class FollowUpRequest(BaseModel):
     draft_id: str = Field(min_length=10, max_length=64)
 

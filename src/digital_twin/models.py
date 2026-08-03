@@ -23,6 +23,8 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column
 from sqlalchemy.pool import StaticPool
 
+from .email_utils import recipient_key
+
 
 def utc_now() -> datetime:
     return datetime.now(UTC)
@@ -109,6 +111,12 @@ class OutreachDraft(Base):
     candidate_id: Mapped[str] = mapped_column(String(64), index=True)
     recipient: Mapped[str] = mapped_column(String(320))
     recipient_status: Mapped[str] = mapped_column(String(24))
+    recipient_pattern: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    recipient_score: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    recipient_why: Mapped[str] = mapped_column(Text, default="")
+    recipient_source_url: Mapped[str] = mapped_column(Text, default="")
+    recipient_source_kind: Mapped[str] = mapped_column(String(40), default="public_web")
+    recipient_company_level: Mapped[bool] = mapped_column(Boolean, default=False)
     subject: Mapped[str] = mapped_column(String(240))
     variants_json: Mapped[str] = mapped_column(Text)
     linkedin_json: Mapped[str] = mapped_column(Text)
@@ -156,6 +164,15 @@ class Suppression(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
 
 
+class DomainPatternStat(Base):
+    __tablename__ = "email_domain_pattern_stats"
+
+    domain: Mapped[str] = mapped_column(String(253), primary_key=True)
+    pattern: Mapped[str] = mapped_column(String(64), primary_key=True)
+    bounce_count: Mapped[int] = mapped_column(Integer, default=0)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+
+
 class ProofPack(Base):
     __tablename__ = "proof_packs"
 
@@ -189,6 +206,7 @@ class Database:
     def create_schema(self) -> None:
         Base.metadata.create_all(self.engine)
         self._migrate_visit_columns()
+        self._migrate_outreach_draft_columns()
 
     def _migrate_visit_columns(self) -> None:
         """Add v2 nullable/defaulted columns for existing SQLite deployments."""
@@ -213,6 +231,30 @@ class Database:
             for name, ddl in missing.items():
                 connection.exec_driver_sql(  # noqa: S608 - fixed internal DDL allowlist
                     f"ALTER TABLE visits ADD COLUMN {name} {ddl}"
+                )
+
+    def _migrate_outreach_draft_columns(self) -> None:
+        if self.engine.dialect.name != "sqlite":
+            return
+        columns = {
+            column["name"]
+            for column in inspect(self.engine).get_columns("outreach_drafts")
+        }
+        additions = {
+            "recipient_pattern": "VARCHAR(64)",
+            "recipient_score": "INTEGER",
+            "recipient_why": "TEXT NOT NULL DEFAULT ''",
+            "recipient_source_url": "TEXT NOT NULL DEFAULT ''",
+            "recipient_source_kind": "VARCHAR(40) NOT NULL DEFAULT 'public_web'",
+            "recipient_company_level": "BOOLEAN NOT NULL DEFAULT 0",
+        }
+        missing = {name: ddl for name, ddl in additions.items() if name not in columns}
+        if not missing:
+            return
+        with self.engine.begin() as connection:
+            for name, ddl in missing.items():
+                connection.exec_driver_sql(  # noqa: S608 - fixed internal DDL allowlist
+                    f"ALTER TABLE outreach_drafts ADD COLUMN {name} {ddl}"
                 )
 
     @contextmanager
@@ -324,6 +366,12 @@ class Database:
         candidate_id: str,
         recipient: str,
         recipient_status: str,
+        recipient_pattern: str | None = None,
+        recipient_score: int | None = None,
+        recipient_why: str = "",
+        recipient_source_url: str = "",
+        recipient_source_kind: str = "public_web",
+        recipient_company_level: bool = False,
         subject: str,
         variants: list[dict[str, Any]],
         linkedin: dict[str, Any],
@@ -337,6 +385,12 @@ class Database:
                 candidate_id=candidate_id,
                 recipient=recipient,
                 recipient_status=recipient_status,
+                recipient_pattern=recipient_pattern,
+                recipient_score=recipient_score,
+                recipient_why=recipient_why,
+                recipient_source_url=recipient_source_url,
+                recipient_source_kind=recipient_source_kind,
+                recipient_company_level=recipient_company_level,
                 subject=subject,
                 variants_json=json.dumps(variants),
                 linkedin_json=json.dumps(linkedin),
@@ -475,7 +529,7 @@ class Database:
             return rows
 
     def suppress(self, address: str, reason: str) -> None:
-        normalized = address.strip().casefold()
+        normalized = recipient_key(address)
         with self.session() as db:
             existing = db.get(Suppression, normalized)
             if existing is None:
@@ -483,7 +537,33 @@ class Database:
 
     def is_suppressed(self, address: str) -> bool:
         with self.session() as db:
-            return db.get(Suppression, address.strip().casefold()) is not None
+            return db.get(Suppression, recipient_key(address)) is not None
+
+    def record_pattern_bounce(self, domain: str, pattern: str) -> int:
+        normalized_domain = domain.casefold().strip(".")
+        with self.session() as db:
+            key = {"domain": normalized_domain, "pattern": pattern}
+            row = db.get(DomainPatternStat, key)
+            if row is None:
+                row = DomainPatternStat(
+                    domain=normalized_domain, pattern=pattern, bounce_count=1
+                )
+                db.add(row)
+            else:
+                row.bounce_count += 1
+                row.updated_at = utc_now()
+            db.flush()
+            return row.bounce_count
+
+    def pattern_bounce_counts(self, domain: str) -> dict[str, int]:
+        normalized_domain = domain.casefold().strip(".")
+        with self.session() as db:
+            rows = db.scalars(
+                select(DomainPatternStat).where(
+                    DomainPatternStat.domain == normalized_domain
+                )
+            )
+            return {row.pattern: row.bounce_count for row in rows}
 
     def create_proof_pack(
         self,

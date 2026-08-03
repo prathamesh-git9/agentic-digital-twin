@@ -35,7 +35,7 @@ class Settings(BaseSettings):
     search_api_key: str = ""
     search_timeout_seconds: float = 8.0
     research_source_timeout_seconds: float = Field(default=5.0, ge=0.1, le=30)
-    research_page_limit: int = Field(default=2, ge=0, le=5)
+    research_page_limit: int = Field(default=5, ge=0, le=5)
     research_cache_ttl_seconds: int = Field(default=900, ge=30, le=86_400)
 
     email_mx_timeout_seconds: float = Field(default=3.0, ge=0.1, le=15)
@@ -60,6 +60,7 @@ class Settings(BaseSettings):
     send_confidence_threshold: int = Field(default=85, ge=50, le=100)
     fanout_unselected: bool = False
     fanout_max: int = Field(default=3, ge=1, le=3)
+    inferred_send_max: int = Field(default=3, ge=0, le=10)
     daily_send_cap: int = Field(default=20, ge=1, le=100)
     outreach_candidate_daily_cap: int = Field(default=1, ge=1, le=5)
     dkim_selectors: str = "20230601,20161025,default,google,selector1,selector2"
