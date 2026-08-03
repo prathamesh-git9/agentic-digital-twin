@@ -18,6 +18,9 @@ The interactive OpenAPI document is also available at `/docs`.
   for invalid credentials.
 - Public/fetched strings are inert data. Unsupported profile claims are removed by the
   grounding verifier.
+- Tool output is screened before it re-enters the model and remains untrusted evidence.
+  `profile` and allow-listed `github` evidence may support claims about Prathamesh;
+  `external` web/company/role evidence may support only claims about that outside subject.
 
 An attributed field has this shape:
 
@@ -100,7 +103,7 @@ page exposes no requisition has `requisition_id:null`; referral copy is omitted 
 
 | Method | Path | Result |
 |---|---|---|
-| `GET` | `/api/health` | Status, version, active answer provider/model, and `authority-gated` grounding label. |
+| `GET` | `/api/health` | Status, version, active answer provider/model, `authority-gated` grounding label, `tool_calling`, and the active `tools[]` names. |
 | `GET` | `/api/contact` | Public email/location and, only with `TWIN_SHOW_PHONE=true`, phone. |
 | `GET` | `/api/github` | Live metadata for the ten allow-listed repositories. |
 | `GET` | `/`, `/embed` | Current frontend page. |
@@ -179,12 +182,100 @@ visit, messages, mutable drafts, and proof packs.
   "grounded": true,
   "refusal": false,
   "tailored_for": null,
-  "budget_remaining": 11234
+  "budget_remaining": 11234,
+  "tool_budget_remaining": 21,
+  "trace": [
+    {
+      "sequence": 1,
+      "call_id": "call_7c8f",
+      "tool": "web_search",
+      "arguments": {"query": "Acme engineering platform"},
+      "phrase": "Searching the web for \"Acme engineering platform\"...",
+      "status": "ok",
+      "duration_ms": 184,
+      "summary": "Found 3 attributed public web result(s).",
+      "source_urls": ["https://acme.example/engineering"],
+      "cached": false
+    }
+  ]
 }
 ```
 
 Only confirmed visitor context can set `tailored_for`. Salary negotiation, offer acceptance,
 contractual commitments, and start-date promises are always refused and handed to Prathamesh.
+`trace` is always present and is `[]` when no tool was called. Its order is the actual call
+order. `sequence` starts at `1` for each chat turn; `call_id` is the provider tool-call ID.
+Arguments are display-safe/redacted: URLs lose credentials/query/fragment, long queries are
+truncated, and a job description is represented only by its character count. `source_urls`
+contains distinct public URLs attached to the screened result.
+
+#### Agent tools
+
+The OpenAI-compatible adapter (including xAI when its base URL/model are configured) sends
+standard Chat Completions `tools` definitions and receives standard assistant `tool_calls`.
+The scripted/keyless answer provider does not enter the loop. Disabled tools are omitted from
+the model request. No schema accepts a credential, cookie, header, token, or authentication
+parameter.
+
+| Tool | JSON arguments | Result and authority |
+|---|---|---|
+| `web_search` | `{"query":"..."}` | Up to five live results through the configured DuckDuckGo, Tavily, Serper, or Brave `SearchProvider`; title, snippet, label, and public URL have `external` authority. |
+| `fetch_page` | `{"url":"https://..."}` | Scrapling/trafilatura main-content extraction after public-URL, host policy, robots.txt, redirect, response-size, and timeout checks. Returns title, up to 8,000 text characters, links, and an attributed `external` page source. |
+| `search_github` | `{"query":"..."}` | Matches from the ten allow-listed repositories across metadata/topics, recent commits, and public READMEs. Authenticated server configuration can additionally use GitHub code search; no token enters the tool call. Each hit includes `repository`, `path`, `permalink`, `kind`, and excerpt with `github` authority. |
+| `repo_detail` | `{"name":"effect-broker"}` | One allow-listed name only. Returns description, topics, languages, latest CI conclusion, open issues, last commit, and repository URL with `github` authority. |
+| `company_research` | `{"name":"Acme"}` | Reuses the attributed `CompanyDossier` pipeline for domain/site, careers, engineering blog, GitHub organisation, stack signals, news, funding, and feeds. Facts have `external` authority. |
+| `open_roles` | `{"company":"Acme"}` | Reuses company research plus Greenhouse, Lever, Ashby, Workable, SmartRecruiters, Recruitee, and public-careers fallback discovery. Returns attributable ranked `RoleMatch` objects with `external` authority. |
+| `job_fit` | `{"description":"..."}` | Reuses structured JD-fit analysis. Returns coverage, matched CV evidence, unevidenced requirements, summary, and caveat. Only matched CV rows have `profile` authority. |
+| `cv_lookup` | `{"topic":"Python"}` | Up to eight topic-ranked rows from `profile.yaml`, retaining their exact source labels and `profile` authority. |
+
+The repository-name enum is exactly `effect-broker`, `agent-runtime`, `effect-browser`,
+`agent-redteam`, `answer-engine`, `agent-mesh`, `llm-gateway`, `promise-ledger`, `reachable`,
+and `trustdesk`. A model-supplied name outside this set fails schema validation without a
+GitHub request.
+
+Every execution returns one of `ok`, `empty`, `blocked`, `timeout`, or `failed`; a tool exception
+never escapes into chat. Results are recursively stripped of HTML/control text, prompt-injection
+fragments, sensitive-trait material, private URLs, and over-limit content before being serialized
+as a `role:"tool"` message. That message explicitly marks the payload as untrusted inert data.
+Only its screened `sources[]` become verifier evidence; a tool result never bypasses verification.
+
+The bounded loop allows four tool-request rounds by default. When the ceiling is reached, the
+adapter gets at most one final request with no tools; if it still does not return a draft, the
+keyless scripted provider produces a draft from the accumulated evidence. The whole loop has an
+18-second monotonic wall-clock deadline by default, and each tool has a 6-second per-call timeout
+clamped to the remaining wall time. Provider, timeout, malformed-argument, disabled-tool, and
+budget failures all preserve a normal chat response.
+
+Each valid call reserves one unit from the durable per-session tool budget (default `24`), which
+is separate from the token budget. Repeated tool name/argument pairs use a SHA-256-keyed in-memory
+TTL cache (default 900 seconds), so they do not repeat network/scraping work; the trace marks such
+results `cached:true`. Timeouts and failures are not cached. The chat token preflight reserves
+output allowance for the four rounds plus finalization, and observed repeated-context/tool-message
+usage is added to the session token usage.
+
+Runtime controls (all use the `TWIN_` prefix) are:
+
+| Setting | Default | Meaning |
+|---|---:|---|
+| `TOOL_CALLING_ENABLED` | `true` | Master switch; when false, the provider receives no tools. |
+| `TOOL_MAX_ITERATIONS` | `4` | Maximum tool-request rounds (`1` to `8`). |
+| `TOOL_WALL_CLOCK_SECONDS` | `18` | Deadline for the complete model/tool loop. |
+| `TOOL_TIMEOUT_SECONDS` | `6` | Per-call ceiling, always clamped to remaining wall time. |
+| `TOOL_BUDGET_PER_SESSION` | `24` | Durable call reservations available to one session; `0` blocks execution. |
+| `TOOL_CACHE_TTL_SECONDS` | `900` | Argument-hash result-cache lifetime. |
+| `TOOL_RESULT_MAX_CHARS` | `12000` | Maximum serialized result content returned to the model. |
+| `TOOL_WEB_SEARCH_ENABLED` | `true` | Registers `web_search`. |
+| `TOOL_FETCH_PAGE_ENABLED` | `true` | Registers `fetch_page` when a page fetcher exists. |
+| `TOOL_SEARCH_GITHUB_ENABLED` | `true` | Registers `search_github`. |
+| `TOOL_REPO_DETAIL_ENABLED` | `true` | Registers `repo_detail`. |
+| `TOOL_COMPANY_RESEARCH_ENABLED` | `true` | Registers `company_research`. |
+| `TOOL_OPEN_ROLES_ENABLED` | `true` | Registers `open_roles`. |
+| `TOOL_JOB_FIT_ENABLED` | `true` | Registers `job_fit`. |
+| `TOOL_CV_LOOKUP_ENABLED` | `true` | Registers `cv_lookup`. |
+| `FETCH_PAGE_ALLOW_HOSTS` | empty | Optional comma-separated host/subdomain allowlist. Empty means any public host. |
+| `FETCH_PAGE_DENY_HOSTS` | empty | Optional comma-separated host/subdomain denylist; it wins over the allowlist. |
+| `FETCH_PAGE_MAX_BYTES` | `262144` | Maximum fetched HTML bytes accepted for extraction. |
+| `FETCH_PAGE_MAX_REDIRECTS` | `3` | Scrapling redirect ceiling; the final URL must pass the same host/public checks. |
 
 `POST /api/sessions/{id}/jd-fit` accepts `{"description":"..."}` and returns evidence coverage,
 matched requirements with CV sources, unevidenced requirements, a summary, and caveat.
@@ -366,6 +457,8 @@ after 15 seconds without an event. Event types are:
 | `research` | `status` is `idle`, `researching`, `candidates`, `empty`, `confirmed`, `skipped`, or `opted_out`. Completed events include candidates, dossiers, source reports, message, and disclosure. |
 | `research.progress` | `source`, per-source `status` (`running`, `ok`, `empty`, `blocked`, `timeout`, or `failed`), and short `message`. Transient. |
 | `research.dossier` | Enriched `candidates[]` and attributed `dossiers[]`. Transient; still not model authority. |
+| `tool.call` | `sequence`, provider `call_id`, `tool`, redacted `arguments`, and human `phrase`. Emitted immediately before bounded execution. Transient. |
+| `tool.result` | Matching `sequence`/`call_id`/`tool`, typed `status` (`ok`, `empty`, `blocked`, `timeout`, or `failed`), integer `duration_ms`, one-line `summary`, distinct public `source_urls[]`, and `cached`. Emitted for every `tool.call`, including denial, timeout, bad arguments, and exhausted budget. Transient. |
 | `roles.ready` | `roles` map keyed by candidate ID, each containing ATS status/reason and `roles[]`. |
 | `outreach.ready` | Computed `decision` and prepared card `drafts[]`. |
 | `outreach.action` | Candidate (for automatic effects) plus send `status`, `transport`, `reason`, optional `mailto_url`/`preflight`. |
@@ -374,6 +467,19 @@ after 15 seconds without an event. Event types are:
 | `company_fit.ready` | Fit score, attributed signals, summary, and caveat. |
 | `proof_pack.ready` | Share `url` and `expires_at`. |
 | `linkedin.action` | LinkedIn action result, detail, and `handoff_required`. |
+
+The complete ordered tool history is also returned as the chat response `trace`, so a client
+that connected late or briefly lost SSE can reconcile by `sequence` and `call_id`. A call/result
+pair is encoded exactly as:
+
+```text
+event: tool.call
+data: {"type":"tool.call","sequence":1,"call_id":"call_7c8f","tool":"fetch_page","arguments":{"url":"https://acme.example/engineering"},"phrase":"Reading acme.example..."}
+
+event: tool.result
+data: {"type":"tool.result","sequence":1,"call_id":"call_7c8f","tool":"fetch_page","status":"ok","duration_ms":241,"summary":"Read acme.example and extracted 3820 characters.","source_urls":["https://acme.example/engineering"],"cached":false}
+
+```
 
 Transient events are broadcast to connected clients but do not replace the value returned by
 `GET /research`; this preserves compatibility with the current page’s polling behavior.
