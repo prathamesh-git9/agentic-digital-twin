@@ -14,6 +14,7 @@ from typing import Any
 import uvicorn
 from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.staticfiles import StaticFiles
@@ -137,6 +138,22 @@ def _draft_payload(draft: Any) -> dict[str, Any]:
 
 def _utc(value: datetime) -> datetime:
     return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
+
+
+class SelectiveGZipMiddleware(GZipMiddleware):
+    """Compress every response except the event stream.
+
+    Starlette's gzip responder carries one deflate stream across chunks and only
+    flushes when a block fills, so compressing SSE would hold events back until
+    enough bytes accumulated -- research progress would arrive in bursts, or not
+    at all on a quiet session.
+    """
+
+    async def __call__(self, scope: Any, receive: Any, send: Any) -> None:
+        if scope["type"] == "http" and scope["path"].endswith("/events"):
+            await self.app(scope, receive, send)
+            return
+        await super().__call__(scope, receive, send)
 
 
 def _answer_provider(settings: Settings) -> tuple[AnswerProvider, str]:
@@ -354,6 +371,9 @@ def create_app(
         allow_methods=["GET", "POST", "DELETE"],
         allow_headers=["Content-Type", "Authorization"],
     )
+    # The stylesheet and script are ~67 KB of highly repetitive text; served raw
+    # they dominate first paint on a mobile connection.
+    app.add_middleware(SelectiveGZipMiddleware, minimum_size=700)
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
     app.state.settings = settings
@@ -392,6 +412,15 @@ def create_app(
         )
         if request.url.path.startswith("/api/"):
             response.headers["Cache-Control"] = "no-store"
+        elif request.url.path.startswith("/static/"):
+            # The shell bumps ?v= whenever an asset changes, so a stamped URL can
+            # never name stale bytes and is safe to keep forever. The photo and
+            # favicon carry no stamp and must stay replaceable.
+            response.headers["Cache-Control"] = (
+                "public, max-age=31536000, immutable"
+                if "v" in request.query_params
+                else "public, max-age=3600, must-revalidate"
+            )
         return response
 
     def client_hash(request: Request) -> str:
@@ -747,6 +776,30 @@ def create_app(
             greeting=GREETING,
             research=initial,
         )
+
+    @app.post("/api/bootstrap", status_code=201)
+    async def bootstrap(request: Request) -> dict[str, Any]:
+        """Everything the shell needs to become interactive, in one round trip.
+
+        The page used to await health, then contact, then GitHub, and only then
+        ask for a session -- four sequential trips during which the composer was
+        dead. Repository metadata rides along only when it is already warm,
+        because the work section is below the fold and must never delay chat.
+        """
+        session = await create_session(request)
+        repositories = github.cached_repositories()
+        if repositories is None:
+            github.prime()
+        return {
+            "session": session.model_dump(mode="json"),
+            "health": await health(),
+            "contact": await contact(),
+            "repositories": (
+                None
+                if repositories is None
+                else [repo.model_dump(mode="json") for repo in repositories]
+            ),
+        }
 
     @app.post(
         "/api/sessions/{session_id}/identity",

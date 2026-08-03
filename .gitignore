@@ -10,6 +10,7 @@ __pycache__/
 *.db-wal
 dist/
 build/
+site/
 htmlcov/
 .coverage
 artifacts/runtime/

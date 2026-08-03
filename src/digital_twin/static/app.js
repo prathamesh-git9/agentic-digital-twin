@@ -34,7 +34,7 @@
 
   const state = {
     sessionId: null, events: null, candidates: [], active: null,
-    drafts: [], busy: false, unread: 0,
+    drafts: [], busy: false, unread: 0, contact: null,
   };
 
   // Deliberately answerable from the CV corpus. A suggested question that
@@ -62,7 +62,16 @@
     toastTimer = setTimeout(() => (el.toast.hidden = true), 3800);
   }
 
+  // The published static build has no server behind it. twin-local.js answers
+  // the same endpoints from a compiled corpus and returns undefined for the ones
+  // that genuinely need a database, so one code path serves both deployments.
+  const offline = window.__TWIN_LOCAL__ || null;
+
   async function api(path, options = {}) {
+    if (offline) {
+      const local = await offline.handle(path, options);
+      if (local !== undefined) return local;
+    }
     const res = await fetch(path, {
       headers: options.body ? { "Content-Type": "application/json" } : undefined,
       ...options,
@@ -210,15 +219,22 @@
 
   /* ---------- chat ---------- */
 
-  function turn(role, text, cites) {
+  function turn(role, text, cites, trace) {
     const div = document.createElement("div");
     div.className = `turn ${role}`;
     const chips = (cites || []).map((c) => `<span class="cite">${esc(c)}</span>`).join("");
+    // Showing the retrieval shape is the point, not decoration: it is what
+    // separates a grounded answer from a confident-sounding one.
+    const retrieval = trace
+      ? `<div class="trace">${esc(trace.candidates)} chunks scored · BM25 + trigram ·`
+        + ` fused by RRF · ${esc((cites || []).length)} cited</div>`
+      : "";
     div.innerHTML = `
       <div class="bubble">
         <span class="label">${role === "twin" ? "Prathamesh" : "You"}</span>
         <div class="text">${esc(text)}</div>
         ${chips ? `<div class="cites">${chips}</div>` : ""}
+        ${retrieval}
         ${role === "twin" && text
           ? `<div class="turn-actions"><button type="button" data-copy>Copy</button></div>`
           : ""}
@@ -264,7 +280,7 @@
       });
       clearInterval(ticker);
       pending.remove();
-      turn("twin", r.answer, r.sources);
+      turn("twin", r.answer, r.sources, r.trace);
     } catch (e) {
       clearInterval(ticker);
       pending.remove();
@@ -466,25 +482,41 @@
 
   // The work section is filled from live repository data rather than a
   // hand-maintained list, so it cannot drift from what is actually published.
-  async function loadWorkCards() {
+  function renderWorkCards(repos) {
     const host = $("#work-cards");
     if (!host) return;
-    try {
-      const data = await api("/api/github");
-      const repos = data.repositories || data.repos || [];
-      if (!repos.length) return;
-      host.innerHTML = repos.map((r) => `
-        <article class="card">
-          <h3><a href="${esc(r.url || r.html_url)}" target="_blank" rel="noopener noreferrer">${esc(r.name)}</a></h3>
-          <p>${esc(r.description || "")}</p>
-          ${r.topics?.length
-            ? `<div class="topics">${r.topics.slice(0, 5)
-                .map((t) => `<span>${esc(t)}</span>`).join("")}</div>`
-            : ""}
-        </article>`).join("");
-    } catch {
-      host.closest(".band")?.remove();
-    }
+    if (!repos.length) { host.closest(".band")?.remove(); return; }
+    host.innerHTML = repos.map((r) => `
+      <article class="card">
+        <h3><a href="${esc(r.url || r.html_url)}" target="_blank" rel="noopener noreferrer">${esc(r.name)}</a></h3>
+        <p>${esc(r.description || "")}</p>
+        ${r.topics?.length
+          ? `<div class="topics">${r.topics.slice(0, 5)
+              .map((t) => `<span>${esc(t)}</span>`).join("")}</div>`
+          : ""}
+      </article>`).join("");
+  }
+
+  // Ten repositories cost twenty upstream lookups. When the server had none
+  // cached, hold the request until the section is within a screen of the
+  // viewport rather than spending it before the visitor has read the hero.
+  function armWorkCards() {
+    const host = $("#work-cards");
+    if (!host) return;
+    let started = false;
+    const load = async () => {
+      if (started) return;
+      started = true;
+      try {
+        const data = await api("/api/github");
+        renderWorkCards(data.repositories || data.repos || []);
+      } catch { host.closest(".band")?.remove(); }
+    };
+    if (!("IntersectionObserver" in window)) { load(); return; }
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) { io.disconnect(); load(); }
+    }, { rootMargin: "600px 0px" });
+    io.observe(host);
   }
 
   /* ---------- scroll progress ---------- */
@@ -548,35 +580,52 @@
   /* ---------- boot ---------- */
 
   (async function boot() {
-    try {
-      const h = await api("/api/health");
-      if (h.model) el.modelNote.textContent = h.model;
-      const railModel = $("#rail-model");
-      if (railModel && h.model) railModel.textContent = h.model;
-    } catch {}
-
-    try {
-      const c = await api("/api/contact");
-      // Optional: contact now lives in the slide-over, so the inline link may
-      // not be present in this layout.
-      if (c.email && el.contactLink) el.contactLink.href = `mailto:${c.email}`;
-      else el.contactLink?.remove();
-    } catch { el.contactLink?.remove(); }
-
-    loadWorkCards();
+    // Nothing here needs the network, so it must not wait behind it.
     stagger(".timeline .reveal", 80);
     armReveals();
 
+    let start;
     try {
-      const s = await api("/api/sessions", { method: "POST", body: "{}" });
-      state.sessionId = s.session_id;
-      // No greeting turn: the opening line above the input already says what
-      // the twin is and what it can be asked, and repeating it reads as a bug.
+      start = await api("/api/bootstrap", { method: "POST", body: "{}" });
+    } catch (e) {
+      turn("twin", `Couldn't start a session: ${e.message}`);
+      el.contactLink?.remove();
+      return;
+    }
+
+    const model = start.health?.model;
+    if (model) {
+      el.modelNote.textContent = model;
+      const railModel = $("#rail-model");
+      if (railModel) railModel.textContent = model;
+    }
+
+    state.contact = start.contact || null;
+    // Optional: contact now lives in the slide-over, so the inline link may not
+    // be present in this layout.
+    if (state.contact?.email && el.contactLink) {
+      el.contactLink.href = `mailto:${state.contact.email}`;
+    } else {
+      el.contactLink?.remove();
+    }
+
+    state.sessionId = start.session.session_id;
+    // No greeting turn: the opening line above the input already says what the
+    // twin is and what it can be asked, and repeating it reads as a bug.
+    if (!offline) {
       openEvents();
       el.onboarding.hidden = false;
       el.visitorName.focus();
-    } catch (e) {
-      turn("twin", `Couldn't start a session: ${e.message}`);
+    } else {
+      // Visitor research needs a server and a search provider. Asking for a
+      // name the static build cannot act on would be theatre.
+      el.onboarding?.remove();
+      el.input.focus({ preventScroll: true });
     }
+
+    // Rendered straight from the bootstrap payload when the server already had
+    // GitHub warm; otherwise held until the section is nearly in view.
+    if (start.repositories) renderWorkCards(start.repositories);
+    else armWorkCards();
   })();
 })();

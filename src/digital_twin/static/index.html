@@ -3,12 +3,49 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Prathamesh Kalamkar's digital twin — ask it anything about his work.">
-    <title>Prathamesh Kalamkar — digital twin</title>
+    <meta name="description" content="Ask an evidence-grounded AI twin about Prathamesh Kalamkar's back-end and AI agent engineering work. Every answer cites his CV or public code.">
+    <title>Prathamesh Kalamkar — AI digital twin</title>
     <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
-    <!-- Version stamp: static assets ship without Cache-Control, so browsers
-         apply heuristic freshness and can serve a stale stylesheet. -->
-    <link rel="stylesheet" href="/static/styles.css?v=29">
+
+    <!-- Recruiters paste this link into Slack, LinkedIn and ATS notes. Without a
+         card it arrives as a bare URL with no name, face or title. -->
+    <link rel="canonical" href="https://prathamesh-git9.github.io/digital-twin/">
+    <meta property="og:type" content="profile">
+    <meta property="og:site_name" content="Prathamesh Kalamkar">
+    <meta property="og:title" content="Prathamesh Kalamkar — AI digital twin">
+    <meta property="og:description" content="Back-end &amp; AI agent engineer in Dublin. Ask the twin about his experience — every answer cites the CV or the code.">
+    <meta property="og:url" content="https://prathamesh-git9.github.io/digital-twin/">
+    <meta property="og:image" content="https://prathamesh-git9.github.io/digital-twin/prathamesh.jpg">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Prathamesh Kalamkar — AI digital twin">
+    <meta name="twitter:description" content="Back-end &amp; AI agent engineer in Dublin. Ask the twin — every answer cites the CV or the code.">
+    <meta name="twitter:image" content="https://prathamesh-git9.github.io/digital-twin/prathamesh.jpg">
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Person",
+      "name": "Prathamesh Kalamkar",
+      "jobTitle": "Back-end & AI Agent Engineer",
+      "email": "mailto:prathameh7744yt@gmail.com",
+      "url": "https://prathamesh-git9.github.io/digital-twin/",
+      "image": "https://prathamesh-git9.github.io/digital-twin/prathamesh.jpg",
+      "address": { "@type": "PostalAddress", "addressLocality": "Dublin", "addressCountry": "IE" },
+      "alumniOf": [
+        { "@type": "CollegeOrUniversity", "name": "Dublin Business School" },
+        { "@type": "CollegeOrUniversity", "name": "Savitribai Phule Pune University" }
+      ],
+      "knowsAbout": ["Java", "Spring Boot", "Python", "FastAPI", "LLM agent systems",
+        "Model Context Protocol", "Retrieval-augmented generation", "Prompt injection defence"],
+      "sameAs": [
+        "https://www.linkedin.com/in/prathameshkalamkar",
+        "https://github.com/prathamesh-git9"
+      ]
+    }
+    </script>
+
+    <!-- Version stamp: /static is cached immutably when the URL carries ?v=, so
+         bumping the stamp is how a changed asset reaches a returning browser. -->
+    <link rel="stylesheet" href="/static/styles.css?v=30">
   </head>
   <body>
     <a class="skip-link" href="#composer-input">Skip to chat</a>
@@ -352,6 +389,6 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-    <script src="/static/app.js?v=29" defer></script>
+    <script src="/static/app.js?v=30" defer></script>
   </body>
 </html>

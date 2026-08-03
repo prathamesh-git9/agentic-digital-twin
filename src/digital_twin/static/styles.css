@@ -167,6 +167,9 @@ main { position: relative; z-index: 2; }
 
 .cites { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
 .cite { font: 400 11px/1 var(--mono); color: var(--ink-3); border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; }
+/* How the answer was retrieved, not decoration: it is what distinguishes a
+   grounded answer from a confident-sounding one. */
+.trace { font: 400 10.5px/1.5 var(--mono); color: var(--ink-3); opacity: .72; margin-top: 8px; letter-spacing: .02em; }
 
 .typing { display: inline-flex; gap: 5px; padding: 6px 0; }
 .typing i { width: 5px; height: 5px; border-radius: 50%; background: var(--clay); animation: blink 1.3s var(--ease) infinite; }
