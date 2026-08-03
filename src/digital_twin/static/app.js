@@ -589,6 +589,7 @@
         ]);
         renderRetrieval(out, result);
         renderMcp(corpus.mcp);
+        renderAgents(corpus.repositories);
       } catch {
         $("#ai-systems")?.remove();
       }
@@ -606,6 +607,50 @@
   /* ---------- MCP servers ---------- */
 
   const QUALITY_METRICS = ["recall_at_k", "precision_at_k", "mrr", "ndcg_at_k", "map"];
+
+  // The agent systems among the ten allow-listed repositories. Everything shown
+  // about them -- description, language, topics, last commit -- comes from the
+  // live GitHub payload, so this panel cannot describe a repository as something
+  // it is not.
+  const AGENT_REPOS = [
+    "agent-runtime", "agent-mesh", "agent-redteam", "effect-broker",
+    "effect-browser", "answer-engine", "llm-gateway",
+  ];
+
+  function renderAgents(repos) {
+    const panel = $("#agents-panel");
+    const grid = $("#agents-grid");
+    if (!panel || !grid || !Array.isArray(repos)) return;
+    const byName = new Map(repos.map((repo) => [repo.name, repo]));
+    const chosen = AGENT_REPOS.map((name) => byName.get(name)).filter(Boolean);
+    if (!chosen.length) return;
+
+    $("#agents-lede").textContent =
+      `${chosen.length} of the ten public systems are agent infrastructure: durable `
+      + `execution, effect authorisation, adversarial testing, multi-agent transport, `
+      + `retrieval and model routing. Descriptions and activity below are read live `
+      + `from GitHub, not written here.`;
+
+    grid.innerHTML = chosen.map((repo) => {
+      const commit = repo.commits?.[0] || repo.last_commit;
+      const when = commit?.committed_at || repo.updated_at;
+      const stamp = when
+        ? new Date(when).toLocaleDateString([], { month: "short", year: "numeric" })
+        : "";
+      return `
+        <article class="mcp-card">
+          <h4><a href="${esc(repo.url)}" target="_blank" rel="noopener noreferrer">${esc(repo.name)}</a></h4>
+          <p>${esc(repo.description || "")}</p>
+          <div class="mcp-counts">
+            ${repo.language ? `<span><b>${esc(repo.language)}</b>language</span>` : ""}
+            ${stamp ? `<span><b>${esc(stamp)}</b>last commit</span>` : ""}
+          </div>
+          ${repo.topics?.length ? `<div class="topics">${repo.topics.slice(0, 5)
+            .map((topic) => `<span>${esc(topic)}</span>`).join("")}</div>` : ""}
+        </article>`;
+    }).join("");
+    panel.hidden = false;
+  }
 
   // Rendered from the manifest the mcp-servers repo publishes, so this panel
   // cannot claim a server that was not built. Absent manifest, absent panel.
@@ -635,9 +680,21 @@
         [count(server.resources), "resources"],
         [count(server.prompts), "prompts"],
       ].filter(([n]) => n > 0);
-      const names = (server.tools || []).slice(0, 6)
-        .map((tool) => esc(typeof tool === "string" ? tool : tool.name || ""))
+      // Every tool, resource and prompt by name. The counts alone read as a
+      // claim; the names are the thing a reader can go and check.
+      const chips = (items, key) => (items || [])
+        .map((item) => esc(typeof item === "string" ? item : item[key] || ""))
         .filter(Boolean);
+      const listing = [
+        ["Tools", chips(server.tools, "name")],
+        ["Resources", chips(server.resources, "uri")],
+        ["Prompts", chips(server.prompts, "name")],
+      ].filter(([, values]) => values.length)
+        .map(([label, values]) => `
+          <div class="mcp-list"><span class="mcp-list-label">${label}</span>
+          <div class="topics">${values
+            .map((value) => `<span>${value}</span>`).join("")}</div></div>`)
+        .join("");
       // Measured retrieval quality is the whole reason to trust the RAG claim.
       // Only quality metrics get a tile — the query count and k describe the
       // experiment, and showing them as scores makes the numbers unreadable.
@@ -660,8 +717,7 @@
             .map(([n, label]) => `<span><b>${esc(n)}</b>${esc(label)}</span>`)
             .join("")}</div>` : ""}
           ${scores ? `<div class="mcp-counts mcp-eval">${scores}</div>${basis}` : ""}
-          ${names.length ? `<div class="topics">${names
-            .map((name) => `<span>${name}</span>`).join("")}</div>` : ""}
+          ${listing}
           ${install ? `<code class="mcp-install">${esc(install)}</code>` : ""}
         </article>`;
     }).join("");
