@@ -86,10 +86,19 @@ class OpenAICompatibleProvider:
                     "role": "user",
                     "content": (
                         "Answer the visitor query using JSON only: "
-                        '{"claims":[{"text":"...","source":"exact label"}],'
-                        '"refusal":false,"refusal_text":null}. Each claim needs one '
-                        "exact source label. If no evidence supports the answer, set "
-                        "refusal=true."
+                        '{"reply":"...","claims":[{"text":"...",'
+                        '"source":"exact label"}],"refusal":false,'
+                        '"refusal_text":null}. "reply" is what the visitor reads: '
+                        "Prathamesh speaking in the first person, conversational and "
+                        "specific, two to five sentences, no bullet lists and no raw "
+                        "CV lines. Every factual statement in the reply must also "
+                        "appear in claims with one exact source label, and must not "
+                        "introduce any date, number or employer absent from the "
+                        "evidence. Give two to four claims only, each closely "
+                        "matching the wording of the evidence it cites — every claim "
+                        "is verified independently, and one loose paraphrase costs "
+                        "the whole conversational reply. If no evidence supports the "
+                        "answer, set refusal=true."
                     ),
                 },
             ],
