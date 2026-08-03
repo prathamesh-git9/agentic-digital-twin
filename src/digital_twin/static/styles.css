@@ -105,12 +105,12 @@ body {
   -webkit-mask-composite: source-in;
 }
 
+/* One cool wash in the top corner only; the rest of the page stays paper. */
 .bg-vignette {
   position: absolute; inset: 0;
   background:
-    radial-gradient(680px 420px at 22% 6%, color-mix(in srgb, var(--sky) 22%, transparent), transparent 70%),
-    radial-gradient(560px 380px at 78% 2%, var(--accent-soft), transparent 72%),
-    radial-gradient(80% 60% at 40% 22%, transparent 24%, var(--bg) 90%);
+    radial-gradient(720px 380px at 88% -4%, color-mix(in srgb, var(--sky) 26%, transparent), transparent 68%),
+    radial-gradient(70% 52% at 46% 14%, transparent 30%, var(--bg) 88%);
 }
 
 .bg-grain {
@@ -174,14 +174,35 @@ p { margin: 0; }
 
 main { position: relative; z-index: 2; }
 
-.hero { max-width: 1140px; margin: 0 auto; padding: 42px clamp(18px, 4vw, 28px) 20px; text-align: center; animation: rise .5s var(--ease); }
+/*
+  Asymmetric on purpose. A centred hero with a badge over it is the house style
+  of every generated landing page; this one is set left like a printed spread,
+  with the portrait placed as a real photograph and captioned.
+*/
+.hero { max-width: 1140px; margin: 0 auto; padding: 34px clamp(18px, 4vw, 28px) 20px; animation: rise .5s var(--ease); }
 
-.tag { display: inline-flex; align-items: center; gap: 9px; font-size: 13px; color: var(--text-2); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 7px 16px; box-shadow: var(--shadow-sm); }
-.ping { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); animation: ping 2.4s var(--ease) infinite; }
+.hero-grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, .65fr); gap: clamp(28px, 5vw, 72px); align-items: start; }
 
-.hero h1 { font-size: clamp(40px, 7.2vw, 78px); margin: 26px 0 0; letter-spacing: -.045em; }
-.lede { color: var(--text-2); font-size: clamp(16px, 1.9vw, 19px); margin: 22px auto 0; max-width: 58ch; }
-.hero-cta { display: flex; gap: 12px; justify-content: center; margin-top: 32px; flex-wrap: wrap; }
+.rule-label { display: inline-flex; align-items: center; gap: 10px; font: 400 11.5px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.rule-label i { width: 34px; height: 1px; background: var(--line-2); }
+
+.hero h1 { font-size: clamp(38px, 6.6vw, 76px); margin: 22px 0 0; letter-spacing: -.05em; }
+
+/* Hand-drawn stroke under the last words, sitting behind the type. */
+.marked { position: relative; display: inline-block; }
+.scribble { position: absolute; left: -2%; bottom: -.06em; width: 104%; height: .32em; color: var(--accent); overflow: visible; }
+
+.lede { color: var(--text-2); font-size: clamp(16px, 1.7vw, 18.5px); margin: 26px 0 0; max-width: 52ch; }
+.hero-cta { display: flex; gap: 12px; margin-top: 32px; flex-wrap: wrap; }
+
+/* Photograph, placed and captioned like print rather than blurred into a wash. */
+.hero-figure { margin: 6px 0 0; }
+.hero-figure img { width: 100%; max-width: 300px; aspect-ratio: 1; object-fit: cover; border-radius: 4px; display: block; filter: saturate(.92) contrast(1.04); box-shadow: var(--shadow); }
+.hero-figure figcaption { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line-2); max-width: 300px; font-size: 12.5px; line-height: 1.55; color: var(--muted); }
+.hero-figure figcaption b { display: block; color: var(--text); font-size: 13.5px; font-weight: 600; margin-bottom: 4px; }
+
+.tag { display: none; }
+.ping { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); }
 
 /* ---------- console ---------- */
 
@@ -207,9 +228,11 @@ main { position: relative; z-index: 2; }
 
 /* ---------- sections ---------- */
 
-.section { max-width: 1140px; margin: 0 auto; padding: 100px clamp(18px, 4vw, 28px) 0; text-align: center; }
-.section h2 { font-size: clamp(28px, 4vw, 44px); }
-.section-lede { color: var(--text-2); font-size: 16.5px; margin: 16px auto 0; max-width: 56ch; }
+.section { max-width: 1140px; margin: 0 auto; padding: 92px clamp(18px, 4vw, 28px) 0; }
+.sec-head { display: grid; grid-template-columns: 62px minmax(0, 1fr); gap: 8px; align-items: start; padding-top: 20px; border-top: 1px solid var(--line-2); }
+.sec-num { font: 400 12px/1.7 var(--mono); color: var(--accent); letter-spacing: .1em; }
+.section h2 { font-size: clamp(27px, 3.6vw, 40px); letter-spacing: -.04em; }
+.section-lede { color: var(--text-2); font-size: 16px; margin: 14px 0 0; max-width: 56ch; }
 
 .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 16px; margin-top: 46px; text-align: left; }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow-sm); transition: transform .18s var(--ease), box-shadow .18s var(--ease), border-color .18s var(--ease); }
@@ -362,4 +385,14 @@ main { position: relative; z-index: 2; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition-duration: .001ms !important; }
+}
+
+/* ---------- hero responsive ---------- */
+
+@media (max-width: 860px) {
+  .hero-grid { grid-template-columns: minmax(0, 1fr); gap: 26px; }
+  .hero-figure { order: -1; }
+  .hero-figure img { max-width: 160px; }
+  .hero-figure figcaption { max-width: 100%; }
+  .sec-head { grid-template-columns: 40px minmax(0, 1fr); }
 }

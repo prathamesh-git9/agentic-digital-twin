@@ -42,12 +42,21 @@
 
     <main>
       <section class="hero">
-        <span class="tag"><span class="ping"></span>Open to engineering roles · Dublin</span>
-        <h1>Talk to me<br>before you meet me.</h1>
-        <p class="lede">I'm Prathamesh's digital twin. I answer as him — grounded strictly in his real CV and public code, so nothing I tell you is invented.</p>
-        <div class="hero-cta">
-          <button class="btn lg" id="hero-start" type="button">Start asking</button>
-          <button class="btn lg ghost" id="projects-button" type="button">See the work</button>
+        <div class="hero-grid">
+          <div class="hero-left">
+            <span class="rule-label"><i></i>Dublin, Ireland — available</span>
+            <h1>Talk to me<br>before you<br><span class="marked">meet me<svg class="scribble" viewBox="0 0 300 22" preserveAspectRatio="none" aria-hidden="true"><path d="M4 15C58 6 122 5 176 9c39 3 78 6 118 2" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg></span>.</h1>
+            <p class="lede">I'm Prathamesh's digital twin. I answer as him, grounded strictly in his real CV and public code — so nothing I tell you is invented.</p>
+            <div class="hero-cta">
+              <button class="btn lg" id="hero-start" type="button">Ask me something</button>
+              <button class="btn lg ghost" id="projects-button" type="button">See the work</button>
+            </div>
+          </div>
+
+          <figure class="hero-figure">
+            <img src="/static/prathamesh.jpg" alt="Prathamesh Kalamkar" width="300" height="300">
+            <figcaption><b>Prathamesh Kalamkar</b>Back-end &amp; AI agent engineer. Java, Python, FastAPI. MSc Cybersecurity, first-class honours.</figcaption>
+          </figure>
         </div>
 
         <div class="feed" id="feed" hidden>
@@ -108,14 +117,24 @@
       </section>
 
       <section class="section" id="work">
-        <h2>What he actually builds</h2>
-        <p class="section-lede">Correctness and reliability underneath AI agents — the problems a better model doesn't solve.</p>
+        <div class="sec-head">
+          <span class="sec-num">01</span>
+          <div>
+            <h2>What he actually builds</h2>
+            <p class="section-lede">Correctness and reliability underneath AI agents — the problems a better model doesn't solve.</p>
+          </div>
+        </div>
         <div class="cards" id="work-cards"></div>
       </section>
 
       <section class="section" id="how">
-        <h2>How this works</h2>
-        <p class="section-lede">Three steps, and a hard rule behind them.</p>
+        <div class="sec-head">
+          <span class="sec-num">02</span>
+          <div>
+            <h2>How this works</h2>
+            <p class="section-lede">Three steps, and a hard rule behind them.</p>
+          </div>
+        </div>
         <div class="steps">
           <article class="step"><b>01</b><h3>Ask anything</h3><p>Experience, projects, stack, or whether he fits the role you're hiring for.</p></article>
           <article class="step"><b>02</b><h3>Grounded, then checked</h3><p>Every answer is retrieved from his CV and public repos, then verified before it reaches you.</p></article>
@@ -124,7 +143,10 @@
       </section>
 
       <section class="section" id="faq">
-        <h2>Questions</h2>
+        <div class="sec-head">
+          <span class="sec-num">03</span>
+          <div><h2>Questions</h2></div>
+        </div>
         <div class="faq">
           <details><summary>Is this actually accurate?</summary><p>Every claim is retrieved from his CV or public repositories and cited underneath the answer. If something isn't evidenced, the twin says so instead of guessing.</p></details>
           <details><summary>Can it negotiate or accept an offer?</summary><p>No. Salary, offers, start dates and anything contractual are refused by design and handed to Prathamesh directly.</p></details>
