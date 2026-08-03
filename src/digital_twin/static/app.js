@@ -37,11 +37,13 @@
     drafts: [], busy: false, unread: 0,
   };
 
+  // Deliberately answerable from the CV corpus. A suggested question that
+  // triggers an honest refusal is a poor first impression of a grounded twin.
   const STARTERS = [
     "Give me the 60-second overview.",
-    "What's the hardest thing he's built?",
+    "What's his experience with Java and Spring Boot?",
+    "Tell me about his work on AI agents.",
     "Is he a fit for a backend role?",
-    "Show me his best project.",
   ];
 
   const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) =>
@@ -227,7 +229,7 @@
     if (!text.trim() || state.busy || !state.sessionId) return;
     state.busy = true;
     el.send.disabled = true;
-    el.intro.hidden = true;
+    if (el.intro) el.intro.hidden = true;
     turn("you", text);
     el.input.value = "";
     el.input.style.height = "auto";

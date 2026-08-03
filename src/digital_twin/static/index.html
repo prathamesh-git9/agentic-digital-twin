@@ -10,7 +10,17 @@
   </head>
   <body>
     <a class="skip-link" href="#composer-input">Skip to chat</a>
-    <div class="aurora" aria-hidden="true"></div>
+    <!--
+      Background stack, back to front: engineering grid, the portrait printed
+      as a halftone that bleeds off the right edge, a vignette to keep the
+      centre readable, and a fine grain over everything.
+    -->
+    <div class="bg" aria-hidden="true">
+      <div class="bg-grid"></div>
+      <div class="bg-portrait" style="background-image:url('/static/prathamesh.jpg')"></div>
+      <div class="bg-vignette"></div>
+      <div class="bg-grain"></div>
+    </div>
 
     <nav class="nav">
       <a class="brand" href="/">
