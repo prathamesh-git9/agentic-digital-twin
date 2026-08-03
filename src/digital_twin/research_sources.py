@@ -5,7 +5,7 @@ import re
 import urllib.robotparser
 from collections.abc import Awaitable, Callable
 from typing import Literal, Protocol
-from urllib.parse import urljoin, urlparse
+from urllib.parse import unquote, urljoin, urlparse
 
 import httpx
 from pydantic import BaseModel, Field
@@ -22,6 +22,9 @@ class AttributedFact(BaseModel):
     source_url: str
     confidence: Literal["high", "medium", "low"]
     why: str = Field(min_length=1, max_length=300)
+    source_kind: str = "public_web"
+    subject_name: str | None = None
+    company_level: bool = False
 
 
 class SourceReport(BaseModel):
@@ -37,6 +40,7 @@ class PublicDocument(BaseModel):
     text: str = ""
     links: list[str] = []
     link_labels: dict[str, str] = {}
+    email_addresses: list[str] = []
     image_url: str | None = None
     source: str = "public_web"
 
@@ -156,7 +160,7 @@ class ScraplingPageFetcher:
         except Exception:  # noqa: BLE001 - each source must degrade independently
             return None, SourceReport(source="public_web", status="failed", url=url)
         document = extract_public_document(html, url)
-        if not document.text and not document.title:
+        if not document.text and not document.title and not document.email_addresses:
             return None, SourceReport(source="public_web", status="empty", url=url)
         return document, SourceReport(source="public_web", status="ok", url=url)
 
@@ -191,8 +195,15 @@ def extract_public_document(html: str, url: str) -> PublicDocument:
     ]
     links: list[str] = []
     link_labels: dict[str, str] = {}
+    email_addresses: list[str] = []
     for node in tree.css("a[href]")[:300]:
-        absolute = urljoin(url, node.attributes.get("href", ""))
+        href = node.attributes.get("href", "").strip()
+        if href.casefold().startswith("mailto:"):
+            mailbox = unquote(href[7:].split("?", 1)[0]).strip()
+            if mailbox:
+                email_addresses.append(mailbox)
+            continue
+        absolute = urljoin(url, href)
         if is_public_http_url(absolute):
             links.append(absolute)
             label = sanitize_external_text(node.text(separator=" "), max_length=240)
@@ -204,5 +215,6 @@ def extract_public_document(html: str, url: str) -> PublicDocument:
         text="\n".join(safe_parts)[:20_000],
         links=list(dict.fromkeys(links)),
         link_labels=link_labels,
+        email_addresses=list(dict.fromkeys(email_addresses)),
         image_url=image_url,
     )

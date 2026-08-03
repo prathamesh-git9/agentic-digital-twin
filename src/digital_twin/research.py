@@ -15,6 +15,15 @@ import httpx
 import tldextract
 from pydantic import BaseModel, Field
 
+from .email_utils import EMAIL_PATTERN, normalize_address, recipient_key
+from .identity import (
+    PublicNameEvidence,
+    extract_public_name,
+    name_tokens,
+    names_compatible,
+    resolve_public_name,
+    token_equivalent,
+)
 from .research_sources import (
     AttributedFact,
     PageFetcher,
@@ -68,6 +77,11 @@ class CandidateEmail(BaseModel):
     confidence: Literal["high", "medium", "low"]
     source_url: str
     why: str
+    pattern: str | None = None
+    score: int = Field(default=0, ge=0)
+    mx_valid: bool | None = None
+    source_kind: str = "public_web"
+    company_level: bool = False
 
 
 class CandidateAvatar(BaseModel):
@@ -97,6 +111,10 @@ class Candidate(BaseModel):
     avatar: CandidateAvatar | None = None
     profiles: list[ProfileLink] = []
     email: CandidateEmail | None = None
+    emails: list[CandidateEmail] = []
+    submitted_name: str | None = None
+    surname_resolved: bool = False
+    name_variants: list[str] = []
 
 
 class PersonDossier(BaseModel):
@@ -370,6 +388,14 @@ def _words(value: str) -> set[str]:
     return {word.casefold() for word in re.findall(r"[\w]+", value)}
 
 
+def _name_match_count(query_name: str, observed: str) -> int:
+    observed_tokens = name_tokens(observed)
+    return sum(
+        any(token_equivalent(token, value) for value in observed_tokens)
+        for token in name_tokens(query_name)
+    )
+
+
 def _source_label(url: str) -> str:
     host = (urlparse(url).hostname or "public web").removeprefix("www.")
     return host
@@ -387,14 +413,12 @@ def score_candidate(
     safe_title = sanitize_external_text(result.title)
     safe_snippet = sanitize_external_text(result.snippet)
     combined = f"{safe_title} {safe_snippet}"
-    query_tokens = _words(query_name)
-    observed_tokens = _words(safe_title)
-    name_ratio = len(query_tokens & observed_tokens) / max(1, len(query_tokens))
+    query_tokens = name_tokens(query_name)
+    name_matches = _name_match_count(query_name, safe_title)
+    name_ratio = name_matches / max(1, len(query_tokens))
     name_points = round(55 * name_ratio)
     score = name_points
-    why = [
-        f"name tokens matched {len(query_tokens & observed_tokens)}/{len(query_tokens)}"
-    ]
+    why = [f"name tokens matched {name_matches}/{len(query_tokens)}"]
 
     if company:
         company_tokens = _words(company)
@@ -430,10 +454,72 @@ def score_candidate(
 
 
 def _candidate_name(query_name: str, title: str) -> str:
-    first = re.split(r"\s+(?:[-–—|·])\s+", title, maxsplit=1)[0].strip()
-    if _words(query_name) <= _words(first):
-        return first[:80]
+    observed = extract_public_name(query_name, title)
+    if observed:
+        return observed[:100]
     return normalize_name(query_name)
+
+
+def _name_source_kind(url: str) -> str:
+    parsed = urlparse(url)
+    host = (parsed.hostname or "").casefold()
+    path = parsed.path.casefold()
+    if host == "github.com" and len([part for part in path.split("/") if part]) == 1:
+        return "github_profile"
+    if any(value in path for value in ("/team", "/people", "/leadership")):
+        return "company_team"
+    if any(value in path for value in ("speaker", "conference", "/talk", "cfp")):
+        return "conference_speaker"
+    if host.endswith("linkedin.com"):
+        return "public_profile"
+    return "search_result"
+
+
+def _resolve_research_name(
+    submitted_name: str,
+    result: RawSearchResult,
+    documents: list[PublicDocument],
+    groups: dict[str, list[RawSearchResult]],
+    *,
+    rank: int,
+    allow_shared_evidence: bool,
+):
+    evidence = [
+        PublicNameEvidence(
+            name=result.title,
+            source_url=result.url,
+            source_kind=_name_source_kind(result.url),
+            confidence=max(65, 96 - (rank - 1) * 5),
+        )
+    ]
+    for document in documents:
+        if document.url == result.url or allow_shared_evidence:
+            evidence.append(
+                PublicNameEvidence(
+                    name=document.title,
+                    source_url=document.url,
+                    source_kind=(
+                        _name_source_kind(document.url)
+                        if _name_source_kind(document.url) != "search_result"
+                        else "page_title"
+                    ),
+                    confidence=90 if document.url == result.url else 75,
+                )
+            )
+    if allow_shared_evidence:
+        for source, values in groups.items():
+            if source in {"identity", "company_website", "careers"}:
+                continue
+            for value in _safe_results(values)[:2]:
+                evidence.append(
+                    PublicNameEvidence(
+                        name=value.title,
+                        source_url=value.url,
+                        source_kind=_name_source_kind(value.url),
+                        confidence=78,
+                    )
+                )
+    return resolve_public_name(submitted_name, evidence)
 
 
 def _headline(title: str, snippet: str, candidate_name: str) -> str:
@@ -578,9 +664,19 @@ class ResearchEngine:
                 company=company,
                 location=location,
             )
-            if not _words(safe_name) & _words(title):
+            if not names_compatible(safe_name, title):
                 continue
-            candidate_name = _candidate_name(safe_name, title)
+            name_resolution = _resolve_research_name(
+                safe_name,
+                RawSearchResult(title, url, snippet, raw.thumbnail),
+                documents,
+                groups,
+                rank=rank,
+                allow_shared_evidence=len(results) == 1,
+            )
+            candidate_name = name_resolution.display_name or _candidate_name(
+                safe_name, title
+            )
             observed_company = (
                 company
                 if company and _words(company) & _words(f"{title} {snippet}")
@@ -607,9 +703,11 @@ class ResearchEngine:
                     why=why,
                     name_detail=AttributedFact(
                         value=candidate_name,
-                        source_url=url,
+                        source_url=name_resolution.source_url or url,
                         confidence="high",
-                        why="name observed in the indexed public result",
+                        why=name_resolution.why,
+                        source_kind=name_resolution.source_kind,
+                        subject_name=candidate_name,
                     ),
                     role=AttributedFact(
                         value=_headline(title, snippet, candidate_name),
@@ -669,6 +767,9 @@ class ResearchEngine:
                         RawSearchResult(title, url, snippet, raw.thumbnail),
                         candidate_name,
                     ),
+                    submitted_name=safe_name,
+                    surname_resolved=name_resolution.surname_resolved,
+                    name_variants=list(name_resolution.variants),
                 )
             )
 
@@ -706,40 +807,87 @@ class ResearchEngine:
     ) -> list[PublicDocument]:
         if self.page_fetcher is None or self.page_limit <= 0:
             return []
-        urls: list[str] = []
+        seed_urls: list[str] = []
         for source in (
             "company_website",
+            "identity",
+            "personal_profiles",
+            "team_pages",
+            "press",
+            "speaker_pages",
+            "talks",
+            "cfp",
             "careers",
             "engineering_blog",
-            "talks",
             "news",
             "funding",
-            "github",
         ):
             for result in groups.get(source, [])[:1]:
                 host = (urlparse(result.url).hostname or "").casefold()
-                if "linkedin.com" not in host and is_public_http_url(result.url):
-                    urls.append(result.url)
-        urls = list(dict.fromkeys(urls))[: self.page_limit]
-        tasks = [asyncio.create_task(self.page_fetcher.fetch(url)) for url in urls]
+                if not any(
+                    value in host for value in ("linkedin.com", "github.com")
+                ) and (is_public_http_url(result.url)):
+                    seed_urls.append(result.url)
+        seed_urls = list(dict.fromkeys(seed_urls))
         documents: list[PublicDocument] = []
-        try:
-            for url, task in zip(urls, tasks, strict=True):
-                try:
-                    document, report = await asyncio.wait_for(
-                        task, timeout=self.source_timeout_seconds + 0.1
+        fetched: set[str] = set()
+
+        async def fetch_urls(urls: list[str]) -> None:
+            tasks = [asyncio.create_task(self.page_fetcher.fetch(url)) for url in urls]
+            try:
+                for url, task in zip(urls, tasks, strict=True):
+                    fetched.add(url)
+                    try:
+                        document, report = await asyncio.wait_for(
+                            task, timeout=self.source_timeout_seconds + 0.1
+                        )
+                    except TimeoutError:
+                        document = None
+                        report = SourceReport(
+                            source="public_web", status="timeout", url=url
+                        )
+                    reports.append(report)
+                    if document is not None:
+                        documents.append(document)
+                    await _emit(
+                        progress, "page", report.status, f"Public page checked: {url}"
                     )
-                except TimeoutError:
-                    document = None
-                    report = SourceReport(source="public_web", status="timeout", url=url)
-                reports.append(report)
-                if document is not None:
-                    documents.append(document)
-                await _emit(
-                    progress, "page", report.status, f"Public page checked: {url}"
+            finally:
+                await _cancel_tasks(tasks)
+
+        reserved_follow_slots = min(2, max(0, self.page_limit - 1))
+        initial_limit = max(1, self.page_limit - reserved_follow_slots)
+        await fetch_urls(seed_urls[:initial_limit])
+
+        relevant_links = [
+            link
+            for document in documents
+            for link in document.links
+            if any(
+                token in urlparse(link).path.casefold()
+                for token in (
+                    "contact",
+                    "about",
+                    "team",
+                    "people",
+                    "leadership",
+                    "press",
+                    "speaker",
+                    "conference",
+                    "cfp",
                 )
-        finally:
-            await _cancel_tasks(tasks)
+            )
+            and link not in fetched
+        ]
+        remaining = self.page_limit - len(fetched)
+        follow = list(dict.fromkeys(relevant_links))[:remaining]
+        if follow:
+            await fetch_urls(follow)
+        remaining = self.page_limit - len(fetched)
+        if remaining > 0:
+            trailing = [url for url in seed_urls if url not in fetched][:remaining]
+            if trailing:
+                await fetch_urls(trailing)
         return documents
 
     async def _read_feeds(
@@ -817,6 +965,10 @@ def _research_queries(name: str, company: str | None) -> dict[str, str]:
         "engineering_blog": f'"{employer}" engineering blog technology stack',
         "github": f'"{employer}" site:github.com organization',
         "talks": f'"{name}" conference talk podcast',
+        "team_pages": f'"{employer}" team about leadership "{name}"',
+        "press": f'"{employer}" press release "{name}"',
+        "speaker_pages": f'"{name}" speaker conference bio',
+        "cfp": f'"{name}" CFP speaker',
         "personal_profiles": (f'"{name}" GitHub X Twitter Instagram personal website'),
         "news": f'"{employer}" recent news',
         "funding": f'"{employer}" funding investors round',
@@ -840,12 +992,19 @@ def _fact(
     result: RawSearchResult,
     confidence: str,
     why: str,
+    *,
+    source_kind: str = "public_web",
+    subject_name: str | None = None,
+    company_level: bool = False,
 ) -> AttributedFact:
     return AttributedFact(
         value=value[:500],
         source_url=result.url,
         confidence=confidence,
         why=why,
+        source_kind=source_kind,
+        subject_name=subject_name,
+        company_level=company_level,
     )
 
 
@@ -958,25 +1117,38 @@ def _enrich_candidate(
                 why="og:image observed on a public page naming this candidate",
             )
 
-    email = candidate.email
-    if email is None:
-        email_pattern = re.compile(r"[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}", re.I)
-        published = next(
-            (
-                (address, document.url)
-                for document in matching_documents
-                for address in email_pattern.findall(document.text)
-            ),
-            None,
+    emails = list(candidate.emails)
+    if candidate.email is not None:
+        emails.insert(0, candidate.email)
+    for document in matching_documents:
+        source_kind = (
+            "conference_speaker"
+            if _name_source_kind(document.url) == "conference_speaker"
+            else "mailto"
+            if document.email_addresses
+            else "public_page"
         )
-        if published:
-            email = CandidateEmail(
-                address=published[0].casefold(),
-                status="verified",
-                confidence="high",
-                source_url=published[1],
-                why="address is explicitly published on an attributed public page",
+        for address in (
+            *document.email_addresses,
+            *EMAIL_PATTERN.findall(document.text),
+        ):
+            normalized = normalize_address(address)
+            if recipient_key(normalized) in {
+                recipient_key(value.address) for value in emails
+            }:
+                continue
+            emails.append(
+                CandidateEmail(
+                    address=normalized,
+                    status="verified",
+                    confidence="high",
+                    source_url=document.url,
+                    why="address is explicitly published on an attributed public page",
+                    score=100,
+                    source_kind=source_kind,
+                )
             )
+    email = emails[0] if emails else None
 
     avatar: CandidateAvatar
     if photo:
@@ -1009,6 +1181,7 @@ def _enrich_candidate(
             "photo_url": photo.value if photo else None,
             "avatar": avatar,
             "email": email,
+            "emails": emails,
         }
     )
 
@@ -1037,6 +1210,34 @@ def _registered_domain(url: str) -> str | None:
     if not extracted.domain or not extracted.suffix:
         return None
     return f"{extracted.domain}.{extracted.suffix}"
+
+
+def _is_company_level_address(address: str, source_url: str) -> bool:
+    local = normalize_address(address).partition("@")[0]
+    return local in {
+        "abuse",
+        "admin",
+        "contact",
+        "hello",
+        "info",
+        "press",
+        "privacy",
+        "security",
+        "support",
+    } or any(
+        value in source_url.casefold() for value in ("security.txt", "rdap", "whois")
+    )
+
+
+def _possible_subject_name(title: str) -> str | None:
+    segment = re.split(r"\s+(?:[-–—|·])\s+", title, maxsplit=1)[0].strip()
+    tokens = name_tokens(segment)
+    if not 2 <= len(tokens) <= 5:
+        return None
+    blocked = {"official", "company", "team", "about", "careers", "press"}
+    if {local_token.casefold() for local_token in tokens} & blocked:
+        return None
+    return segment[:100]
 
 
 def _build_dossier(
@@ -1088,36 +1289,58 @@ def _build_dossier(
     combined_sources = [
         *_safe_results([item for values in groups.values() for item in values]),
         *[
-            RawSearchResult(document.title or document.url, document.url, document.text)
+            RawSearchResult(
+                document.title or document.url,
+                document.url,
+                f"{document.text} {' '.join(document.email_addresses)}",
+            )
             for document in documents
         ],
     ]
-    email_pattern = re.compile(r"[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}", re.I)
     for result in combined_sources:
         if not _words(candidate.name) <= _words(f"{result.title} {result.snippet}"):
             continue
-        for email in email_pattern.findall(f"{result.title} {result.snippet}"):
+        for email in EMAIL_PATTERN.findall(f"{result.title} {result.snippet}"):
             if email.casefold() not in {
                 fact.value.casefold() for fact in person.public_emails
             }:
                 person.public_emails.append(
-                    _fact(email, result, "high", "email address publicly displayed")
+                    _fact(
+                        normalize_address(email),
+                        result,
+                        "high",
+                        "email address publicly displayed",
+                        source_kind="public_page",
+                        subject_name=candidate.name,
+                    )
                 )
 
     website_result = _first_result(groups, "company_website")
     domain = _registered_domain(website_result.url) if website_result else None
     company = CompanyDossier(name=stated_company or candidate.company)
     for result in combined_sources:
-        for address in email_pattern.findall(f"{result.title} {result.snippet}"):
+        for address in EMAIL_PATTERN.findall(f"{result.title} {result.snippet}"):
             if address.casefold() not in {
                 fact.value.casefold() for fact in company.public_emails
             }:
+                company_level = _is_company_level_address(address, result.url)
                 company.public_emails.append(
                     _fact(
-                        address.casefold(),
+                        normalize_address(address),
                         result,
                         "high",
                         "email address publicly displayed in company-related content",
+                        source_kind=(
+                            "security_txt"
+                            if "security.txt" in result.url.casefold()
+                            else "company_page"
+                        ),
+                        subject_name=(
+                            None
+                            if company_level
+                            else _possible_subject_name(result.title)
+                        ),
+                        company_level=company_level,
                     )
                 )
     if website_result and domain:
@@ -1224,4 +1447,14 @@ def attach_candidate_email(candidate: Candidate, email: CandidateEmail) -> Candi
             initials=candidate.initials,
             source_url=email.source_url,
         )
-    return candidate.model_copy(update={"email": email, "avatar": avatar})
+    emails = [email, *candidate.emails]
+    deduped: list[CandidateEmail] = []
+    seen: set[str] = set()
+    for value in emails:
+        key = recipient_key(value.address)
+        if key not in seen:
+            seen.add(key)
+            deduped.append(value)
+    return candidate.model_copy(
+        update={"email": email, "emails": deduped, "avatar": avatar}
+    )
