@@ -97,18 +97,34 @@
     el.people.hidden = false;
     el.peopleTitle.textContent =
       candidates.length === 1 ? "Is this you?" : "Which one is you?";
+    $("#people-sub").textContent =
+      candidates.length === 1
+        ? "Found one public profile that looks like you."
+        : `Found ${candidates.length} public profiles with that name.`;
+
     el.peopleGrid.innerHTML = candidates.map((c, i) => {
       const photo = c.avatar?.url || c.photo_url;
       const ini = c.avatar?.initials || c.initials || initialsOf(c.name);
+      // A short human line beats a raw score: say what was actually observed.
+      const desc = val(c.bio)
+        || (Array.isArray(c.why) ? c.why.slice(0, 2).join(" · ") : c.why)
+        || "";
+      const where = [val(c.company_detail) || c.company, val(c.location)]
+        .filter(Boolean).join(" · ");
       return `
-        <article class="person" data-pick="${i}" role="button" tabindex="0">
+        <article class="person" data-pick="${i}" role="button" tabindex="0"
+                 aria-label="Select ${esc(c.name)}">
           ${photo
             ? `<img src="${esc(photo)}" alt="" loading="lazy"
                  onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'initials',textContent:'${esc(ini)}'}))">`
             : `<span class="initials">${esc(ini)}</span>`}
           <strong>${esc(c.name)}</strong>
-          <span>${esc(c.headline || c.company || "")}</span>
+          ${c.headline ? `<span class="role">${esc(c.headline)}</span>` : ""}
+          ${where ? `<span class="role">${esc(where)}</span>` : ""}
+          ${desc ? `<p class="desc">${esc(desc)}</p>` : ""}
+          ${c.source_label ? `<span class="src">via ${esc(c.source_label)}</span>` : ""}
           ${c.confidence ? `<span class="pct">${esc(c.confidence)}% match</span>` : ""}
+          <button type="button" class="btn sm pick" data-pick="${i}">That's me</button>
         </article>`;
     }).join("");
   }
@@ -215,8 +231,9 @@
     turn("you", text);
     el.input.value = "";
     el.input.style.height = "auto";
-    const pending = turn("twin", "Thinking…");
-    pending.classList.add("pending");
+    const pending = turn("twin", "");
+    pending.querySelector(".text").innerHTML =
+      '<span class="typing"><i></i><i></i><i></i></span>';
 
     try {
       const r = await api(`/api/sessions/${state.sessionId}/chat`, {
@@ -350,6 +367,45 @@
             `<div class="repo"><strong>— ${esc(m.requirement || m)}</strong><p>Not in the CV.</p></div>`).join("");
       } catch (err) { out.innerHTML = `<p>${esc(err.message)}</p>`; }
     });
+  });
+
+  /* ---------- contact ---------- */
+
+  const contactSheet = $("#contact-sheet");
+
+  async function openContact() {
+    const rows = $("#contact-rows");
+    rows.innerHTML = "<p>Loading…</p>";
+    contactSheet.hidden = false;
+    const items = [];
+    try {
+      const c = await api("/api/contact");
+      if (c.email) items.push([`mailto:${c.email}`, "Email", c.email]);
+      if (c.phone) items.push([`tel:${c.phone}`, "Phone", c.phone]);
+      if (c.location) items.push(["", "Based in", c.location]);
+    } catch { /* fall through to the static links below */ }
+    items.push(["https://github.com/prathamesh-git9", "GitHub", "prathamesh-git9"]);
+    rows.innerHTML = items.map(([href, label, value]) =>
+      href
+        ? `<a class="contact-row" href="${esc(href)}"${href.startsWith("http") ? ' target="_blank" rel="noopener noreferrer"' : ""}>
+             <div><span>${esc(label)}</span><strong>${esc(value)}</strong></div></a>`
+        : `<div class="contact-row"><div><span>${esc(label)}</span><strong>${esc(value)}</strong></div></div>`,
+    ).join("");
+  }
+
+  $("#contact-button").addEventListener("click", openContact);
+  $("#hero-contact").addEventListener("click", openContact);
+  $("#contact-close").addEventListener("click", () => (contactSheet.hidden = true));
+  contactSheet.addEventListener("click", (e) => {
+    if (e.target === contactSheet) contactSheet.hidden = true;
+  });
+  $("#hero-work").addEventListener("click", () => el.projectsButton.click());
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    contactSheet.hidden = true;
+    el.drawer.hidden = true;
+    el.feed.hidden = true;
   });
 
   /* ---------- theme ---------- */
