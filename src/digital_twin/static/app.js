@@ -241,6 +241,9 @@
           : ""}
       </div>`;
     el.messages.appendChild(div);
+    // Only once there is a thread to scroll does pinning the composer help; up
+    // to that point a sticky dock just sits on top of the hero copy.
+    el.messages.closest(".ask-hero")?.classList.add("has-thread");
     // "nearest" only scrolls when the turn is actually off-screen. Aligning to
     // "end" threw the page down past the conversation into the sections below,
     // so the answer landed above the fold and the chat looked like it had done

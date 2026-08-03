@@ -193,6 +193,50 @@
       ],
       "install_command": "uvx --from git+https://github.com/prathamesh-git9/mcp-servers.git#subdirectory=packages/outcome-ledger --with git+https://github.com/prathamesh-git9/mcp-servers.git#subdirectory=packages/common outcome-ledger",
       "eval": null
+    },
+    {
+      "name": "coding-workflows",
+      "description": "Deterministic, repository-aware review, planning, quality-gate, failure-triage, and commit workflows.",
+      "tools": [
+        {
+          "name": "review_diff",
+          "description": "Parse a unified diff into line-addressed findings with severity and rationale."
+        },
+        {
+          "name": "plan_change",
+          "description": "Decompose a change request into ordered tasks, dependencies, and acceptance criteria."
+        },
+        {
+          "name": "run_checks",
+          "description": "Run detected format, lint, and test gates with typed outcomes and deadlines."
+        },
+        {
+          "name": "triage_failure",
+          "description": "Rank repository files likely responsible for a traceback or failing test."
+        },
+        {
+          "name": "commit_message",
+          "description": "Generate a conventional, body-carrying message from a staged diff."
+        }
+      ],
+      "resources": [
+        {
+          "uri": "coding://toolchain",
+          "description": "Detected languages, package managers, frameworks, and config files."
+        },
+        {
+          "uri": "coding://checks",
+          "description": "Detected quality-gate argv lists and their configuration sources."
+        }
+      ],
+      "prompts": [
+        {
+          "name": "guarded-review",
+          "description": "Review untrusted diff data through line-addressed findings and verified gates."
+        }
+      ],
+      "install_command": "uvx --from git+https://github.com/prathamesh-git9/mcp-servers.git#subdirectory=packages/coding-workflows --with git+https://github.com/prathamesh-git9/mcp-servers.git#subdirectory=packages/common coding-workflows",
+      "eval": null
     }
   ]
 }
