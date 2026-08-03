@@ -22,6 +22,15 @@
   --clay-ink: #ffffff;
   --clay-soft: #f6ebe4;
   --ok: #4a7c59;
+  --sky-top: #dfe8f0;
+  --sky-mid: #f0e6dc;
+  --sky-low: #f9efe4;
+  --sun-core: #f6c9a3;
+  --sun-halo: rgba(244, 189, 148, .34);
+  --ridge-4: #dcd8cd;
+  --ridge-3: #cfc9bb;
+  --ridge-2: #beb7a6;
+  --ridge-1: #a9a08c;
   --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Charter, Georgia, serif;
   --sans: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
@@ -43,12 +52,65 @@ html[data-theme="dark"] {
   --clay-ink: #1b1a17;
   --clay-soft: #33261f;
   --ok: #7fae8c;
+  --sky-top: #14161d;
+  --sky-mid: #1b1a21;
+  --sky-low: #221e21;
+  --sun-core: #6b4535;
+  --sun-halo: rgba(140, 84, 60, .3);
+  --ridge-4: #232224;
+  --ridge-3: #201f21;
+  --ridge-2: #1d1c1e;
+  --ridge-1: #191819;
 }
 
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 
 body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); line-height: 1.62; -webkit-font-smoothing: antialiased; }
+
+/* ---------- scene ---------- */
+
+.scene { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+
+.sky {
+  position: absolute; inset: 0;
+  background:
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--sky-top) 100%, transparent) 0%,
+      color-mix(in srgb, var(--sky-mid) 100%, transparent) 46%,
+      color-mix(in srgb, var(--sky-low) 100%, transparent) 78%,
+      var(--paper) 100%);
+}
+
+/* Low sun sitting just above the far ridge. */
+.sun {
+  position: absolute; left: 71%; bottom: min(40vh, 356px); width: 104px; height: 104px;
+  transform: translateX(-50%); border-radius: 50%;
+  background: var(--sun-core); filter: blur(.4px); opacity: .92;
+}
+.sun::after {
+  content: ""; position: absolute; inset: -180px; border-radius: 50%;
+  background: radial-gradient(circle, var(--sun-halo), transparent 60%);
+}
+
+.ridges { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: min(62vh, 560px); }
+.ridges .r { transition: fill .3s var(--ease); }
+.r4 { fill: var(--ridge-4); }
+.r3 { fill: var(--ridge-3); }
+.r2 { fill: var(--ridge-2); }
+.r1 { fill: var(--ridge-1); }
+
+/* Atmospheric haze so the far ridges sit back rather than stacking flat. */
+.haze {
+  position: absolute; left: 0; right: 0; bottom: 0; height: min(62vh, 560px);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--sky-low) 62%, transparent) 0%, transparent 34%);
+}
+
+.grain {
+  position: absolute; inset: 0; opacity: .2;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='3'/%3E%3C/filter%3E%3Crect width='150' height='150' filter='url(%23n)' opacity='.34'/%3E%3C/svg%3E");
+}
+html[data-theme="dark"] .grain { opacity: .34; }
 
 h1, h2 { margin: 0; font-family: var(--serif); font-weight: 500; letter-spacing: -.015em; line-height: 1.16; }
 p { margin: 0; }
@@ -64,7 +126,7 @@ a { color: inherit; }
 
 /* ---------- shell ---------- */
 
-.app { display: flex; flex-direction: column; min-height: 100vh; }
+.app { position: relative; z-index: 2; display: flex; flex-direction: column; min-height: 100vh; }
 
 .bar { display: flex; align-items: center; gap: 12px; padding: 15px clamp(16px, 4vw, 30px); }
 .bar-left { display: flex; align-items: center; gap: 8px; min-width: 0; }
@@ -141,7 +203,7 @@ a { color: inherit; }
 
 /* ---------- dock ---------- */
 
-.dock { position: sticky; bottom: 0; width: 100%; max-width: 720px; margin: 0 auto; padding: 0 clamp(16px, 4vw, 24px) 18px; background: linear-gradient(to top, var(--paper) 74%, transparent); }
+.dock { position: sticky; bottom: 0; width: 100%; max-width: 720px; margin: 0 auto; padding: 0 clamp(16px, 4vw, 24px) 18px; }
 .suggestions { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 11px; }
 .suggestions button { font: inherit; font-size: 13px; cursor: pointer; color: var(--ink-2); background: var(--raised); border: 1px solid var(--line); border-radius: 999px; padding: 8px 14px; transition: border-color .16s var(--ease), color .16s var(--ease); }
 .suggestions button:hover { border-color: var(--clay); color: var(--clay); }

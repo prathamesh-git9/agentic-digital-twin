@@ -12,6 +12,24 @@
     <a class="skip-link" href="#composer-input">Skip to chat</a>
 
     <!--
+      Hand-authored scene. Four ridge layers recede into haze behind a low sun,
+      so the page has depth and horizon instead of a flat fill. Drawn as inline
+      SVG rather than an image so it rescales cleanly and re-tints for dark.
+    -->
+    <div class="scene" aria-hidden="true">
+      <div class="sky"></div>
+      <div class="sun"></div>
+      <svg class="ridges" viewBox="0 0 1440 520" preserveAspectRatio="none">
+        <path class="r r4" d="M0 318 C 74 296 118 232 176 226 C 236 220 268 286 316 300 C 372 316 402 214 470 200 C 540 186 566 292 632 306 C 700 320 726 236 796 232 C 868 228 892 302 958 312 C 1026 322 1054 244 1122 244 C 1192 244 1220 306 1286 314 C 1348 322 1392 282 1440 268 L1440 520 L0 520 Z"/>
+        <path class="r r3" d="M0 372 C 66 360 104 314 164 306 C 228 298 258 356 316 366 C 380 376 408 300 476 296 C 548 292 574 362 640 372 C 708 382 740 318 806 316 C 876 314 900 372 968 380 C 1036 388 1070 328 1138 330 C 1206 332 1238 380 1304 386 C 1362 392 1402 366 1440 356 L1440 520 L0 520 Z"/>
+        <path class="r r2" d="M0 424 C 72 416 110 388 172 384 C 238 380 266 418 328 426 C 392 434 420 392 488 390 C 558 388 582 428 648 436 C 716 444 748 404 814 404 C 882 404 906 440 972 448 C 1040 456 1074 418 1142 420 C 1210 422 1240 452 1306 458 C 1364 463 1404 446 1440 438 L1440 520 L0 520 Z"/>
+        <path class="r r1" d="M0 470 C 80 464 122 448 190 446 C 258 444 288 468 352 474 C 418 480 448 458 516 458 C 586 458 610 480 676 486 C 744 492 776 470 842 470 C 910 470 934 490 1000 496 C 1068 502 1100 482 1168 482 C 1236 482 1266 500 1330 504 C 1382 507 1414 498 1440 494 L1440 520 L0 520 Z"/>
+      </svg>
+      <div class="haze"></div>
+      <div class="grain"></div>
+    </div>
+
+    <!--
       Conversation-first. This is a chat product, so it is built as one: a single
       column, no marketing sections stacked above it, and everything secondary
       (work, role fit, contact, activity) lives in a slide-over rather than

@@ -59,7 +59,10 @@ class Settings(BaseSettings):
     autosend: bool = False
     send_confidence_threshold: int = Field(default=85, ge=50, le=100)
     fanout_unselected: bool = False
-    fanout_max: int = Field(default=3, ge=1, le=3)
+    # Ceiling raised to 6 at the owner's request: common names routinely return
+    # four or five public profiles, and a hard stop at 3 meant those sessions
+    # always fell back to review and never sent. The default stays 3.
+    fanout_max: int = Field(default=3, ge=1, le=6)
     inferred_send_max: int = Field(default=3, ge=0, le=10)
     daily_send_cap: int = Field(default=20, ge=1, le=100)
     outreach_candidate_daily_cap: int = Field(default=1, ge=1, le=5)
