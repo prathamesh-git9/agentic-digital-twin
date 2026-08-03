@@ -213,8 +213,8 @@
     div.className = `turn ${role}`;
     const chips = (cites || []).map((c) => `<span class="cite">${esc(c)}</span>`).join("");
     div.innerHTML = `
-      ${role === "twin" ? `<img class="who-pic" src="/static/prathamesh.jpg" alt="">` : ""}
       <div class="bubble">
+        <span class="label">${role === "twin" ? "Prathamesh" : "You"}</span>
         <div class="text">${esc(text)}</div>
         ${chips ? `<div class="cites">${chips}</div>` : ""}
       </div>`;
@@ -394,12 +394,13 @@
   }
 
   $("#contact-button").addEventListener("click", openContact);
-  $("#hero-contact").addEventListener("click", openContact);
   $("#contact-close").addEventListener("click", () => (contactSheet.hidden = true));
   contactSheet.addEventListener("click", (e) => {
     if (e.target === contactSheet) contactSheet.hidden = true;
   });
-  $("#hero-work").addEventListener("click", () => el.projectsButton.click());
+  // Optional hero shortcuts: present in some layouts, absent in others.
+  $("#hero-contact")?.addEventListener("click", openContact);
+  $("#hero-work")?.addEventListener("click", () => el.projectsButton.click());
 
   document.addEventListener("keydown", (e) => {
     if (e.key !== "Escape") return;
