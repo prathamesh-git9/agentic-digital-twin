@@ -151,7 +151,7 @@
       el.people.hidden = true;
       showVisitor(result);
       note(`Confirmed ${candidate.name}`);
-      toast("Thanks — I'll tailor what I show you.");
+      toast("Thanks, I'll tailor what I show you.");
     }).catch((e) => toast(e.message));
   }
 
@@ -275,7 +275,7 @@
       const secs = Math.round((Date.now() - startedAt) / 1000);
       clock.textContent = `${secs}s`;
       if (secs === 4) label.textContent = "Drafting a grounded answer…";
-      if (secs === 12) label.textContent = "Still working — verifying every claim…";
+      if (secs === 12) label.textContent = "Still working. Verifying every claim…";
     }, 1000);
 
     try {
@@ -288,7 +288,7 @@
     } catch (e) {
       clearInterval(ticker);
       pending.remove();
-      turn("twin", `Sorry — ${e.message}`);
+      turn("twin", `Sorry, ${e.message}`);
     } finally {
       state.busy = false;
       el.send.disabled = false;
@@ -413,7 +413,7 @@
           (fit.matched || fit.matched_requirements || []).map((m) =>
             `<div class="repo"><strong>✓ ${esc(m.requirement || m)}</strong><p>${esc(m.source || "")}</p></div>`).join("") +
           (fit.unevidenced || fit.unevidenced_requirements || []).map((m) =>
-            `<div class="repo"><strong>— ${esc(m.requirement || m)}</strong><p>Not in the CV.</p></div>`).join("");
+            `<div class="repo"><strong>✕ ${esc(m.requirement || m)}</strong><p>Not in the CV.</p></div>`).join("");
       } catch (err) { out.innerHTML = `<p>${esc(err.message)}</p>`; }
     });
   });
@@ -671,7 +671,7 @@
       manifest?.sdk ? `SDK ${manifest.sdk}` : null,
     ].filter(Boolean).join(" · ");
     $("#mcp-lede").innerHTML =
-      `${esc(servers.length)} servers speaking the Model Context Protocol — each exposing `
+      `${esc(servers.length)} servers speaking the Model Context Protocol. Each exposes `
       + `tools, resources and prompts with structured output schemas, and none letting a `
       + `low-level exception cross the protocol boundary.`
       + (detail ? ` <span class="mcp-detail">${esc(detail)}</span>` : "")
@@ -699,7 +699,7 @@
             .map((value) => `<span>${value}</span>`).join("")}</div></div>`)
         .join("");
       // Measured retrieval quality is the whole reason to trust the RAG claim.
-      // Only quality metrics get a tile — the query count and k describe the
+      // Only quality metrics get a tile, the query count and k describe the
       // experiment, and showing them as scores makes the numbers unreadable.
       const scored = server.eval && typeof server.eval === "object" ? server.eval : null;
       const at = scored?.k ?? "k";
