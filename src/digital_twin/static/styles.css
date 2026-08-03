@@ -174,8 +174,24 @@ main { position: relative; z-index: 2; }
 .typing i:nth-child(3) { animation-delay: .32s; }
 @keyframes blink { 0%, 60%, 100% { opacity: .22; } 30% { opacity: 1; } }
 
-/* The input is the focal artefact of the page, not a footer control. */
-.dock { margin-top: auto; padding-top: 26px; }
+/*
+  The input is the focal artefact, so it stays reachable. Without sticky it
+  sank below the fold from the second answer onward: the visitor finished
+  reading and had no visible way to ask anything else.
+*/
+.dock {
+  position: sticky; bottom: 0; z-index: 5;
+  margin-top: auto; padding: 16px 0 14px;
+}
+/* A blurred veil that fades upward, so the thread scrolls under the dock
+   instead of colliding with it. */
+.dock::before {
+  content: ""; position: absolute; left: -24px; right: -24px; top: 0; bottom: 0;
+  z-index: -1; pointer-events: none;
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  mask-image: linear-gradient(to top, #000 62%, transparent);
+  -webkit-mask-image: linear-gradient(to top, #000 62%, transparent);
+}
 #composer { display: flex; align-items: flex-end; gap: 10px; background: var(--raised); border: 1px solid var(--line-2); border-radius: 18px; padding: 12px 12px 12px 20px; transition: border-color .22s var(--ease), box-shadow .22s var(--ease); }
 #composer:focus-within { border-color: var(--clay); box-shadow: 0 0 0 4px var(--clay-soft); }
 #composer textarea { flex: 1; border: 0; background: none; resize: none; outline: none; font: inherit; font-size: 16.5px; color: var(--ink); max-height: 180px; padding: 8px 0; }
@@ -520,3 +536,54 @@ html[data-theme="dark"] #composer { box-shadow: inset 0 1px 0 rgba(255,255,255,.
    between the last question and the call to action. */
 #cta { padding-top: clamp(28px, 4vh, 44px); }
 #cta .cta { margin-top: 0; }
+
+/* ================= chat legibility fixes ================= */
+
+/*
+  The thread must be able to scroll clear of the sticky dock, otherwise the
+  final lines of an answer sit permanently behind the composer.
+*/
+.thread { padding-bottom: 250px; }
+
+/* The visitor's own turn was glass over near-white sky: invisible. It needs a
+   tinted surface that survives both the sky and the solid bands. */
+.turn.you .text {
+  background: var(--paper-2);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: 1px solid var(--line-2);
+  box-shadow: none;
+}
+html[data-theme="dark"] .turn.you .text { background: var(--paper-2); }
+
+/* A firmer veil, so text passing under the dock is muted rather than sliced. */
+.dock::before {
+  background: linear-gradient(to top,
+    color-mix(in srgb, var(--paper) 92%, transparent) 42%,
+    color-mix(in srgb, var(--paper) 55%, transparent) 78%,
+    transparent);
+}
+
+/* The composer sits over scrolling text, so it must be opaque. Translucent
+   fill let answers show through it and read as clipped mid-sentence. */
+#composer { background: var(--raised); backdrop-filter: none; -webkit-backdrop-filter: none; border-color: var(--line-2); }
+
+/* Suggestion pills were glass against near-white sky: no visible edge. */
+.suggestions button { background: var(--paper-2); backdrop-filter: none; -webkit-backdrop-filter: none; border-color: var(--line-2); }
+
+/* Start the veil above the composer so nothing meets its edge mid-line. */
+.dock { padding-top: 34px; }
+
+/* ================= mobile overflow ================= */
+
+/* The dock veil bleeds past the column edges by design, and long source
+   labels are unbreakable strings; both push a phone viewport sideways. */
+body { overflow-x: hidden; }
+.cite { word-break: break-word; max-width: 100%; }
+.chips a, .chips .chip, .stack span { word-break: break-word; }
+
+@media (max-width: 520px) {
+  .dock::before { left: -16px; right: -16px; }
+  .turn.you .bubble { max-width: 92%; }
+  .thread { padding-bottom: 210px; }
+}
