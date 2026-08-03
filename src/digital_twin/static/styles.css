@@ -337,3 +337,9 @@ main { position: relative; z-index: 2; }
   *, *::before, *::after { animation: none !important; transition-duration: .001ms !important; }
   .reveal { opacity: 1; transform: none; }
 }
+
+/* Waiting state: explicit, because a grounded answer takes seconds and silent
+   dots read as a dead page. */
+.waiting { display: inline-flex; align-items: center; gap: 11px; }
+.waiting-label { font-family: var(--sans); font-size: 14.5px; color: var(--ink-3); }
+.waiting-clock { font: 400 12px/1 var(--mono); color: var(--clay); border: 1px solid var(--line); border-radius: 999px; padding: 4px 9px; }

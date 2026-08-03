@@ -233,17 +233,33 @@
     turn("you", text);
     el.input.value = "";
     el.input.style.height = "auto";
+    // A grounded answer takes several seconds. Silent dots are indistinguishable
+    // from a broken page, so say what is happening and keep a running clock.
     const pending = turn("twin", "");
-    pending.querySelector(".text").innerHTML =
-      '<span class="typing"><i></i><i></i><i></i></span>';
+    const slot = pending.querySelector(".text");
+    slot.innerHTML =
+      '<span class="waiting"><span class="typing"><i></i><i></i><i></i></span>' +
+      '<span class="waiting-label">Searching his CV and repositories…</span>' +
+      '<span class="waiting-clock">0s</span></span>';
+    const startedAt = Date.now();
+    const clock = slot.querySelector(".waiting-clock");
+    const label = slot.querySelector(".waiting-label");
+    const ticker = setInterval(() => {
+      const secs = Math.round((Date.now() - startedAt) / 1000);
+      clock.textContent = `${secs}s`;
+      if (secs === 4) label.textContent = "Drafting a grounded answer…";
+      if (secs === 12) label.textContent = "Still working — verifying every claim…";
+    }, 1000);
 
     try {
       const r = await api(`/api/sessions/${state.sessionId}/chat`, {
         method: "POST", body: JSON.stringify({ message: text }),
       });
+      clearInterval(ticker);
       pending.remove();
       turn("twin", r.answer, r.sources);
     } catch (e) {
+      clearInterval(ticker);
       pending.remove();
       turn("twin", `Sorry — ${e.message}`);
     } finally {
@@ -503,9 +519,8 @@
     try {
       const s = await api("/api/sessions", { method: "POST", body: "{}" });
       state.sessionId = s.session_id;
-      // Open on the greeting so the console reads as a live conversation
-      // rather than an empty frame waiting to be earned.
-      if (s.greeting) turn("twin", s.greeting, ["CV › Grounding contract"]);
+      // No greeting turn: the opening line above the input already says what
+      // the twin is and what it can be asked, and repeating it reads as a bug.
       openEvents();
       el.onboarding.hidden = false;
       el.visitorName.focus();
