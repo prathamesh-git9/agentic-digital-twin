@@ -8,7 +8,7 @@
     <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
     <!-- Version stamp: static assets ship without Cache-Control, so browsers
          apply heuristic freshness and can serve a stale stylesheet. -->
-    <link rel="stylesheet" href="/static/styles.css?v=25">
+    <link rel="stylesheet" href="/static/styles.css?v=27">
   </head>
   <body>
     <a class="skip-link" href="#composer-input">Skip to chat</a>
@@ -33,6 +33,8 @@
         <svg class="cloud c2" viewBox="0 0 260 88"><path d="M34 70c-18 0-32-12-32-26 0-13 11-24 25-25 5-14 19-23 34-23 18 0 34 12 39 28 4-2 9-3 13-3 16 0 29 12 29 26s-13 23-29 23Z"/></svg>
         <svg class="cloud c3" viewBox="0 0 300 96"><path d="M40 78C18 78 2 64 2 46 2 30 15 17 32 16 39 6 52 0 66 0c19 0 36 12 42 29 5-2 10-3 15-3 18 0 33 14 33 30s-15 28-33 28Z"/></svg>
         <svg class="cloud c4" viewBox="0 0 200 72"><path d="M26 56c-14 0-24-9-24-20s10-19 23-19c4-11 15-17 26-17 14 0 26 8 29 20 3-1 5-1 8-1 12 0 21 9 21 19s-9 18-21 18Z"/></svg>
+        <svg class="cloud c5" viewBox="0 0 260 88"><path d="M34 70c-18 0-32-12-32-26 0-13 11-24 25-25 5-14 19-23 34-23 18 0 34 12 39 28 4-2 9-3 13-3 16 0 29 12 29 26s-13 23-29 23Z"/></svg>
+        <svg class="cloud c6" viewBox="0 0 300 96"><path d="M40 78C18 78 2 64 2 46 2 30 15 17 32 16 39 6 52 0 66 0c19 0 36 12 42 29 5-2 10-3 15-3 18 0 33 14 33 30s-15 28-33 28Z"/></svg>
       </div>
       <div class="haze"></div>
       <div class="grain"></div>
@@ -151,25 +153,28 @@
       </section>
 
       <aside class="rail rail-right">
-        <section class="panel reveal">
-          <span class="panel-label">What it can do</span>
-          <ul class="toollist">
-            <li><b>Search the web</b><span>Live search when the CV alone can't answer</span></li>
-            <li><b>Read a page</b><span>Scrapes and extracts, respecting robots.txt</span></li>
-            <li><b>Search his code</b><span>Across ten public repositories</span></li>
-            <li><b>Research a company</b><span>Stack, blog, news — each attributed</span></li>
-            <li><b>Find open roles</b><span>Live from Greenhouse, Lever, Ashby</span></li>
-            <li><b>Score a job spec</b><span>Honest about gaps, not just matches</span></li>
+        <section class="panel stack-panel reveal">
+          <span class="panel-label">AI stack he works in</span>
+          <ul class="aistack">
+            <li><b>RAG</b><span>Hybrid BM25 + vector, fused with RRF, MMR diversity</span></li>
+            <li><b>MCP</b><span>Model Context Protocol servers across his repos</span></li>
+            <li><b>Tool calling</b><span>Function calling, orchestration, retries</span></li>
+            <li><b>Grounding</b><span>Claim-level verification against sources</span></li>
+            <li><b>Guardrails</b><span>Prompt-injection defence, layered oracles</span></li>
+            <li><b>Evals</b><span>Reproducible runs with regression baselines</span></li>
+            <li><b>Vector search</b><span>Embeddings, semantic retrieval, relevance floors</span></li>
+            <li><b>Agent runtimes</b><span>Durable execution, replay, human gates</span></li>
           </ul>
         </section>
 
         <section class="panel reveal d1">
-          <span class="panel-label">How it answers</span>
+          <span class="panel-label">This twin's own pipeline</span>
           <ol class="pipeline">
-            <li><b>Retrieve</b><span>from the CV and public code</span></li>
+            <li><b>Retrieve</b><span>CV corpus + live GitHub</span></li>
+            <li><b>Tools</b><span>web search, scraping, repo search</span></li>
             <li><b>Draft</b><span>in his own voice</span></li>
             <li><b>Verify</b><span>every claim against its source</span></li>
-            <li><b>Cite</b><span>or say plainly it has no evidence</span></li>
+            <li><b>Cite</b><span>or admit it has no evidence</span></li>
           </ol>
         </section>
 
@@ -351,6 +356,6 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-    <script src="/static/app.js?v=25" defer></script>
+    <script src="/static/app.js?v=27" defer></script>
   </body>
 </html>
