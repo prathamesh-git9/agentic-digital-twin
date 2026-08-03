@@ -116,16 +116,6 @@ class ProfileCorpus:
             items.append(EvidenceItem("CV › Certifications", certification))
         items.extend(
             [
-                # The twin's own identity is evidence, not prompt wording. Asked
-                # its name it would otherwise draft "I'm Kal", find no support for
-                # it, and fall back to reciting the grounding policy at the
-                # visitor — refusing to say what it is called.
-                EvidenceItem(
-                    "Policy › Twin identity",
-                    "The name of this digital twin is Kal; it is called Kal. Kal "
-                    "answers on Prathamesh Kalamkar's behalf, drawing only on his "
-                    "CV and his public code, and is not Prathamesh himself.",
-                ),
                 EvidenceItem(
                     "Policy › Grounding boundary",
                     "The twin only makes claims supported by the CV or allow-listed "

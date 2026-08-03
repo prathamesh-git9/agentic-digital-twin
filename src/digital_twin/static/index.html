@@ -3,12 +3,12 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Kal is Prathamesh Kalamkar's digital twin — ask it anything about his work.">
-    <title>Kal — Prathamesh Kalamkar's digital twin</title>
+    <meta name="description" content="Prathamesh Kalamkar's digital twin — ask it anything about his work.">
+    <title>Prathamesh Kalamkar — digital twin</title>
     <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
     <!-- Version stamp: static assets ship without Cache-Control, so browsers
          apply heuristic freshness and can serve a stale stylesheet. -->
-    <link rel="stylesheet" href="/static/styles.css?v=23">
+    <link rel="stylesheet" href="/static/styles.css?v=25">
   </head>
   <body>
     <a class="skip-link" href="#composer-input">Skip to chat</a>
@@ -23,6 +23,17 @@
         <path class="r r2" d="M0 424 C 72 416 110 388 172 384 C 238 380 266 418 328 426 C 392 434 420 392 488 390 C 558 388 582 428 648 436 C 716 444 748 404 814 404 C 882 404 906 440 972 448 C 1040 456 1074 418 1142 420 C 1210 422 1240 452 1306 458 C 1364 463 1404 446 1440 438 L1440 520 L0 520 Z"/>
         <path class="r r1" d="M0 470 C 80 464 122 448 190 446 C 258 444 288 468 352 474 C 418 480 448 458 516 458 C 586 458 610 480 676 486 C 744 492 776 470 842 470 C 910 470 934 490 1000 496 C 1068 502 1100 482 1168 482 C 1236 482 1266 500 1330 504 C 1382 507 1414 498 1440 494 L1440 520 L0 520 Z"/>
       </svg>
+      <!--
+        Clouds drift at three speeds for parallax. Decorative: the CV lists an
+        AWS course, not production cloud work, so this is atmosphere and the
+        page makes no claim beyond what the certifications section states.
+      -->
+      <div class="clouds" aria-hidden="true">
+        <svg class="cloud c1" viewBox="0 0 220 80"><path d="M28 62c-15 0-26-10-26-22s11-21 25-21c4-13 17-19 29-19 15 0 28 9 32 22 3-1 6-2 9-2 13 0 24 10 24 22s-11 20-24 20Z"/></svg>
+        <svg class="cloud c2" viewBox="0 0 260 88"><path d="M34 70c-18 0-32-12-32-26 0-13 11-24 25-25 5-14 19-23 34-23 18 0 34 12 39 28 4-2 9-3 13-3 16 0 29 12 29 26s-13 23-29 23Z"/></svg>
+        <svg class="cloud c3" viewBox="0 0 300 96"><path d="M40 78C18 78 2 64 2 46 2 30 15 17 32 16 39 6 52 0 66 0c19 0 36 12 42 29 5-2 10-3 15-3 18 0 33 14 33 30s-15 28-33 28Z"/></svg>
+        <svg class="cloud c4" viewBox="0 0 200 72"><path d="M26 56c-14 0-24-9-24-20s10-19 23-19c4-11 15-17 26-17 14 0 26 8 29 20 3-1 5-1 8-1 12 0 21 9 21 19s-9 18-21 18Z"/></svg>
+      </div>
       <div class="haze"></div>
       <div class="grain"></div>
     </div>
@@ -30,7 +41,7 @@
     <header class="bar">
       <a class="bar-left" href="/">
         <img class="face" src="/static/prathamesh.jpg" alt="" width="26" height="26">
-        <span class="name">Prathamesh Kalamkar</span><span class="tag-kal">Kal</span>
+        <span class="name">Prathamesh Kalamkar</span>
       </a>
       <nav class="bar-right">
         <a href="#experience">Experience</a>
@@ -49,6 +60,45 @@
     </div></div>
 
     <main>
+      <!--
+        Three columns above the fold. The conversation stays the centre of
+        attention; the rails carry the context a recruiter would otherwise have
+        to scroll for, and give the wide viewport something to hold.
+      -->
+      <div class="deck">
+
+      <aside class="rail rail-left">
+        <section class="panel identity reveal">
+          <img class="rail-face" src="/static/prathamesh.jpg" alt="Prathamesh Kalamkar" width="56" height="56">
+          <strong>Prathamesh Kalamkar</strong>
+          <span>Back-end &amp; AI agent engineer</span>
+          <span class="avail"><i></i>Dublin · open to roles</span>
+          <div class="rail-links">
+            <a href="https://github.com/prathamesh-git9" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
+            <button class="linkish" id="rail-contact" type="button">Email ↗</button>
+          </div>
+        </section>
+
+        <section class="panel reveal d1">
+          <span class="panel-label">At a glance</span>
+          <dl class="glance">
+            <div><dt>Experience</dt><dd>3.5+ yrs</dd></div>
+            <div><dt>Core</dt><dd>Java · Python</dd></div>
+            <div><dt>Education</dt><dd>MSc, 1:1</dd></div>
+            <div><dt>Open source</dt><dd>10 systems</dd></div>
+          </dl>
+        </section>
+
+        <nav class="panel reveal d2">
+          <span class="panel-label">Jump to</span>
+          <a href="#experience">Experience</a>
+          <a href="#skills">Capabilities</a>
+          <a href="#projects">Projects</a>
+          <a href="#work">Open source</a>
+          <a href="#faq">Questions</a>
+        </nav>
+      </aside>
+
       <!-- The input is the focal artefact; everything above it is one line. -->
       <section class="ask-hero">
         <!-- Only the opening copy retires once the conversation starts. It must
@@ -56,7 +106,7 @@
              the chat from the page. -->
         <div id="intro">
           <h1 class="reveal">Meet Prathamesh<br><em>before you meet him.</em></h1>
-          <p class="reveal d1">I'm <b>Kal</b>, his digital twin. Ask me about his experience, what he's built, or whether he fits the role you're hiring for — every answer comes from his CV and public code.</p>
+          <p class="reveal d1">I'm his digital twin. Ask me about his experience, what he's built, or whether he fits the role you're hiring for — every answer comes from his CV and public code.</p>
           <div class="quickfacts reveal d2">
             <span><b>3.5+</b> years back-end</span>
             <span><b>10</b> systems shipped</span>
@@ -96,9 +146,40 @@
             </button>
           </form>
           <div class="suggestions" id="starters"></div>
-          <p class="dock-note"><span id="model-note"></span> · Kal answers from evidence. Contractual questions go to Prathamesh.</p>
+          <p class="dock-note"><span id="model-note"></span> · Answers are evidence-backed. Contractual questions go to Prathamesh.</p>
         </div>
       </section>
+
+      <aside class="rail rail-right">
+        <section class="panel reveal">
+          <span class="panel-label">What it can do</span>
+          <ul class="toollist">
+            <li><b>Search the web</b><span>Live search when the CV alone can't answer</span></li>
+            <li><b>Read a page</b><span>Scrapes and extracts, respecting robots.txt</span></li>
+            <li><b>Search his code</b><span>Across ten public repositories</span></li>
+            <li><b>Research a company</b><span>Stack, blog, news — each attributed</span></li>
+            <li><b>Find open roles</b><span>Live from Greenhouse, Lever, Ashby</span></li>
+            <li><b>Score a job spec</b><span>Honest about gaps, not just matches</span></li>
+          </ul>
+        </section>
+
+        <section class="panel reveal d1">
+          <span class="panel-label">How it answers</span>
+          <ol class="pipeline">
+            <li><b>Retrieve</b><span>from the CV and public code</span></li>
+            <li><b>Draft</b><span>in his own voice</span></li>
+            <li><b>Verify</b><span>every claim against its source</span></li>
+            <li><b>Cite</b><span>or say plainly it has no evidence</span></li>
+          </ol>
+        </section>
+
+        <section class="panel note reveal d2">
+          <span class="panel-label">Boundary</span>
+          <p>It will not negotiate salary, accept an offer, or commit to a start date. Those go to Prathamesh.</p>
+        </section>
+      </aside>
+
+      </div>
 
       <div class="bands">
       <section class="band" id="experience">
@@ -208,15 +289,15 @@
         <div class="band-head reveal"><span class="kicker">Questions</span><h2>What people ask before they get in touch.</h2></div>
         <div class="faq reveal">
           <details><summary>Is this actually accurate?</summary><p>Every claim is retrieved from his CV or public repositories and cited underneath the answer. If something isn't evidenced, the twin says so rather than guessing.</p></details>
-          <details><summary>Can Kal negotiate or accept an offer?</summary><p>No. Kal speaks about the work; it cannot commit anything on his behalf. Salary, offers, start dates and anything contractual are refused by design and handed to Prathamesh directly.</p></details>
-          <details><summary>Why does Kal ask my name?</summary><p>So it can point you at the most relevant work. It's optional — skipping gives you the identical conversation.</p></details>
-          <details><summary>What is Kal built on?</summary><p>Python, FastAPI and SQLite with a provider-agnostic model layer. The source is public on GitHub, alongside the ten systems it talks about.</p></details>
+          <details><summary>Can it negotiate or accept an offer?</summary><p>No. It speaks about the work; it cannot commit anything on his behalf. Salary, offers, start dates and anything contractual are refused by design and handed to Prathamesh directly.</p></details>
+          <details><summary>Why does it ask my name?</summary><p>So it can point you at the most relevant work. It's optional — skipping gives you the identical conversation.</p></details>
+          <details><summary>What is it built on?</summary><p>Python, FastAPI and SQLite with a provider-agnostic model layer. The source is public on GitHub, alongside the ten systems it talks about.</p></details>
         </div>
       </section>
       <section class="band" id="cta">
         <div class="cta reveal">
           <h2>Still deciding?</h2>
-          <p>Ask Kal anything — it answers from the CV and the code, and tells you plainly when something isn't evidenced. Or skip it and talk to Prathamesh directly.</p>
+          <p>Ask the twin anything — it answers from the CV and the code, and tells you plainly when something isn't evidenced. Or skip it and talk to Prathamesh directly.</p>
           <div class="cta-row">
             <button class="btn" id="cta-ask" type="button">Ask a question</button>
             <button class="btn ghost" id="cta-contact" type="button">Contact him</button>
@@ -246,7 +327,7 @@
       <div class="over-scrim" data-close></div>
       <section class="over-panel">
         <div class="over-head"><h2 id="contact-title">Get in touch</h2><button type="button" class="q" id="contact-close">Close</button></div>
-        <p class="over-lede">Straight to Prathamesh — not to Kal.</p>
+        <p class="over-lede">Straight to Prathamesh — not the twin.</p>
         <div class="contact-rows" id="contact-rows"></div>
       </section>
     </div>
@@ -254,7 +335,7 @@
     <div class="modal" id="onboarding" role="dialog" aria-modal="true" aria-labelledby="onboarding-title" hidden>
       <section class="modal-card">
         <h2 id="onboarding-title">Who am I talking to?</h2>
-        <p>I'm Kal, Prathamesh's twin. Knowing who you are lets me point you at the most relevant work. Entirely optional.</p>
+        <p>Knowing who you are lets me point you at the most relevant work. Entirely optional.</p>
         <form id="identity-form">
           <label class="sr-only" for="visitor-name">Your name</label>
           <input id="visitor-name" type="text" placeholder="Your name" autocomplete="name">
@@ -270,6 +351,6 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-    <script src="/static/app.js?v=23" defer></script>
+    <script src="/static/app.js?v=25" defer></script>
   </body>
 </html>

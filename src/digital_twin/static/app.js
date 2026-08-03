@@ -216,7 +216,7 @@
     const chips = (cites || []).map((c) => `<span class="cite">${esc(c)}</span>`).join("");
     div.innerHTML = `
       <div class="bubble">
-        <span class="label">${role === "twin" ? "Kal" : "You"}</span>
+        <span class="label">${role === "twin" ? "Prathamesh" : "You"}</span>
         <div class="text">${esc(text)}</div>
         ${chips ? `<div class="cites">${chips}</div>` : ""}
         ${role === "twin" && text
@@ -423,6 +423,7 @@
   }
 
   $("#contact-button").addEventListener("click", openContact);
+  $("#rail-contact")?.addEventListener("click", openContact);
   $("#contact-close").addEventListener("click", () => (contactSheet.hidden = true));
   contactSheet.addEventListener("click", (e) => {
     if (e.target.dataset.close !== undefined) contactSheet.hidden = true;
