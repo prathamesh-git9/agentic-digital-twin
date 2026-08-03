@@ -450,6 +450,12 @@
 
   /* ---------- landing sections ---------- */
 
+  $("#cta-ask")?.addEventListener("click", () => {
+    el.input.scrollIntoView({ behavior: "smooth", block: "center" });
+    setTimeout(() => el.input.focus({ preventScroll: true }), 500);
+  });
+  $("#cta-contact")?.addEventListener("click", () => $("#contact-button").click());
+
   $("#hero-start")?.addEventListener("click", () => {
     el.input.scrollIntoView({ behavior: "smooth", block: "center" });
     el.input.focus({ preventScroll: true });

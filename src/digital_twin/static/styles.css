@@ -445,3 +445,78 @@ html[data-theme="dark"] #composer { box-shadow: inset 0 1px 0 rgba(255,255,255,.
   border: 1px solid var(--glass-edge); border-radius: 999px; padding: 8px 15px;
 }
 .quickfacts b { font-size: 14.5px; color: var(--clay); font-weight: 650; }
+
+/* ================= skills ================= */
+
+.skillgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; margin-top: 44px; }
+.skillcard {
+  background: var(--glass); backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-edge); border-radius: 16px; padding: 22px;
+}
+.skillcard h3 { font-size: 13px; font-weight: 600; letter-spacing: .02em; margin: 0 0 14px; color: var(--clay); }
+.skillcard ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.skillcard li { font-size: 12.5px; color: var(--ink); background: var(--paper-2); border-radius: 7px; padding: 5px 10px; }
+/* Faded entries are the CV's own "familiarity" wording, kept visually distinct
+   so a reviewer is never misled about depth. */
+.skillcard li.soft { color: var(--ink-3); background: transparent; box-shadow: inset 0 0 0 1px var(--line); }
+
+.legend { display: flex; align-items: center; gap: 9px; margin-top: 20px; font-size: 12.5px; color: var(--ink-3); }
+.swatch { width: 22px; height: 10px; border-radius: 4px; background: linear-gradient(90deg, var(--paper-2) 50%, transparent 50%); box-shadow: inset 0 0 0 1px var(--line); flex: none; }
+
+/* ================= projects ================= */
+
+.projects { margin-top: 44px; }
+.project { display: grid; grid-template-columns: 90px minmax(0, 1fr); gap: 20px; padding: 28px 0; border-top: 1px solid var(--line); }
+.project-year { font: 400 12px/1.7 var(--mono); color: var(--clay); }
+.project h3 { font-size: 19px; font-weight: 600; letter-spacing: -.02em; margin: 0; }
+.project p { font-size: 14.5px; color: var(--ink-2); margin-top: 10px; max-width: 64ch; }
+.stack { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+.stack span { font: 400 11.5px/1 var(--mono); color: var(--ink-3); border: 1px solid var(--line); border-radius: 999px; padding: 5px 11px; }
+
+/* ================= certifications ================= */
+
+.certs { margin-top: 36px; padding-top: 24px; border-top: 1px solid var(--line); }
+.certrow { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.certrow span { font-size: 13px; color: var(--ink-2); background: var(--glass); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); border: 1px solid var(--glass-edge); border-radius: 999px; padding: 8px 15px; }
+
+/* ================= closing call to action ================= */
+
+.cta {
+  margin-top: 40px; padding: clamp(36px, 6vw, 60px); text-align: center;
+  background: var(--glass); backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-edge); border-radius: 24px;
+}
+.cta h2 { font-size: clamp(26px, 3.6vw, 38px); }
+.cta p { color: var(--ink-2); font-size: 16px; margin: 16px auto 0; max-width: 52ch; }
+.cta-row { display: flex; gap: 11px; justify-content: center; margin-top: 28px; flex-wrap: wrap; }
+
+@media (max-width: 700px) {
+  .project { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+}
+
+/* ================= surfaces over solid ground ================= */
+
+/*
+  Glass only reads against the sky. Panels inside the lower bands sit on solid
+  paper, where a translucent white fill renders as nothing at all — so these
+  get a real tinted surface and a border instead.
+*/
+.skillcard,
+.cta,
+.certrow span {
+  background: var(--paper-2);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-color: var(--line-2);
+}
+.skillcard { box-shadow: none; }
+.cta { background: linear-gradient(170deg, var(--paper-2), var(--paper) 70%); }
+.skillcard li { background: var(--paper); }
+.skillcard li.soft { background: transparent; }
+
+/* The closing panel followed a full band of padding, leaving a dead screen
+   between the last question and the call to action. */
+#cta { padding-top: clamp(28px, 4vh, 44px); }
+#cta .cta { margin-top: 0; }

@@ -8,7 +8,7 @@
     <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
     <!-- Version stamp: static assets ship without Cache-Control, so browsers
          apply heuristic freshness and can serve a stale stylesheet. -->
-    <link rel="stylesheet" href="/static/styles.css?v=16">
+    <link rel="stylesheet" href="/static/styles.css?v=18">
   </head>
   <body>
     <a class="skip-link" href="#composer-input">Skip to chat</a>
@@ -134,9 +134,74 @@
         </div>
       </section>
 
+      <section class="band" id="skills">
+        <div class="band-head reveal"><span class="kicker">Capabilities</span><h2>What he reaches for, and how deep it goes.</h2></div>
+        <div class="skillgrid">
+          <article class="skillcard reveal">
+            <h3>Languages</h3>
+            <ul><li>Java</li><li>Python</li><li>SQL</li><li>Bash</li><li>JavaScript</li><li class="soft">Node.js</li><li class="soft">GraphQL</li><li class="soft">Ruby</li><li class="soft">C++</li></ul>
+          </article>
+          <article class="skillcard reveal">
+            <h3>Back-end</h3>
+            <ul><li>Spring Boot</li><li>REST APIs</li><li>Microservices</li><li>Data modelling</li><li>Auth flows</li><li>Service contracts</li><li>Structured logging</li><li class="soft">JVM internals</li></ul>
+          </article>
+          <article class="skillcard reveal">
+            <h3>AI &amp; agents</h3>
+            <ul><li>LLM integrations</li><li>OpenAI APIs</li><li>Claude</li><li>Agentic workflows</li><li>Function calling</li><li>Tool orchestration</li><li>Retries &amp; guardrails</li><li>Prompt contracts</li><li class="soft">MCP</li></ul>
+          </article>
+          <article class="skillcard reveal">
+            <h3>Events &amp; data</h3>
+            <ul><li>Event-driven pipelines</li><li>Context assembly</li><li class="soft">Kafka</li><li class="soft">SQS</li><li class="soft">RAG</li><li class="soft">Embeddings</li><li class="soft">Vector stores</li><li class="soft">Caching &amp; rate limiting</li></ul>
+          </article>
+          <article class="skillcard reveal">
+            <h3>Observability</h3>
+            <ul><li>Logs, metrics, traces</li><li>Run metadata</li><li>Dashboards</li><li>Debugging</li><li class="soft">OpenTelemetry</li><li class="soft">Datadog</li></ul>
+          </article>
+          <article class="skillcard reveal">
+            <h3>Security &amp; ops</h3>
+            <ul><li>Input validation</li><li>Prompt-injection defence</li><li>Secret management</li><li>Least-privilege design</li><li>Integration testing</li><li>CI/CD</li><li>Docker</li></ul>
+          </article>
+        </div>
+        <p class="legend reveal"><span class="swatch"></span>Solid = used in production work. Faded = familiarity, stated as such rather than overclaimed.</p>
+      </section>
+
+      <section class="band" id="projects">
+        <div class="band-head reveal"><span class="kicker">Selected projects</span><h2>Things he built to answer a question.</h2></div>
+        <div class="projects">
+          <article class="project reveal">
+            <div class="project-year">2026</div>
+            <div>
+              <h3>Agentic Job Application Platform</h3>
+              <p>A full-stack platform automating ATS workflows through agent-driven task execution, persistent state, human review gates and structured outputs. Tool execution layers with validation, retries and workflow controls keep long task chains inspectable.</p>
+              <div class="stack"><span>Python</span><span>FastAPI</span><span>SQL</span><span>Agent workflows</span><span>Supabase</span></div>
+            </div>
+          </article>
+          <article class="project reveal">
+            <div class="project-year">2025</div>
+            <div>
+              <h3>AI Agent Evaluation Harness</h3>
+              <p>Compares agent responses, surfaces failure modes and improves orchestration through reproducible runs rather than intuition. Scoring, parsing and run metadata support iterative tuning of prompts, tool selection and error handling.</p>
+              <div class="stack"><span>Python</span><span>Tool calling</span><span>Structured outputs</span><span>Prompt evals</span></div>
+            </div>
+          </article>
+          <article class="project reveal">
+            <div class="project-year">2025</div>
+            <div>
+              <h3>SAFECode</h3>
+              <p>An AI-assisted code review tool that analyses source for vulnerabilities and returns structured findings for triage, with clear input validation and predictable outputs so it fits into an existing developer workflow.</p>
+              <div class="stack"><span>Python</span><span>FastAPI</span><span>Security analysis</span><span>AI workflows</span></div>
+            </div>
+          </article>
+        </div>
+      </section>
+
       <section class="band" id="work">
         <div class="band-head reveal"><span class="kicker">Open source</span><h2>Ten systems, built around correctness.</h2></div>
         <div class="cards" id="work-cards"></div>
+        <div class="certs reveal">
+          <span class="kicker">Also completed</span>
+          <div class="certrow"><span>AWS</span><span>Node.js</span><span>Data Structures &amp; Algorithms</span><span>System Design</span></div>
+        </div>
       </section>
 
       <section class="band" id="faq">
@@ -146,6 +211,16 @@
           <details><summary>Can it negotiate or accept an offer?</summary><p>No. Salary, offers, start dates and anything contractual are refused by design and handed to Prathamesh directly.</p></details>
           <details><summary>Why does it ask my name?</summary><p>So it can point you at the most relevant work. It's optional — skipping gives you the identical conversation.</p></details>
           <details><summary>What is it built on?</summary><p>Python, FastAPI and SQLite with a provider-agnostic model layer. The source is public on GitHub, alongside the ten systems it talks about.</p></details>
+        </div>
+      </section>
+      <section class="band" id="cta">
+        <div class="cta reveal">
+          <h2>Still deciding?</h2>
+          <p>Ask the twin anything — it answers from the CV and the code, and tells you plainly when something isn't evidenced. Or skip it and talk to Prathamesh directly.</p>
+          <div class="cta-row">
+            <button class="btn" id="cta-ask" type="button">Ask a question</button>
+            <button class="btn ghost" id="cta-contact" type="button">Contact him</button>
+          </div>
         </div>
       </section>
       </div>
@@ -195,6 +270,6 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-    <script src="/static/app.js?v=16" defer></script>
+    <script src="/static/app.js?v=18" defer></script>
   </body>
 </html>
