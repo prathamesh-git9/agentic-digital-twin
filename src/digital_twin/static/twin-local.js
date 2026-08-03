@@ -71,7 +71,26 @@
     fit: ["experience", "built", "engineer", "skills"],
     lead: ["ownership", "collaborating", "reviews"],
     scale: ["production", "throughput", "reliability", "performance"],
+    // Recruiters ask about education in words the CV never uses: it says "MSc"
+    // and "Dublin Business School", never "study" or "qualification".
+    study: ["education", "degree", "msc", "bsc", "university", "honours", "coursework"],
+    studied: ["education", "degree", "msc", "bsc", "university", "honours"],
+    education: ["msc", "bsc", "degree", "university", "honours", "coursework", "school"],
+    degree: ["msc", "bsc", "honours", "university", "education"],
+    university: ["dublin", "business", "school", "savitribai", "pune", "msc", "bsc"],
+    college: ["university", "msc", "bsc", "school"],
+    qualification: ["msc", "bsc", "degree", "certification", "education"],
+    based: ["location", "dublin", "ireland", "contact"],
+    location: ["dublin", "ireland", "based"],
+    contact: ["email", "reach", "location"],
+    overview: ["summary", "engineer", "years", "experience"],
+    summary: ["engineer", "years", "experience", "backend"],
+    certification: ["course", "aws", "node", "certifications"],
   };
+
+  // Questions that want the top-line summary rather than the best keyword match.
+  const OVERVIEW_RE =
+    /\b(overview|summar(y|ise|ize)|who is he|introduce|elevator|60[- ]second|tell me about him)\b/i;
 
   const tokenize = (value) =>
     String(value || "")
@@ -188,16 +207,50 @@
     return [...totals.entries()].sort((a, b) => b[1] - a[1]);
   }
 
-  function retrieve(index, query, limit = 4) {
+  const sectionOf = (source) => source.split("›").slice(0, 3).join("›").trim();
+
+  function retrieve(index, query, limit = 4, { evidenceOnly = true } = {}) {
     const terms = expand(tokenize(query));
     if (!terms.length) return { hits: [], trace: null };
     const lexical = bm25(index, terms);
     const dense = semantic(index, query);
-    const fused = fuse([lexical, dense]);
-    const hits = fused.slice(0, limit).map(([id, score]) => ({
-      ...index.items[id],
-      score,
-    }));
+    const rankings = [lexical, dense];
+    // A third ranking, fused the same way, is how an overview question reaches
+    // the summary without a special case downstream.
+    if (OVERVIEW_RE.test(query)) {
+      rankings.push(
+        index.items
+          .map((item, id) => [id, item])
+          .filter((pair) => /Summary/i.test(pair[1].source))
+          .map((pair) => [pair[0], 1]),
+      );
+    }
+    const fused = fuse(rankings);
+
+    const hits = [];
+    const seenText = new Set();
+    const perSection = new Map();
+    let best = 0;
+    for (const [id, score] of fused) {
+      const item = index.items[id];
+      // Policy chunks state what the twin will not do. They are the right answer
+      // to "can you negotiate?" and never the right answer to anything else, so
+      // they belong in refusals rather than in evidence.
+      if (evidenceOnly && /^Policy/i.test(item.source)) continue;
+      if (!best) best = score;
+      // Anything scoring far below the best match is padding. A fixed four
+      // chunks meant "where is he based?" answered correctly and then added
+      // three unrelated paragraphs.
+      if (score < best * 0.55) break;
+      const fingerprint = item.text.slice(0, 60).toLowerCase();
+      if (seenText.has(fingerprint)) continue;
+      const group = sectionOf(item.source);
+      if ((perSection.get(group) || 0) >= 2) continue;
+      seenText.add(fingerprint);
+      perSection.set(group, (perSection.get(group) || 0) + 1);
+      hits.push({ ...item, score });
+      if (hits.length >= limit) break;
+    }
     return {
       hits,
       trace: {
@@ -224,10 +277,15 @@
     // The corpus bullets are already written as standalone prose, so joining the
     // top chunks reads as an answer. Anything beyond this would be generation,
     // and there is no model here to ground it.
-    const lead = /\b(who|what|tell me|overview|about|summar)/i.test(question)
-      ? "Here's what his CV and public code actually show:"
-      : "From his CV and public repositories:";
     const body = hits.map((hit) => hit.text.trim().replace(/\s+/g, " ")).join("\n\n");
+    // A single confident hit needs no preamble. Announcing "here is what the CV
+    // shows" ahead of one short sentence is worse than just saying the sentence.
+    if (hits.length === 1) return body;
+    const lead = OVERVIEW_RE.test(question)
+      ? "The short version, from his CV:"
+      : /\bfits?\b|\bsuited\b|\bright for\b|\bgood for\b/i.test(question)
+        ? "Judge it from the evidence rather than from my opinion:"
+        : "From his CV and public repositories:";
     return `${lead}\n\n${body}`;
   }
 
@@ -252,7 +310,9 @@
     }
     return {
       answer: compose(question, hits),
-      sources: hits.map((hit) => hit.source),
+      // Two chunks from the same CV entry are one citation, not two: repeating
+      // the identical label under an answer reads as a rendering fault.
+      sources: [...new Set(hits.map((hit) => hit.source))],
       grounded: true,
       refusal: false,
       trace,

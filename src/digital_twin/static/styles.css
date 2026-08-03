@@ -599,6 +599,43 @@ body.has-thread .scene { opacity: .32; }
 .scroll-cue svg { animation: nudge 2.4s var(--ease) infinite; }
 @keyframes nudge { 0%, 60%, 100% { transform: none; } 30% { transform: translateY(3px); } }
 
+/* ================= detail ================= */
+
+/* Selection inherited the browser default blue, which clashed with the accent
+   on every highlighted line of an answer. */
+::selection { background: var(--clay-soft); color: var(--ink); }
+
+/* The default scrollbar is a slab of system chrome against a soft page. */
+* { scrollbar-width: thin; scrollbar-color: var(--line-2) transparent; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--line-2); border-radius: var(--r-pill);
+  border: 3px solid var(--paper); background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--ink-3); background-clip: padding-box; }
+
+/* A citation is checkable evidence, so it should look like it rewards a look. */
+.cite { cursor: help; transition: border-color .16s var(--ease), color .16s var(--ease); }
+.cite:hover { border-color: var(--clay); color: var(--ink-2); }
+
+/* The send button had no disabled affordance beyond opacity, and no press
+   feedback at all. */
+.send:active { transform: translateY(0) scale(.94); }
+.suggestions button:active { transform: translateY(0) scale(.98); }
+.stack-chip:active { transform: scale(.98); }
+
+/* Links in prose were indistinguishable from body text until hovered. */
+.mcp-lede a { color: var(--clay); text-decoration: none; border-bottom: 1px solid transparent; }
+.mcp-lede a:hover { border-bottom-color: currentColor; }
+
+/* Long single-word tokens in a repository description or a tool name must not
+   push a card wider than its column. */
+.card p, .mcp-card p, .rank-src, .mcp-install { overflow-wrap: anywhere; }
+
+/* An answer arriving should not shift what is already on screen. */
+.thread { scroll-margin-top: calc(var(--bar-h) + 16px); }
+
 /* ================= scroll progress ================= */
 
 .progress {

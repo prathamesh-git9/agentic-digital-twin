@@ -223,7 +223,14 @@
   function turn(role, text, cites, trace) {
     const div = document.createElement("div");
     div.className = `turn ${role}`;
-    const chips = (cites || []).map((c) => `<span class="cite">${esc(c)}</span>`).join("");
+    // "CV › Experience › matriXploit Pvt. Ltd. › Software Engineer" is
+    // four levels of breadcrumb for a chip. The last two identify it; the full
+    // path stays available on hover for anyone checking the source.
+    const chips = (cites || []).map((c) => {
+      const parts = String(c).split("›").map((p) => p.trim()).filter(Boolean);
+      const short = parts.length > 2 ? parts.slice(-2).join(" › ") : parts.join(" › ");
+      return `<span class="cite" title="${esc(c)}">${esc(short)}</span>`;
+    }).join("");
     // Showing the retrieval shape is the point, not decoration: it is what
     // separates a grounded answer from a confident-sounding one.
     const retrieval = trace
