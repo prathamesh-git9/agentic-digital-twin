@@ -109,13 +109,20 @@ class ScraplingPageFetcher:
         timeout: float = 5.0,
         robots: RobotsPolicy | None = None,
         fetch_html: Callable[[str, float], Awaitable[str]] | None = None,
+        allow_hosts: tuple[str, ...] = (),
+        deny_hosts: tuple[str, ...] = (),
+        max_bytes: int = 262_144,
+        max_redirects: int = 3,
     ) -> None:
         self.timeout = timeout
         self.robots = robots or RobotsPolicy(timeout=timeout)
-        self.fetch_html = fetch_html or self._scrapling_fetch
+        self.fetch_html = fetch_html
+        self.allow_hosts = tuple(host.casefold().lstrip(".") for host in allow_hosts)
+        self.deny_hosts = tuple(host.casefold().lstrip(".") for host in deny_hosts)
+        self.max_bytes = max_bytes
+        self.max_redirects = max_redirects
 
-    @staticmethod
-    async def _scrapling_fetch(url: str, timeout_seconds: float) -> str:
+    async def _scrapling_fetch(self, url: str, timeout_seconds: float) -> str:
         from scrapling.fetchers import AsyncFetcher
 
         page = await AsyncFetcher.get(
@@ -123,6 +130,7 @@ class ScraplingPageFetcher:
             timeout=timeout_seconds,
             stealthy_headers=False,
             follow_redirects=True,
+            max_redirects=self.max_redirects,
         )
         status = int(getattr(page, "status", getattr(page, "status_code", 200)))
         if status >= 400:
@@ -131,6 +139,9 @@ class ScraplingPageFetcher:
                 request=httpx.Request("GET", url),
                 response=httpx.Response(status),
             )
+        final_url = str(getattr(page, "url", url))
+        if not self._url_allowed(final_url):
+            raise ValueError("redirect target is outside the public host policy")
         raw = getattr(page, "html_content", None)
         if raw is None:
             raw = getattr(page, "body", None)
@@ -138,10 +149,23 @@ class ScraplingPageFetcher:
             return raw.decode("utf-8", errors="replace")
         return str(raw if raw is not None else page)
 
-    async def fetch(self, url: str) -> tuple[PublicDocument | None, SourceReport]:
+    def _url_allowed(self, url: str) -> bool:
         if not is_public_http_url(url):
+            return False
+        host = (urlparse(url).hostname or "").casefold().rstrip(".")
+        if self.deny_hosts and any(_host_matches(host, item) for item in self.deny_hosts):
+            return False
+        return not self.allow_hosts or any(
+            _host_matches(host, item) for item in self.allow_hosts
+        )
+
+    async def fetch(self, url: str) -> tuple[PublicDocument | None, SourceReport]:
+        if not self._url_allowed(url):
             return None, SourceReport(
-                source="public_web", status="blocked", url=url, detail="non-public URL"
+                source="public_web",
+                status="blocked",
+                url=url,
+                detail="URL is outside the public host policy",
             )
         try:
             allowed = await self.robots.allowed(url)
@@ -153,16 +177,32 @@ class ScraplingPageFetcher:
             )
         try:
             html = await asyncio.wait_for(
-                self.fetch_html(url, self.timeout), timeout=self.timeout
+                (
+                    self.fetch_html(url, self.timeout)
+                    if self.fetch_html is not None
+                    else self._scrapling_fetch(url, self.timeout)
+                ),
+                timeout=self.timeout,
             )
         except TimeoutError:
             return None, SourceReport(source="public_web", status="timeout", url=url)
         except Exception:  # noqa: BLE001 - each source must degrade independently
             return None, SourceReport(source="public_web", status="failed", url=url)
+        if len(html.encode("utf-8", errors="replace")) > self.max_bytes:
+            return None, SourceReport(
+                source="public_web",
+                status="blocked",
+                url=url,
+                detail="response exceeded the configured size cap",
+            )
         document = extract_public_document(html, url)
         if not document.text and not document.title and not document.email_addresses:
             return None, SourceReport(source="public_web", status="empty", url=url)
         return document, SourceReport(source="public_web", status="ok", url=url)
+
+
+def _host_matches(host: str, policy_host: str) -> bool:
+    return host == policy_host or host.endswith(f".{policy_host}")
 
 
 def extract_public_document(html: str, url: str) -> PublicDocument:

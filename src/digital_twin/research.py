@@ -157,6 +157,13 @@ class SearchOutcome(BaseModel):
     source_reports: list[SourceReport] = []
 
 
+class CompanyResearchOutcome(BaseModel):
+    status: Literal["ok", "empty", "failed"]
+    dossier: CompanyDossier
+    documents: list[PublicDocument] = []
+    source_reports: list[SourceReport] = []
+
+
 ProgressCallback = Callable[[dict[str, Any]], Awaitable[None]]
 
 
@@ -796,6 +803,116 @@ class ResearchEngine:
             message=f"Found {len(candidates)} possible public match"
             f"{'es' if len(candidates) != 1 else ''}. Please confirm before I use one.",
             dossiers=dossiers,
+            source_reports=reports,
+        )
+
+    async def research_company(
+        self,
+        name: str,
+        *,
+        limit: int = 4,
+        progress: ProgressCallback | None = None,
+    ) -> CompanyResearchOutcome:
+        """Build the existing attributed company dossier without inventing a person."""
+        safe_name = normalize_name(name)
+        empty = CompanyDossier(name=safe_name or None)
+        if not safe_name:
+            return CompanyResearchOutcome(status="empty", dossier=empty)
+
+        reports: list[SourceReport] = []
+        groups: dict[str, list[RawSearchResult]] = {}
+        query_method = getattr(self.provider, "search_query", None)
+        if callable(query_method):
+            queries = _research_queries(safe_name, safe_name)
+            selected = {
+                source: queries[source]
+                for source in (
+                    "company_website",
+                    "careers",
+                    "engineering_blog",
+                    "github",
+                    "news",
+                    "funding",
+                )
+            }
+            tasks = {
+                source: asyncio.create_task(
+                    _bounded_query(
+                        query_method, query, limit, self.source_timeout_seconds
+                    )
+                )
+                for source, query in selected.items()
+            }
+            try:
+                for source, task in tasks.items():
+                    try:
+                        groups[source] = await task
+                        source_status = "ok" if groups[source] else "empty"
+                    except TimeoutError:
+                        groups[source], source_status = [], "timeout"
+                    except Exception:  # noqa: BLE001 - independent public source
+                        groups[source], source_status = [], "failed"
+                    reports.append(SourceReport(source=source, status=source_status))
+                    await _emit(
+                        progress,
+                        source,
+                        source_status,
+                        f"{source.replace('_', ' ').title()} checked",
+                    )
+            finally:
+                await _cancel_tasks(tasks.values())
+        else:
+            try:
+                groups["company_website"] = await asyncio.wait_for(
+                    self.provider.search(safe_name, safe_name, limit),
+                    timeout=self.source_timeout_seconds,
+                )
+                source_status = "ok" if groups["company_website"] else "empty"
+            except TimeoutError:
+                groups["company_website"], source_status = [], "timeout"
+            except Exception:  # noqa: BLE001 - provider failure is represented
+                groups["company_website"], source_status = [], "failed"
+            reports.append(SourceReport(source="company_website", status=source_status))
+
+        documents = await self._fetch_documents(groups, reports, progress)
+        observed = _safe_results([item for values in groups.values() for item in values])
+        if not observed and not documents:
+            status = (
+                "failed" if any(row.status == "failed" for row in reports) else "empty"
+            )
+            return CompanyResearchOutcome(
+                status=status,
+                dossier=empty,
+                source_reports=reports,
+            )
+
+        primary = (
+            observed[0]
+            if observed
+            else RawSearchResult(
+                title=documents[0].title or safe_name,
+                url=documents[0].url,
+                snippet=documents[0].text[:500],
+            )
+        )
+        synthetic = Candidate(
+            id=hashlib.sha256(f"company|{safe_name}".encode()).hexdigest()[:12],
+            name=safe_name,
+            headline=f"Attributed public company research for {safe_name}",
+            company=safe_name,
+            initials=_initials(safe_name),
+            source_link=primary.url,
+            source_label=_source_label(primary.url),
+            confidence=0,
+            why=["Synthetic carrier used only for the existing company dossier builder."],
+            submitted_name=safe_name,
+            surname_resolved=False,
+        )
+        company = _build_dossier(synthetic, groups, documents, safe_name).company
+        return CompanyResearchOutcome(
+            status="ok",
+            dossier=company,
+            documents=documents,
             source_reports=reports,
         )
 

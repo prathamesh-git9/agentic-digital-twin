@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 
 import httpx
+import pytest
 
 from digital_twin.github import REPOSITORIES, GitHubService
 from digital_twin.grounding import GenerationRequest, GroundingVerifier
@@ -87,6 +88,96 @@ async def test_github_adapter_gets_live_stats_topics_and_recent_commits() -> Non
     assert "POISON_REPO_MARKER" not in " ".join(
         item.text for item in service.evidence(repositories)
     )
+
+
+async def test_github_repo_detail_adds_languages_ci_and_allowlist_enforcement() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/languages"):
+            return httpx.Response(200, json={"Python": 4200, "Shell": 200})
+        if request.url.path.endswith("/actions/runs"):
+            return httpx.Response(
+                200,
+                json={"workflow_runs": [{"conclusion": "success"}]},
+            )
+        if request.url.path.endswith("/commits"):
+            return httpx.Response(
+                200,
+                json=[
+                    {
+                        "sha": "abcdef123456",
+                        "html_url": (
+                            "https://github.com/prathamesh-git9/"
+                            "effect-broker/commit/abcdef1"
+                        ),
+                        "commit": {
+                            "message": "Bound every external effect",
+                            "committer": {"date": "2026-08-01T12:00:00Z"},
+                        },
+                    }
+                ],
+            )
+        return httpx.Response(
+            200,
+            json={
+                "html_url": "https://github.com/prathamesh-git9/effect-broker",
+                "description": "A bounded effect broker",
+                "stargazers_count": 4,
+                "forks_count": 1,
+                "open_issues_count": 2,
+                "language": "Python",
+                "topics": ["agents", "effects"],
+                "default_branch": "main",
+                "updated_at": "2026-08-01T12:00:00Z",
+            },
+        )
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        service = GitHubService(client=client)
+        detail = await service.get_repo_detail("effect-broker")
+        with pytest.raises(ValueError, match="allowlist"):
+            await service.get_repo_detail("private-repository")
+
+    assert detail.languages == {"Python": 4200, "Shell": 200}
+    assert detail.latest_ci_conclusion == "success"
+    assert detail.last_commit is not None
+    assert detail.last_commit.sha == "abcdef1"
+
+
+async def test_github_search_covers_readmes_and_returns_permalinks_keylessly() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        name = request.url.path.split("/")[3]
+        if request.url.path.endswith("/readme"):
+            text = (
+                "A bounded agent effect boundary."
+                if name == "effect-broker"
+                else "Public repository documentation."
+            )
+            return httpx.Response(200, text=text)
+        if request.url.path.endswith("/commits"):
+            return httpx.Response(200, json=[])
+        return httpx.Response(
+            200,
+            json={
+                "html_url": f"https://github.com/prathamesh-git9/{name}",
+                "description": "Reliable public agent system",
+                "stargazers_count": 0,
+                "forks_count": 0,
+                "open_issues_count": 0,
+                "language": "Python",
+                "topics": ["agents"],
+                "default_branch": "main",
+                "updated_at": "2026-08-01T12:00:00Z",
+            },
+        )
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        hits = await GitHubService(client=client).search("bounded")
+
+    assert len(hits) == 1
+    assert hits[0].repository == "effect-broker"
+    assert hits[0].path == "README.md"
+    assert hits[0].kind == "readme"
+    assert hits[0].permalink.endswith("/effect-broker/blob/HEAD/README.md")
 
 
 async def test_openai_compatible_adapter_is_vendor_neutral_and_still_verified() -> None:

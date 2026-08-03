@@ -57,6 +57,7 @@ class Visit(Base):
     handoff_notified: Mapped[bool] = mapped_column(Boolean, default=False)
     crm_stage: Mapped[str] = mapped_column(String(16), default="visited", index=True)
     token_usage: Mapped[int] = mapped_column(Integer, default=0)
+    tool_call_usage: Mapped[int] = mapped_column(Integer, default=0)
     message_count: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
     last_seen_at: Mapped[datetime] = mapped_column(
@@ -224,6 +225,7 @@ class Database:
             "verified_corporate_domain": "VARCHAR(253)",
             "handoff_notified": "BOOLEAN NOT NULL DEFAULT 0",
             "crm_stage": "VARCHAR(16) NOT NULL DEFAULT 'visited'",
+            "tool_call_usage": "INTEGER NOT NULL DEFAULT 0",
         }
         missing = {name: ddl for name, ddl in additions.items() if name not in columns}
         if not missing:
@@ -295,6 +297,26 @@ class Database:
             db.flush()
             db.expunge(visit)
             return visit
+
+    def consume_tool_call(self, session_id: str, limit: int) -> tuple[bool, int]:
+        """Atomically reserve one call from a session's separate tool budget."""
+        with self.session() as db:
+            visit = db.get(Visit, session_id)
+            if visit is None:
+                return False, 0
+            used = int(visit.tool_call_usage or 0)
+            if used >= limit:
+                return False, 0
+            visit.tool_call_usage = used + 1
+            remaining = max(0, limit - visit.tool_call_usage)
+            return True, remaining
+
+    def tool_budget_remaining(self, session_id: str, limit: int) -> int:
+        with self.session() as db:
+            visit = db.get(Visit, session_id)
+            if visit is None:
+                return 0
+            return max(0, limit - int(visit.tool_call_usage or 0))
 
     def add_message(
         self, session_id: str, role: str, content: str, sources: list[str] | None = None

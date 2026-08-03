@@ -18,7 +18,7 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    app_name: str = "Prathamesh · Digital Twin"
+    app_name: str = "Kal · Prathamesh Kalamkar's digital twin"
     environment: Literal["development", "test", "production"] = "development"
     database_url: str = "sqlite:///./digital-twin.db"
     profile_path: Path = Path("data/profile.yaml")
@@ -30,6 +30,28 @@ class Settings(BaseSettings):
     llm_model: str = "deepseek-v4-flash"
     llm_timeout_seconds: float = 25.0
     max_output_tokens: int = Field(default=700, ge=100, le=2_000)
+
+    tool_calling_enabled: bool = True
+    tool_max_iterations: int = Field(default=4, ge=1, le=8)
+    tool_wall_clock_seconds: float = Field(default=18.0, ge=0.05, le=60)
+    tool_timeout_seconds: float = Field(default=6.0, ge=0.01, le=30)
+    tool_budget_per_session: int = Field(default=24, ge=0, le=500)
+    tool_cache_ttl_seconds: int = Field(default=900, ge=30, le=86_400)
+    tool_result_max_chars: int = Field(default=12_000, ge=1_000, le=50_000)
+
+    tool_web_search_enabled: bool = True
+    tool_fetch_page_enabled: bool = True
+    tool_search_github_enabled: bool = True
+    tool_repo_detail_enabled: bool = True
+    tool_company_research_enabled: bool = True
+    tool_open_roles_enabled: bool = True
+    tool_job_fit_enabled: bool = True
+    tool_cv_lookup_enabled: bool = True
+
+    fetch_page_allow_hosts: str = ""
+    fetch_page_deny_hosts: str = ""
+    fetch_page_max_bytes: int = Field(default=262_144, ge=4_096, le=2_000_000)
+    fetch_page_max_redirects: int = Field(default=3, ge=0, le=10)
 
     search_provider: Literal["duckduckgo", "tavily", "serper", "brave"] = "duckduckgo"
     search_api_key: str = ""
@@ -119,3 +141,21 @@ class Settings(BaseSettings):
                 if selector.strip()
             )
         )
+
+    @property
+    def parsed_fetch_page_allow_hosts(self) -> tuple[str, ...]:
+        return _host_list(self.fetch_page_allow_hosts)
+
+    @property
+    def parsed_fetch_page_deny_hosts(self) -> tuple[str, ...]:
+        return _host_list(self.fetch_page_deny_hosts)
+
+
+def _host_list(value: str) -> tuple[str, ...]:
+    return tuple(
+        dict.fromkeys(
+            host.strip().casefold().lstrip(".")
+            for host in value.split(",")
+            if host.strip()
+        )
+    )

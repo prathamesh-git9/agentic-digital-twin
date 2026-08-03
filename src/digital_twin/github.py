@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import re
 import time
 from datetime import datetime
 from typing import Any
@@ -42,9 +43,24 @@ class RepoMetadata(BaseModel):
     open_issues: int | None = None
     language: str | None = None
     topics: list[str] = []
+    default_branch: str | None = None
     updated_at: datetime | None = None
     commits: list[CommitSummary] = []
     live: bool = True
+
+
+class RepoDetail(RepoMetadata):
+    languages: dict[str, int] = {}
+    latest_ci_conclusion: str | None = None
+    last_commit: CommitSummary | None = None
+
+
+class GitHubSearchHit(BaseModel):
+    repository: str
+    path: str
+    permalink: str
+    kind: str
+    excerpt: str
 
 
 class GitHubService:
@@ -142,9 +158,194 @@ class GitHubService:
             open_issues=int(data.get("open_issues_count", 0)),
             language=data.get("language"),
             topics=[str(topic)[:40] for topic in data.get("topics", [])[:12]],
+            default_branch=str(data.get("default_branch") or "")[:100] or None,
             updated_at=data.get("updated_at"),
             commits=commits,
         )
+
+    async def get_repo_detail(self, name: str) -> RepoDetail:
+        if name not in REPOSITORIES:
+            raise ValueError("repository is not in the public allowlist")
+        if self.client is not None:
+            return await self._repo_detail_with(self.client, name)
+        async with httpx.AsyncClient(follow_redirects=True) as client:
+            return await self._repo_detail_with(client, name)
+
+    async def _repo_detail_with(self, client: httpx.AsyncClient, name: str) -> RepoDetail:
+        metadata = await self._fetch_repo(client, name)
+        base = f"https://api.github.com/repos/{OWNER}/{name}"
+        languages_response, runs_response = await asyncio.gather(
+            client.get(f"{base}/languages", headers=self.headers, timeout=self.timeout),
+            client.get(
+                f"{base}/actions/runs",
+                params={"per_page": 1},
+                headers=self.headers,
+                timeout=self.timeout,
+            ),
+            return_exceptions=True,
+        )
+        languages: dict[str, int] = {}
+        if (
+            isinstance(languages_response, httpx.Response)
+            and languages_response.is_success
+        ):
+            payload = languages_response.json()
+            if isinstance(payload, dict):
+                languages = {
+                    str(language)[:60]: int(value)
+                    for language, value in payload.items()
+                    if isinstance(value, int) and value >= 0
+                }
+        conclusion = None
+        if isinstance(runs_response, httpx.Response) and runs_response.is_success:
+            runs = runs_response.json().get("workflow_runs", [])
+            if runs:
+                observed = str(runs[0].get("conclusion") or runs[0].get("status") or "")
+                if observed in {
+                    "success",
+                    "failure",
+                    "cancelled",
+                    "skipped",
+                    "timed_out",
+                    "action_required",
+                    "neutral",
+                    "stale",
+                    "queued",
+                    "in_progress",
+                }:
+                    conclusion = observed
+        return RepoDetail(
+            **metadata.model_dump(),
+            languages=languages,
+            latest_ci_conclusion=conclusion,
+            last_commit=metadata.commits[0] if metadata.commits else None,
+        )
+
+    async def search(self, query: str, *, limit: int = 10) -> list[GitHubSearchHit]:
+        safe_query = sanitize_external_text(query, max_length=160)
+        terms = {value.casefold() for value in re.findall(r"[a-z0-9_.+#-]+", safe_query)}
+        if not safe_query or not terms:
+            return []
+        repositories = await self.get_repositories()
+        hits = self._metadata_hits(repositories, terms)
+        if self.client is not None:
+            remote = await self._search_with(self.client, safe_query, terms)
+        else:
+            async with httpx.AsyncClient(follow_redirects=True) as client:
+                remote = await self._search_with(client, safe_query, terms)
+        seen = {(hit.repository, hit.path, hit.permalink) for hit in hits}
+        for hit in remote:
+            key = (hit.repository, hit.path, hit.permalink)
+            if key not in seen:
+                hits.append(hit)
+                seen.add(key)
+        return hits[:limit]
+
+    def _metadata_hits(
+        self, repositories: list[RepoMetadata], terms: set[str]
+    ) -> list[GitHubSearchHit]:
+        hits: list[GitHubSearchHit] = []
+        for repo in repositories:
+            metadata = " ".join((repo.name, repo.description or "", *repo.topics))
+            if terms & set(re.findall(r"[a-z0-9_.+#-]+", metadata.casefold())):
+                hits.append(
+                    GitHubSearchHit(
+                        repository=repo.name,
+                        path="README.md",
+                        permalink=f"{repo.url}#readme",
+                        kind="metadata",
+                        excerpt=(repo.description or f"Topics: {', '.join(repo.topics)}"),
+                    )
+                )
+            for commit in repo.commits:
+                words = set(re.findall(r"[a-z0-9_.+#-]+", commit.message.casefold()))
+                if terms & words:
+                    hits.append(
+                        GitHubSearchHit(
+                            repository=repo.name,
+                            path=f"commit/{commit.sha}",
+                            permalink=commit.url,
+                            kind="commit",
+                            excerpt=commit.message,
+                        )
+                    )
+        return hits
+
+    async def _search_with(
+        self,
+        client: httpx.AsyncClient,
+        query: str,
+        terms: set[str],
+    ) -> list[GitHubSearchHit]:
+        readmes = await asyncio.gather(
+            *(self._search_readme(client, name, terms) for name in REPOSITORIES),
+            return_exceptions=True,
+        )
+        hits = [value for value in readmes if isinstance(value, GitHubSearchHit)]
+        if not self.token:
+            return hits
+        try:
+            response = await client.get(
+                "https://api.github.com/search/code",
+                params={"q": f"{query} user:{OWNER}", "per_page": 20},
+                headers={
+                    **self.headers,
+                    "Accept": "application/vnd.github.text-match+json",
+                },
+                timeout=self.timeout,
+            )
+            response.raise_for_status()
+        except Exception:  # noqa: BLE001 - README/metadata search still succeeds
+            return hits
+        for item in response.json().get("items", []):
+            repository = str((item.get("repository") or {}).get("name") or "")
+            if repository not in REPOSITORIES:
+                continue
+            excerpt = " ".join(
+                str(match.get("fragment") or "")
+                for match in item.get("text_matches", [])[:2]
+            )
+            safe_excerpt = sanitize_external_text(excerpt, max_length=500)
+            path = sanitize_external_text(str(item.get("path") or ""), max_length=300)
+            permalink = str(item.get("html_url") or "")
+            if path and safe_excerpt and permalink.startswith("https://github.com/"):
+                hits.append(
+                    GitHubSearchHit(
+                        repository=repository,
+                        path=path,
+                        permalink=permalink,
+                        kind="code",
+                        excerpt=safe_excerpt,
+                    )
+                )
+        return hits
+
+    async def _search_readme(
+        self, client: httpx.AsyncClient, name: str, terms: set[str]
+    ) -> GitHubSearchHit | None:
+        try:
+            response = await client.get(
+                f"https://api.github.com/repos/{OWNER}/{name}/readme",
+                headers={**self.headers, "Accept": "application/vnd.github.raw+json"},
+                timeout=self.timeout,
+            )
+            response.raise_for_status()
+        except Exception:  # noqa: BLE001 - one repository is independent
+            return None
+        for raw_line in response.text.splitlines():
+            words = set(re.findall(r"[a-z0-9_.+#-]+", raw_line.casefold()))
+            if not terms & words:
+                continue
+            excerpt = sanitize_external_text(raw_line, max_length=500)
+            if excerpt:
+                return GitHubSearchHit(
+                    repository=name,
+                    path="README.md",
+                    permalink=f"https://github.com/{OWNER}/{name}/blob/HEAD/README.md",
+                    kind="readme",
+                    excerpt=excerpt,
+                )
+        return None
 
     @staticmethod
     def evidence(repositories: list[RepoMetadata]) -> list[EvidenceItem]:
