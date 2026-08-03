@@ -172,7 +172,10 @@ main { position: relative; z-index: 2; }
 /* The .ai carries the accent: it is the brand and the whole premise in two
    characters, so it should not read as part of the surname. */
 .ask-hero h1 em { font-style: normal; color: var(--clay); }
-.ask-hero > p { color: var(--ink-2); font-size: clamp(17px, 1.35vw, 25px); margin-top: 22px; max-width: 48ch; }
+/* Two lines, not one block: the invitation to type reads first, the qualifier
+   second. A single paragraph gave them equal weight and neither landed. */
+.hero-lead { color: var(--ink); font-size: clamp(19px, 1.5vw, 27px); font-weight: 500; letter-spacing: -.015em; margin-top: 18px; }
+.hero-sub { color: var(--ink-2); font-size: clamp(14.5px, 1vw, 17px); margin-top: 10px; max-width: 56ch; line-height: 1.6; }
 
 .thread { display: flex; flex-direction: column; gap: 28px; padding: 34px 0 8px; }
 .turn { animation: rise .4s var(--ease); }
@@ -304,6 +307,33 @@ body.has-thread .dock::before {
 .rank-score { font: 400 12px/1.5 var(--mono); color: var(--clay); }
 .rank-from { grid-column: 1 / -1; font: 400 10.5px/1.5 var(--mono); color: var(--ink-3); }
 .rank-text { grid-column: 1 / -1; margin: 6px 0 0; font-size: 13.5px; line-height: 1.6; color: var(--ink-3); }
+
+/* ================= tech stack strip ================= */
+
+/*
+  Real brand marks, inlined as single paths taking currentColor so they hold up
+  in both themes. The two groups are not decoration: the CV distinguishes
+  production experience from familiarity, and a flat logo wall would quietly
+  upgrade every one of them.
+*/
+.stack-strip { display: grid; gap: 22px; margin-top: 40px; padding-top: 32px; border-top: 1px solid var(--line); }
+.stack-label { display: block; font: 400 10px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 14px; }
+.stack-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.stack-chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 13px; color: var(--ink-2);
+  background: var(--paper); border: 1px solid var(--line);
+  border-radius: var(--r-pill); padding: 8px 16px;
+  transition: border-color .18s var(--ease), color .18s var(--ease);
+}
+.stack-chip svg { fill: currentColor; flex: none; opacity: .82; }
+.stack-chip:hover { border-color: var(--line-2); color: var(--ink); }
+.stack-chip:hover svg { opacity: 1; }
+/* Same convention the skills grid already uses: faded means stated as
+   familiarity rather than production work. */
+.stack-chip.soft { color: var(--ink-3); border-style: dashed; }
+.stack-chip.soft svg { opacity: .55; }
+.stack-mono { font: 600 12px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; }
 
 /* ================= mcp servers ================= */
 
