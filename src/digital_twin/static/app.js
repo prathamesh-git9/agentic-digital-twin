@@ -398,7 +398,7 @@
   $("#contact-button").addEventListener("click", openContact);
   $("#contact-close").addEventListener("click", () => (contactSheet.hidden = true));
   contactSheet.addEventListener("click", (e) => {
-    if (e.target === contactSheet) contactSheet.hidden = true;
+    if (e.target.dataset.close !== undefined) contactSheet.hidden = true;
   });
   // Optional hero shortcuts: present in some layouts, absent in others.
   $("#hero-contact")?.addEventListener("click", openContact);
@@ -461,9 +461,11 @@
 
     try {
       const c = await api("/api/contact");
-      if (c.email) el.contactLink.href = `mailto:${c.email}`;
-      else el.contactLink.remove();
-    } catch { el.contactLink.remove(); }
+      // Optional: contact now lives in the slide-over, so the inline link may
+      // not be present in this layout.
+      if (c.email && el.contactLink) el.contactLink.href = `mailto:${c.email}`;
+      else el.contactLink?.remove();
+    } catch { el.contactLink?.remove(); }
 
     loadWorkCards();
 

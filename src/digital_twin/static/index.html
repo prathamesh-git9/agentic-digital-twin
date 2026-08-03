@@ -3,203 +3,122 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Prathamesh Kalamkar's digital twin — ask it anything about his work. Grounded in his real CV and public code.">
-    <title>Prathamesh Kalamkar — Digital Twin</title>
+    <meta name="description" content="Prathamesh Kalamkar's digital twin — ask it anything about his work.">
+    <title>Prathamesh Kalamkar</title>
     <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="/static/styles.css">
   </head>
   <body>
     <a class="skip-link" href="#composer-input">Skip to chat</a>
+
     <!--
-      Background stack, back to front: engineering grid, the portrait printed
-      as a halftone that bleeds off the right edge, a vignette to keep the
-      centre readable, and a fine grain over everything.
+      Conversation-first. This is a chat product, so it is built as one: a single
+      column, no marketing sections stacked above it, and everything secondary
+      (work, role fit, contact, activity) lives in a slide-over rather than
+      competing with the conversation for the page.
     -->
-    <div class="bg" aria-hidden="true">
-      <div class="bg-grid"></div>
-      <div class="bg-portrait" style="background-image:url('/static/prathamesh.jpg')"></div>
-      <div class="bg-vignette"></div>
-      <div class="bg-grain"></div>
+    <div class="app">
+      <header class="bar">
+        <div class="bar-left">
+          <img class="face" src="/static/prathamesh.jpg" alt="" width="26" height="26">
+          <span class="name">Prathamesh Kalamkar</span>
+          <span class="sep">·</span>
+          <span class="sub">digital twin</span>
+        </div>
+        <div class="bar-right">
+          <button class="q" id="bell" type="button">Activity<span class="dot" id="bell-dot" hidden></span></button>
+          <button class="q" id="projects-button" type="button">Work</button>
+          <button class="q" id="jd-button" type="button">Role fit</button>
+          <button class="q" id="theme-button" type="button" aria-label="Theme">Theme</button>
+          <button class="q strong" id="contact-button" type="button">Contact</button>
+        </div>
+      </header>
+
+      <div class="feed" id="feed" hidden>
+        <div class="feed-head"><span>Activity</span><button class="linkish" id="feed-close" type="button">Close</button></div>
+        <ul id="feed-list"></ul>
+      </div>
+
+      <main class="stage" id="stage">
+        <section class="opening" id="intro">
+          <h1>What would you like to know<br>about Prathamesh?</h1>
+          <p>I'm his digital twin. I answer only from his CV and his public code — if it isn't evidenced, I'll tell you rather than guess.</p>
+        </section>
+
+        <section class="visitor" id="visitor-card" hidden>
+          <img class="visitor-photo" id="visitor-photo" alt="" hidden>
+          <span class="visitor-photo initials" id="visitor-initials" aria-hidden="true"></span>
+          <div class="visitor-body">
+            <strong id="visitor-name-out"></strong>
+            <span id="visitor-role"></span>
+            <div class="chips" id="visitor-links"></div>
+          </div>
+          <div class="visitor-actions">
+            <button class="btn sm" id="send-email" type="button" hidden>Email</button>
+            <button class="btn sm ghost" id="open-linkedin" type="button" hidden>LinkedIn</button>
+          </div>
+        </section>
+
+        <section class="people" id="people" hidden>
+          <h2 id="people-title">Which one is you?</h2>
+          <p class="people-sub" id="people-sub"></p>
+          <div class="people-grid" id="people-grid"></div>
+        </section>
+
+        <div class="thread" id="messages" role="log" aria-live="polite"></div>
+      </main>
+
+      <div class="dock">
+        <div class="suggestions" id="starters"></div>
+        <form id="composer">
+          <label class="sr-only" for="composer-input">Message</label>
+          <textarea id="composer-input" rows="1" placeholder="Ask about his experience, projects, or fit for a role…"></textarea>
+          <button type="submit" class="send" id="send-button" aria-label="Send">
+            <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M10 16V4M5 9l5-5 5 5" stroke="currentColor" stroke-width="1.9" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </form>
+        <p class="dock-note"><span id="model-note"></span> · Contractual questions go to Prathamesh, not to me.</p>
+      </div>
     </div>
 
-    <nav class="nav">
-      <a class="brand" href="/">
-        <img src="/static/prathamesh.jpg" alt="" width="30" height="30">
-        <span>Prathamesh</span>
-      </a>
-      <div class="nav-links">
-        <a href="#work">Work</a>
-        <a href="#how">How it works</a>
-        <a href="#faq">FAQ</a>
-      </div>
-      <div class="nav-right">
-        <button class="tbtn" id="bell" type="button">Activity<span class="dot" id="bell-dot" hidden></span></button>
-        <button class="tbtn" id="theme-button" type="button" aria-label="Theme">Theme</button>
-        <button class="tbtn" id="jd-button" type="button">Role&nbsp;fit</button>
-        <button class="btn sm" id="contact-button" type="button">Get in touch</button>
-      </div>
-    </nav>
-
-    <main>
-      <section class="hero">
-        <div class="hero-grid">
-          <div class="hero-left">
-            <span class="rule-label"><i></i>Dublin, Ireland — available</span>
-            <h1>Talk to me<br>before you<br><span class="marked">meet me<svg class="scribble" viewBox="0 0 300 22" preserveAspectRatio="none" aria-hidden="true"><path d="M4 15C58 6 122 5 176 9c39 3 78 6 118 2" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg></span>.</h1>
-            <p class="lede">I'm Prathamesh's digital twin. I answer as him, grounded strictly in his real CV and public code — so nothing I tell you is invented.</p>
-            <div class="hero-cta">
-              <button class="btn lg" id="hero-start" type="button">Ask me something</button>
-              <button class="btn lg ghost" id="projects-button" type="button">See the work</button>
-            </div>
-          </div>
-
-          <figure class="hero-figure">
-            <img src="/static/prathamesh.jpg" alt="Prathamesh Kalamkar" width="300" height="300">
-            <figcaption><b>Prathamesh Kalamkar</b>Back-end &amp; AI agent engineer. Java, Python, FastAPI. MSc Cybersecurity, first-class honours.</figcaption>
-          </figure>
+    <!-- Slide-over: everything secondary lives here. -->
+    <div class="over" id="drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title" hidden>
+      <div class="over-scrim" data-close></div>
+      <section class="over-panel">
+        <div class="over-head">
+          <h2 id="drawer-title">Selected work</h2>
+          <button type="button" class="q" id="drawer-close">Close</button>
         </div>
-
-        <div class="feed" id="feed" hidden>
-          <div class="feed-head"><span>Activity</span><button class="linkish" id="feed-close" type="button">Close</button></div>
-          <ul id="feed-list"></ul>
-        </div>
-
-        <!-- The product itself, presented as the hero artefact. -->
-        <div class="console" id="console">
-          <div class="console-bar">
-            <span class="lights" aria-hidden="true"><i></i><i></i><i></i></span>
-            <span class="console-title">prathamesh.twin</span>
-            <span class="console-model" id="model-note"></span>
-          </div>
-
-          <div class="console-body">
-            <section class="visitor" id="visitor-card" hidden>
-              <img class="visitor-photo" id="visitor-photo" alt="" hidden>
-              <span class="visitor-photo initials" id="visitor-initials" aria-hidden="true"></span>
-              <div class="visitor-body">
-                <strong id="visitor-name-out"></strong>
-                <span id="visitor-role"></span>
-                <div class="chips" id="visitor-links"></div>
-              </div>
-              <div class="visitor-actions">
-                <button class="btn sm" id="send-email" type="button" hidden>Email</button>
-                <button class="btn sm ghost" id="open-linkedin" type="button" hidden>LinkedIn</button>
-              </div>
-            </section>
-
-            <section class="people" id="people" hidden>
-              <h2 id="people-title">Which one is you?</h2>
-              <p class="people-sub" id="people-sub"></p>
-              <div class="people-grid" id="people-grid"></div>
-            </section>
-
-            <div class="thread" id="messages" role="log" aria-live="polite"></div>
-
-            <div class="ask">
-              <div class="suggestions" id="starters"></div>
-              <form id="composer">
-                <label class="sr-only" for="composer-input">Message</label>
-                <textarea id="composer-input" rows="1" placeholder="Ask a question…"></textarea>
-                <button type="submit" class="btn send" id="send-button" aria-label="Send">
-                  <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M3.5 10h11M10 5l5 5-5 5" stroke="currentColor" stroke-width="1.9" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                </button>
-              </form>
-            </div>
-          </div>
-        </div>
-
-        <ul class="stats">
-          <li><b>3.5+</b><span>years back-end</span></li>
-          <li><b>10</b><span>systems shipped</span></li>
-          <li><b>MSc</b><span>Cybersecurity, 1:1</span></li>
-          <li><b>100%</b><span>answers cited</span></li>
-        </ul>
+        <div id="drawer-body"></div>
       </section>
+    </div>
 
-      <section class="section" id="work">
-        <div class="sec-head">
-          <span class="sec-num">01</span>
-          <div>
-            <h2>What he actually builds</h2>
-            <p class="section-lede">Correctness and reliability underneath AI agents — the problems a better model doesn't solve.</p>
-          </div>
+    <div class="over" id="contact-sheet" role="dialog" aria-modal="true" aria-labelledby="contact-title" hidden>
+      <div class="over-scrim" data-close></div>
+      <section class="over-panel">
+        <div class="over-head">
+          <h2 id="contact-title">Get in touch</h2>
+          <button type="button" class="q" id="contact-close">Close</button>
         </div>
-        <div class="cards" id="work-cards"></div>
-      </section>
-
-      <section class="section" id="how">
-        <div class="sec-head">
-          <span class="sec-num">02</span>
-          <div>
-            <h2>How this works</h2>
-            <p class="section-lede">Three steps, and a hard rule behind them.</p>
-          </div>
-        </div>
-        <div class="steps">
-          <article class="step"><b>01</b><h3>Ask anything</h3><p>Experience, projects, stack, or whether he fits the role you're hiring for.</p></article>
-          <article class="step"><b>02</b><h3>Grounded, then checked</h3><p>Every answer is retrieved from his CV and public repos, then verified before it reaches you.</p></article>
-          <article class="step"><b>03</b><h3>Straight to him</h3><p>Anything contractual — salary, offers, start dates — is handed to the real Prathamesh.</p></article>
-        </div>
-      </section>
-
-      <section class="section" id="faq">
-        <div class="sec-head">
-          <span class="sec-num">03</span>
-          <div><h2>Questions</h2></div>
-        </div>
-        <div class="faq">
-          <details><summary>Is this actually accurate?</summary><p>Every claim is retrieved from his CV or public repositories and cited underneath the answer. If something isn't evidenced, the twin says so instead of guessing.</p></details>
-          <details><summary>Can it negotiate or accept an offer?</summary><p>No. Salary, offers, start dates and anything contractual are refused by design and handed to Prathamesh directly.</p></details>
-          <details><summary>Why does it ask my name?</summary><p>So it can point you at the most relevant work. It's optional — skipping gives you the identical conversation.</p></details>
-          <details><summary>What is it built on?</summary><p>Python, FastAPI and SQLite, with a provider-agnostic model layer. The source is public on GitHub, along with the ten systems it talks about.</p></details>
-        </div>
-      </section>
-    </main>
-
-    <footer class="footer">
-      <div>
-        <strong>Prathamesh Kalamkar</strong>
-        <span>Back-end &amp; AI agent engineer · Dublin, Ireland</span>
-      </div>
-      <div class="footer-links">
-        <a href="https://github.com/prathamesh-git9" target="_blank" rel="noopener noreferrer">GitHub</a>
-        <a id="contact-link" href="#">Email</a>
-      </div>
-    </footer>
-
-    <div class="sheet-backdrop" id="contact-sheet" role="dialog" aria-modal="true" aria-labelledby="contact-title" hidden>
-      <section class="sheet">
-        <h2 id="contact-title">Get in touch</h2>
-        <p>Straight to Prathamesh — not the twin.</p>
+        <p class="over-lede">Straight to Prathamesh — not the twin.</p>
         <div class="contact-rows" id="contact-rows"></div>
-        <div class="sheet-actions"><button type="button" class="btn ghost" id="contact-close">Close</button></div>
       </section>
     </div>
 
-    <div class="sheet-backdrop" id="onboarding" role="dialog" aria-modal="true" aria-labelledby="onboarding-title" hidden>
-      <section class="sheet">
+    <div class="modal" id="onboarding" role="dialog" aria-modal="true" aria-labelledby="onboarding-title" hidden>
+      <section class="modal-card">
         <h2 id="onboarding-title">Who am I talking to?</h2>
-        <p>So I can point you at the most relevant work. Optional.</p>
+        <p>So I can point you at the most relevant work. Entirely optional.</p>
         <form id="identity-form">
           <label class="sr-only" for="visitor-name">Your name</label>
           <input id="visitor-name" type="text" placeholder="Your name" autocomplete="name">
           <label class="sr-only" for="visitor-company">Company</label>
           <input id="visitor-company" type="text" placeholder="Company" autocomplete="organization">
-          <div class="sheet-actions">
+          <div class="modal-actions">
             <button type="button" class="btn ghost" id="skip-button">Skip</button>
             <button type="submit" class="btn">Start</button>
           </div>
         </form>
-      </section>
-    </div>
-
-    <div class="sheet-backdrop" id="drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title" hidden>
-      <section class="sheet wide">
-        <div class="sheet-head">
-          <h2 id="drawer-title">Selected work</h2>
-          <button type="button" class="tbtn" id="drawer-close">Close</button>
-        </div>
-        <div id="drawer-body"></div>
       </section>
     </div>
 
