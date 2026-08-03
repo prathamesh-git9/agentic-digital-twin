@@ -219,6 +219,9 @@
         <span class="label">${role === "twin" ? "Prathamesh" : "You"}</span>
         <div class="text">${esc(text)}</div>
         ${chips ? `<div class="cites">${chips}</div>` : ""}
+        ${role === "twin" && text
+          ? `<div class="turn-actions"><button type="button" data-copy>Copy</button></div>`
+          : ""}
       </div>`;
     el.messages.appendChild(div);
     // "nearest" only scrolls when the turn is actually off-screen. Aligning to
@@ -474,6 +477,37 @@
       host.closest(".band")?.remove();
     }
   }
+
+  /* ---------- scroll progress ---------- */
+
+  const progress = $("#progress");
+  if (progress) {
+    const paint = () => {
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      const pct = max > 0 ? (window.scrollY / max) * 100 : 0;
+      progress.style.width = `${pct}%`;
+    };
+    addEventListener("scroll", paint, { passive: true });
+    addEventListener("resize", paint);
+    paint();
+  }
+
+  /* ---------- copy an answer ---------- */
+
+  // Recruiters paste answers into their notes or ATS; making that one click
+  // keeps the twin's exact wording intact rather than a lossy manual selection.
+  el.messages.addEventListener("click", async (event) => {
+    const button = event.target.closest("[data-copy]");
+    if (!button) return;
+    const text = button.closest(".turn")?.querySelector(".text")?.innerText || "";
+    try {
+      await navigator.clipboard.writeText(text.trim());
+      button.textContent = "Copied";
+      setTimeout(() => (button.textContent = "Copy"), 1800);
+    } catch {
+      toast("Your browser blocked clipboard access.");
+    }
+  });
 
   /* ---------- scroll reveal ---------- */
 
