@@ -246,6 +246,8 @@ class GitHubService:
     ) -> list[GitHubSearchHit]:
         hits: list[GitHubSearchHit] = []
         for repo in repositories:
+            if not repo.live:
+                continue
             metadata = " ".join((repo.name, repo.description or "", *repo.topics))
             if terms & set(re.findall(r"[a-z0-9_.+#-]+", metadata.casefold())):
                 hits.append(

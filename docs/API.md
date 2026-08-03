@@ -238,6 +238,7 @@ never escapes into chat. Results are recursively stripped of HTML/control text, 
 fragments, sensitive-trait material, private URLs, and over-limit content before being serialized
 as a `role:"tool"` message. That message explicitly marks the payload as untrusted inert data.
 Only its screened `sources[]` become verifier evidence; a tool result never bypasses verification.
+`web_search` rejects sensitive-trait research before calling its provider.
 
 The bounded loop allows four tool-request rounds by default. When the ceiling is reached, the
 adapter gets at most one final request with no tools; if it still does not return a draft, the

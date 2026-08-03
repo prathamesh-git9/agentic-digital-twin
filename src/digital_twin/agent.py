@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import time
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
@@ -181,7 +182,7 @@ class AgentRunner:
             draft = await self.fallback.generate(effective_request)
 
         continuation_tokens = sum(
-            approximate_tokens(str(message.get("content") or ""))
+            approximate_tokens(json.dumps(message, ensure_ascii=False))
             for message in continuation
         )
         repeated_context = max(0, provider_turns - 1) * approximate_tokens(

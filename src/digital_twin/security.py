@@ -42,11 +42,15 @@ def contains_prompt_injection(value: str) -> bool:
     return any(pattern.search(value) for pattern in INJECTION_PATTERNS)
 
 
+def contains_sensitive_traits(value: str) -> bool:
+    return bool(SENSITIVE_TERMS.search(value or ""))
+
+
 def sanitize_external_text(value: str, *, max_length: int = 240) -> str:
     """Make fetched content inert, or reject it when it carries commands."""
     clean = html.unescape(CONTROL_RE.sub(" ", TAG_RE.sub(" ", value or "")))
     clean = SPACE_RE.sub(" ", clean).strip()
-    if contains_prompt_injection(clean) or SENSITIVE_TERMS.search(clean):
+    if contains_prompt_injection(clean) or contains_sensitive_traits(clean):
         return ""
     return clean[:max_length].rstrip()
 

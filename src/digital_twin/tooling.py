@@ -18,7 +18,11 @@ from .profile import EvidenceItem, ProfileCorpus
 from .research import CompanyDossier, RawSearchResult, ResearchEngine, SearchProvider
 from .research_sources import PageFetcher
 from .roles import OpenRoleService
-from .security import is_public_http_url, sanitize_external_text
+from .security import (
+    contains_sensitive_traits,
+    is_public_http_url,
+    sanitize_external_text,
+)
 
 ToolStatus = Literal["ok", "empty", "blocked", "timeout", "failed"]
 
@@ -421,6 +425,11 @@ class ToolRegistry:
 
     async def _web_search(self, value: BaseModel) -> ToolResult:
         arguments = QueryArgs.model_validate(value)
+        if contains_sensitive_traits(arguments.query):
+            return ToolResult(
+                status="blocked",
+                summary="Sensitive-trait research is not permitted.",
+            )
         query_method = getattr(self.search, "search_query", None)
         if callable(query_method):
             results = await query_method(arguments.query, 5)
@@ -684,10 +693,12 @@ def _screen_value(value: Any, *, depth: int = 0) -> Any:
     if isinstance(value, str):
         return sanitize_external_text(value, max_length=2_000)
     if isinstance(value, dict):
-        return {
-            str(key)[:100]: _screen_value(item, depth=depth + 1)
-            for key, item in list(value.items())[:100]
-        }
+        safe: dict[str, Any] = {}
+        for key, item in list(value.items())[:100]:
+            safe_key = sanitize_external_text(str(key), max_length=100)
+            if safe_key:
+                safe[safe_key] = _screen_value(item, depth=depth + 1)
+        return safe
     if isinstance(value, list):
         return [_screen_value(item, depth=depth + 1) for item in value[:100]]
     if isinstance(value, (bool, int, float)) or value is None:

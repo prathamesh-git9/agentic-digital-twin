@@ -18,6 +18,7 @@ from sqlalchemy import (
     create_engine,
     inspect,
     select,
+    update,
 )
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column
@@ -300,16 +301,21 @@ class Database:
 
     def consume_tool_call(self, session_id: str, limit: int) -> tuple[bool, int]:
         """Atomically reserve one call from a session's separate tool budget."""
+        if limit <= 0:
+            return False, 0
         with self.session() as db:
-            visit = db.get(Visit, session_id)
-            if visit is None:
+            reserved = db.execute(
+                update(Visit)
+                .where(
+                    Visit.id == session_id,
+                    Visit.tool_call_usage < limit,
+                )
+                .values(tool_call_usage=Visit.tool_call_usage + 1)
+            )
+            if reserved.rowcount != 1:
                 return False, 0
-            used = int(visit.tool_call_usage or 0)
-            if used >= limit:
-                return False, 0
-            visit.tool_call_usage = used + 1
-            remaining = max(0, limit - visit.tool_call_usage)
-            return True, remaining
+            used = db.scalar(select(Visit.tool_call_usage).where(Visit.id == session_id))
+            return True, max(0, limit - int(used or 0))
 
     def tool_budget_remaining(self, session_id: str, limit: int) -> int:
         with self.session() as db:

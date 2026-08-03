@@ -99,6 +99,28 @@ async def test_tool_cache_prevents_rescraping_and_session_budget_is_separate(
     assert app.state.tools.remaining(visit.id) == 0
 
 
+async def test_web_tool_blocks_sensitive_trait_research_before_network(
+    app_factory: Callable[..., FastAPI],
+) -> None:
+    provider = QueryProvider()
+    app = app_factory(search_provider=provider)
+    visit = app.state.database.create_visit("test-ip")
+
+    result, _ = await app.state.tools.execute(
+        visit.id,
+        ToolCall(
+            id="call_sensitive",
+            name="web_search",
+            arguments={"query": "candidate religious affiliation"},
+        ),
+        available_seconds=1,
+    )
+
+    assert result.status == "blocked"
+    assert result.summary == "Sensitive-trait research is not permitted."
+    assert provider.calls == 0
+
+
 async def test_fetch_page_tool_honours_robots_denial_before_fetching(
     app_factory: Callable[..., FastAPI],
 ) -> None:
