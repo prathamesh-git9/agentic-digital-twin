@@ -170,7 +170,10 @@ main { position: relative; z-index: 2; }
 .thread { display: flex; flex-direction: column; gap: 28px; padding: 34px 0 8px; }
 .turn { animation: rise .4s var(--ease); }
 .turn .label { font: 400 10.5px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); display: block; margin-bottom: 10px; }
-.turn .text { font-size: 16px; white-space: pre-wrap; }
+/* pre-wrap preserves the newlines an answer is composed with, but on its own it
+   will not break inside a word. A pasted token with no spaces (a URL, a base64
+   blob) therefore stretched the page to 42,000px. */
+.turn .text { font-size: 16px; white-space: pre-wrap; overflow-wrap: anywhere; }
 .turn.twin .text { font-family: var(--serif); font-size: 18px; line-height: 1.62; }
 .turn.you { display: flex; justify-content: flex-end; }
 .turn.you .label { display: none; }
@@ -201,17 +204,23 @@ main { position: relative; z-index: 2; }
    is meant to reach first sat lowest -- and on a narrow screen the pinned dock
    landed on top of the facts strip and clipped it. */
 .dock { position: relative; z-index: 5; margin-top: 34px; }
-.ask-hero.has-thread .dock {
+body.has-thread .dock {
   position: sticky; bottom: 0; margin-top: auto; padding: 16px 0 14px;
 }
-/* A blurred veil that fades upward, so the thread scrolls under the dock
-   instead of colliding with it. Only meaningful once a thread exists. */
-.ask-hero.has-thread .dock::before {
-  content: ""; position: absolute; left: -24px; right: -24px; top: 0; bottom: 0;
+/* A veil the thread scrolls under. Blur alone left the last answer legible
+   straight through the composer, cut off mid-word, so the lower half is opaque
+   paper and only the top edge fades. */
+body.has-thread .dock::before {
+  content: ""; position: absolute; top: -60px; bottom: -40px;
+  /* Bleeds past the column so the blur covers the gutter, but the gutter is
+     only ~19px on a phone, so a flat -24px hung 5px off-screen and gave the
+     whole page a horizontal scrollbar. */
+  inset-inline: calc(-1 * clamp(0px, 4vw, 24px));
   z-index: -1; pointer-events: none;
-  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-  mask-image: linear-gradient(to top, #000 62%, transparent);
-  -webkit-mask-image: linear-gradient(to top, #000 62%, transparent);
+  background: linear-gradient(to top, var(--paper) 80%, transparent);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  mask-image: linear-gradient(to top, #000 82%, transparent);
+  -webkit-mask-image: linear-gradient(to top, #000 82%, transparent);
 }
 /* The composer is the page's primary action, so it carries the most weight on
    the screen: an opaque surface and a real shadow, not another glass panel. */
@@ -519,6 +528,24 @@ html[data-theme="dark"] #composer { box-shadow: 0 26px 60px -28px rgba(0, 0, 0, 
 .turn.twin .cites { max-width: 62ch; }
 .ask-hero > #intro p { max-width: 44ch; }
 
+/* ================= conversation state ================= */
+
+/*
+  Once a conversation runs, the page is a transcript rather than a landing
+  screen. The deck no longer forces a full viewport, and the rails stop being
+  centred: centring them inside a 7,700px column parked them 2,579px above the
+  viewport, so they vanished entirely. Pinned, they stay useful while the
+  transcript scrolls past.
+*/
+body.has-thread .deck { align-items: start; min-height: 0; }
+body.has-thread .rail { position: sticky; top: calc(var(--bar-h) + 18px); }
+/* Intro furniture, and the sticky dock would otherwise sit on top of both. */
+body.has-thread .quickfacts,
+body.has-thread .scroll-cue { display: none; }
+/* Ridges behind a wall of body copy are just noise, and the transcript needs
+   the contrast more than the page needs the weather. */
+body.has-thread .scene { opacity: .32; }
+
 /* ================= scroll cue ================= */
 
 .scroll-cue {
@@ -676,7 +703,7 @@ html[data-theme="dark"] .turn.you .text { background: var(--paper-2); }
 /* Start the veil above the composer so nothing meets its edge mid-line. Only
    in the threaded state -- otherwise it stacked with the dock's own margin and
    left a dead 68px band between the intro copy and the composer. */
-.ask-hero.has-thread .dock { padding-top: 34px; }
+body.has-thread .dock { padding-top: 34px; }
 
 @media (max-width: 700px) {
   /* A tall phone hero would push the composer off-screen, so let content lead. */

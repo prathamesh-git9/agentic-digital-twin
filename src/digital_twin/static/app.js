@@ -241,9 +241,9 @@
           : ""}
       </div>`;
     el.messages.appendChild(div);
-    // Only once there is a thread to scroll does pinning the composer help; up
-    // to that point a sticky dock just sits on top of the hero copy.
-    el.messages.closest(".ask-hero")?.classList.add("has-thread");
+    // On the body, not the hero: the deck and rails need to react too, and CSS
+    // cannot reach a parent from the element that changed.
+    document.body.classList.add("has-thread");
     // "nearest" only scrolls when the turn is actually off-screen. Aligning to
     // "end" threw the page down past the conversation into the sections below,
     // so the answer landed above the fold and the chat looked like it had done
@@ -536,8 +536,8 @@
 
   function renderRetrieval(host, result) {
     if (!result) {
-      host.innerHTML = `<p class="retrieval-empty">Every term in that query is a stop
-        word, so there is nothing to score. Try a noun.</p>`;
+      host.innerHTML = '<p class="retrieval-empty">Every term in that query is a '
+        + 'stop word, so there is nothing to score. Try a noun.</p>';
       return;
     }
     // The fused column is the interesting one: showing where each result placed
