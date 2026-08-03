@@ -6,16 +6,13 @@
     <meta name="description" content="Prathamesh Kalamkar's digital twin — ask it anything about his work.">
     <title>Prathamesh Kalamkar</title>
     <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="/static/styles.css">
+    <!-- Version stamp: static assets ship without Cache-Control, so browsers
+         apply heuristic freshness and can serve a stale stylesheet. -->
+    <link rel="stylesheet" href="/static/styles.css?v=8">
   </head>
   <body>
     <a class="skip-link" href="#composer-input">Skip to chat</a>
 
-    <!--
-      Hand-authored scene. Four ridge layers recede into haze behind a low sun,
-      so the page has depth and horizon instead of a flat fill. Drawn as inline
-      SVG rather than an image so it rescales cleanly and re-tints for dark.
-    -->
     <div class="scene" aria-hidden="true">
       <div class="sky"></div>
       <div class="sun"></div>
@@ -29,39 +26,34 @@
       <div class="grain"></div>
     </div>
 
-    <!--
-      Conversation-first. This is a chat product, so it is built as one: a single
-      column, no marketing sections stacked above it, and everything secondary
-      (work, role fit, contact, activity) lives in a slide-over rather than
-      competing with the conversation for the page.
-    -->
-    <div class="app">
-      <header class="bar">
-        <div class="bar-left">
-          <img class="face" src="/static/prathamesh.jpg" alt="" width="26" height="26">
-          <span class="name">Prathamesh Kalamkar</span>
-          <span class="sep">·</span>
-          <span class="sub">digital twin</span>
-        </div>
-        <div class="bar-right">
-          <button class="q" id="bell" type="button">Activity<span class="dot" id="bell-dot" hidden></span></button>
-          <button class="q" id="projects-button" type="button">Work</button>
-          <button class="q" id="jd-button" type="button">Role fit</button>
-          <button class="q" id="theme-button" type="button" aria-label="Theme">Theme</button>
-          <button class="q strong" id="contact-button" type="button">Contact</button>
-        </div>
-      </header>
+    <header class="bar">
+      <a class="bar-left" href="/">
+        <img class="face" src="/static/prathamesh.jpg" alt="" width="26" height="26">
+        <span class="name">Prathamesh Kalamkar</span>
+      </a>
+      <nav class="bar-right">
+        <a href="#experience">Experience</a>
+        <a href="#work">Work</a>
+        <a href="#faq">FAQ</a>
+        <button class="q" id="bell" type="button">Activity<span class="dot" id="bell-dot" hidden></span></button>
+        <button class="q" id="jd-button" type="button">Role fit</button>
+        <button class="q" id="theme-button" type="button" aria-label="Theme">Theme</button>
+        <button class="q strong" id="contact-button" type="button">Contact</button>
+      </nav>
+    </header>
 
-      <div class="feed" id="feed" hidden>
-        <div class="feed-head"><span>Activity</span><button class="linkish" id="feed-close" type="button">Close</button></div>
-        <ul id="feed-list"></ul>
-      </div>
+    <div class="feed-wrap"><div class="feed" id="feed" hidden>
+      <div class="feed-head"><span>Activity</span><button class="linkish" id="feed-close" type="button">Close</button></div>
+      <ul id="feed-list"></ul>
+    </div></div>
 
-      <main class="stage" id="stage">
-        <section class="opening" id="intro">
-          <h1>What would you like to know<br>about Prathamesh?</h1>
-          <p>I'm his digital twin. I answer only from his CV and his public code — if it isn't evidenced, I'll tell you rather than guess.</p>
-        </section>
+    <main>
+      <!-- The input is the focal artefact; everything above it is one line. -->
+      <section class="ask-hero" id="intro">
+        <h1 class="reveal">ask me anything<br><em>about prathamesh</em></h1>
+        <p class="reveal d1">His digital twin. Answers come from his CV and public code — never invented.</p>
+
+        <div class="thread" id="messages" role="log" aria-live="polite"></div>
 
         <section class="visitor" id="visitor-card" hidden>
           <img class="visitor-photo" id="visitor-photo" alt="" hidden>
@@ -83,30 +75,80 @@
           <div class="people-grid" id="people-grid"></div>
         </section>
 
-        <div class="thread" id="messages" role="log" aria-live="polite"></div>
-      </main>
+        <div class="dock reveal d2">
+          <form id="composer">
+            <label class="sr-only" for="composer-input">Message</label>
+            <textarea id="composer-input" rows="1" placeholder="Ask about his experience, projects, or fit for a role…"></textarea>
+            <button type="submit" class="send" id="send-button" aria-label="Send">
+              <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M10 16V4M5 9l5-5 5 5" stroke="currentColor" stroke-width="1.9" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </form>
+          <div class="suggestions" id="starters"></div>
+          <p class="dock-note"><span id="model-note"></span> · Contractual questions go to Prathamesh, not to me.</p>
+        </div>
+      </section>
 
-      <div class="dock">
-        <div class="suggestions" id="starters"></div>
-        <form id="composer">
-          <label class="sr-only" for="composer-input">Message</label>
-          <textarea id="composer-input" rows="1" placeholder="Ask about his experience, projects, or fit for a role…"></textarea>
-          <button type="submit" class="send" id="send-button" aria-label="Send">
-            <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M10 16V4M5 9l5-5 5 5" stroke="currentColor" stroke-width="1.9" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </button>
-        </form>
-        <p class="dock-note"><span id="model-note"></span> · Contractual questions go to Prathamesh, not to me.</p>
+      <section class="band" id="experience">
+        <div class="band-head reveal"><span class="kicker">Experience</span><h2>Three and a half years of shipping back-end systems.</h2></div>
+        <ol class="timeline">
+          <li class="reveal">
+            <span class="when">Jan 2025 — Present</span>
+            <div><h3>Software Engineer, AI &amp; Automation Systems</h3><span class="where">Freelance</span>
+            <p>LLM-powered back-end services for agentic workflows: tool orchestration, structured outputs, retries, validation and safety checks. Event-driven workflow engines that assemble context, invoke external tools and return reviewable output.</p></div>
+          </li>
+          <li class="reveal">
+            <span class="when">Oct — Dec 2024</span>
+            <div><h3>Software Engineer Intern</h3><span class="where">Physics Wallah</span>
+            <p>Backend features in Java and Spring Boot across high-usage product workflows, plus debugging and release readiness.</p></div>
+          </li>
+          <li class="reveal">
+            <span class="when">Jun 2022 — Jul 2024</span>
+            <div><h3>Software Engineer</h3><span class="where">matriXploit</span>
+            <p>Java, Spring Boot, Python, SQL and REST APIs across shared production systems. Refactored roughly half of a legacy authentication module, and added diagnostics and health checks that cut regressions by about 35%.</p></div>
+          </li>
+          <li class="reveal">
+            <span class="when">Jan — Jun 2022</span>
+            <div><h3>Technical Support Engineer</h3><span class="where">matriXploit</span>
+            <p>Root-cause analysis through SQL and logs, narrowing production issues to specific flows and escalating with clear findings.</p></div>
+          </li>
+        </ol>
+
+        <div class="edu reveal">
+          <div><span class="kicker">Education</span>
+            <p><b>MSc Cybersecurity</b> — Dublin Business School, first-class honours, 2024–2025</p>
+            <p><b>BSc Computer Science</b> — Savitribai Phule Pune University, first class, 2021–2024</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="band" id="work">
+        <div class="band-head reveal"><span class="kicker">Open source</span><h2>Ten systems, built around correctness.</h2></div>
+        <div class="cards" id="work-cards"></div>
+      </section>
+
+      <section class="band" id="faq">
+        <div class="band-head reveal"><span class="kicker">Questions</span><h2>What people ask before they get in touch.</h2></div>
+        <div class="faq reveal">
+          <details><summary>Is this actually accurate?</summary><p>Every claim is retrieved from his CV or public repositories and cited underneath the answer. If something isn't evidenced, the twin says so rather than guessing.</p></details>
+          <details><summary>Can it negotiate or accept an offer?</summary><p>No. Salary, offers, start dates and anything contractual are refused by design and handed to Prathamesh directly.</p></details>
+          <details><summary>Why does it ask my name?</summary><p>So it can point you at the most relevant work. It's optional — skipping gives you the identical conversation.</p></details>
+          <details><summary>What is it built on?</summary><p>Python, FastAPI and SQLite with a provider-agnostic model layer. The source is public on GitHub, alongside the ten systems it talks about.</p></details>
+        </div>
+      </section>
+    </main>
+
+    <footer class="foot">
+      <div><strong>Prathamesh Kalamkar</strong><span>Back-end &amp; AI agent engineer · Dublin, Ireland</span></div>
+      <div class="foot-links">
+        <a href="https://github.com/prathamesh-git9" target="_blank" rel="noopener noreferrer">GitHub</a>
+        <a id="contact-link" href="#">Email</a>
       </div>
-    </div>
+    </footer>
 
-    <!-- Slide-over: everything secondary lives here. -->
     <div class="over" id="drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title" hidden>
       <div class="over-scrim" data-close></div>
       <section class="over-panel">
-        <div class="over-head">
-          <h2 id="drawer-title">Selected work</h2>
-          <button type="button" class="q" id="drawer-close">Close</button>
-        </div>
+        <div class="over-head"><h2 id="drawer-title">Selected work</h2><button type="button" class="q" id="drawer-close">Close</button></div>
         <div id="drawer-body"></div>
       </section>
     </div>
@@ -114,10 +156,7 @@
     <div class="over" id="contact-sheet" role="dialog" aria-modal="true" aria-labelledby="contact-title" hidden>
       <div class="over-scrim" data-close></div>
       <section class="over-panel">
-        <div class="over-head">
-          <h2 id="contact-title">Get in touch</h2>
-          <button type="button" class="q" id="contact-close">Close</button>
-        </div>
+        <div class="over-head"><h2 id="contact-title">Get in touch</h2><button type="button" class="q" id="contact-close">Close</button></div>
         <p class="over-lede">Straight to Prathamesh — not the twin.</p>
         <div class="contact-rows" id="contact-rows"></div>
       </section>
@@ -142,6 +181,6 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-    <script src="/static/app.js" defer></script>
+    <script src="/static/app.js?v=8" defer></script>
   </body>
 </html>

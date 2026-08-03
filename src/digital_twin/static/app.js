@@ -333,7 +333,9 @@
   el.drawerClose.addEventListener("click", () => (el.drawer.hidden = true));
   el.drawer.addEventListener("click", (e) => { if (e.target === el.drawer) el.drawer.hidden = true; });
 
-  el.projectsButton.addEventListener("click", async () => {
+  // Optional: in the current layout Work is a section link, not a drawer
+  // trigger, so this button may not exist.
+  el.projectsButton?.addEventListener("click", async () => {
     openDrawer("Selected work", "<p>Loading…</p>");
     try {
       const d = await api("/api/github");
@@ -402,7 +404,7 @@
   });
   // Optional hero shortcuts: present in some layouts, absent in others.
   $("#hero-contact")?.addEventListener("click", openContact);
-  $("#hero-work")?.addEventListener("click", () => el.projectsButton.click());
+  $("#hero-work")?.addEventListener("click", () => el.projectsButton?.click());
 
   document.addEventListener("keydown", (e) => {
     if (e.key !== "Escape") return;
@@ -447,8 +449,35 @@
             : ""}
         </article>`).join("");
     } catch {
-      host.closest(".section")?.remove();
+      host.closest(".band")?.remove();
     }
+  }
+
+  /* ---------- scroll reveal ---------- */
+
+  // Sections ease in once as they enter view, then stop being observed so
+  // scrolling back up does not replay the animation.
+  function armReveals() {
+    const items = document.querySelectorAll(".reveal");
+    if (!("IntersectionObserver" in window)) {
+      items.forEach((n) => n.classList.add("in"));
+      return;
+    }
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add("in");
+        io.unobserve(entry.target);
+      });
+    }, { rootMargin: "0px 0px -12% 0px", threshold: 0.12 });
+    items.forEach((n) => io.observe(n));
+  }
+
+  // Stagger the timeline and card grids so they cascade rather than snap.
+  function stagger(selector, step = 70) {
+    document.querySelectorAll(selector).forEach((n, i) => {
+      n.style.transitionDelay = `${i * step}ms`;
+    });
   }
 
   /* ---------- boot ---------- */
@@ -468,6 +497,8 @@
     } catch { el.contactLink?.remove(); }
 
     loadWorkCards();
+    stagger(".timeline .reveal", 80);
+    armReveals();
 
     try {
       const s = await api("/api/sessions", { method: "POST", body: "{}" });
