@@ -221,7 +221,11 @@
         ${chips ? `<div class="cites">${chips}</div>` : ""}
       </div>`;
     el.messages.appendChild(div);
-    div.scrollIntoView({ behavior: "smooth", block: "end" });
+    // "nearest" only scrolls when the turn is actually off-screen. Aligning to
+    // "end" threw the page down past the conversation into the sections below,
+    // so the answer landed above the fold and the chat looked like it had done
+    // nothing at all.
+    div.scrollIntoView({ behavior: "smooth", block: "nearest" });
     return div;
   }
 
@@ -265,7 +269,9 @@
     } finally {
       state.busy = false;
       el.send.disabled = false;
-      el.input.focus();
+      // preventScroll matters: refocusing the composer otherwise drags the
+      // viewport down to it, past the answer that just arrived.
+      el.input.focus({ preventScroll: true });
     }
   }
 

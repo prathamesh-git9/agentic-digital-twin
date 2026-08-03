@@ -8,7 +8,7 @@
     <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
     <!-- Version stamp: static assets ship without Cache-Control, so browsers
          apply heuristic freshness and can serve a stale stylesheet. -->
-    <link rel="stylesheet" href="/static/styles.css?v=12">
+    <link rel="stylesheet" href="/static/styles.css?v=15">
   </head>
   <body>
     <a class="skip-link" href="#composer-input">Skip to chat</a>
@@ -49,9 +49,14 @@
 
     <main>
       <!-- The input is the focal artefact; everything above it is one line. -->
-      <section class="ask-hero" id="intro">
-        <h1 class="reveal">Meet Prathamesh<br><em>before you meet him.</em></h1>
-        <p class="reveal d1">I'm his digital twin. Ask me about his experience, what he's built, or whether he fits the role you're hiring for — every answer comes from his CV and public code.</p>
+      <section class="ask-hero">
+        <!-- Only the opening copy retires once the conversation starts. It must
+             not wrap the thread or the composer, or asking a question removes
+             the chat from the page. -->
+        <div id="intro">
+          <h1 class="reveal">Meet Prathamesh<br><em>before you meet him.</em></h1>
+          <p class="reveal d1">I'm his digital twin. Ask me about his experience, what he's built, or whether he fits the role you're hiring for — every answer comes from his CV and public code.</p>
+        </div>
 
         <div class="thread" id="messages" role="log" aria-live="polite"></div>
 
@@ -183,6 +188,6 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-    <script src="/static/app.js?v=12" defer></script>
+    <script src="/static/app.js?v=15" defer></script>
   </body>
 </html>
