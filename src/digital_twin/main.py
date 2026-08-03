@@ -140,6 +140,22 @@ def _utc(value: datetime) -> datetime:
     return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
 
 
+def _mcp_manifest(profile_path: Path) -> dict[str, Any] | None:
+    """The MCP server manifest vendored beside the profile, when one is present.
+
+    `scripts/build_static.py` copies it out of the sibling mcp-servers checkout,
+    so a deployed container reads it from `data/` rather than needing that repo.
+    """
+    candidate = profile_path.parent / "mcp-manifest.json"
+    if not candidate.is_file():
+        return None
+    try:
+        loaded = json.loads(candidate.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    return loaded if isinstance(loaded, dict) else None
+
+
 class SelectiveGZipMiddleware(GZipMiddleware):
     """Compress every response except the event stream.
 
@@ -206,6 +222,7 @@ def create_app(
     database = Database(settings.database_url)
     database.create_schema()
     corpus = ProfileCorpus(settings.profile_path, show_phone=settings.show_phone)
+    mcp_manifest = _mcp_manifest(settings.profile_path)
     configured_provider, effective_provider = _answer_provider(settings)
     provider = answer_provider or configured_provider
     if answer_provider is not None:
@@ -750,6 +767,31 @@ def create_app(
             "grounding": "authority-gated",
             "tool_calling": bool(chat.agent and chat.agent.enabled),
             "tools": tools.names if chat.agent and chat.agent.enabled else [],
+        }
+
+    @app.get("/api/corpus")
+    async def corpus_snapshot() -> dict[str, Any]:
+        """The evidence corpus, in the shape the static build ships beside itself.
+
+        This is what the page's retrieval explorer indexes. It is the same
+        already-public CV text the twin cites, so exposing it adds no disclosure
+        the answers do not; it just lets a reader check the retrieval themselves.
+        """
+        return {
+            "person": {
+                "name": corpus.data["person"]["name"],
+                "email": corpus.email,
+                "location": corpus.data["person"]["location"],
+            },
+            "items": [
+                {"source": item.source, "text": item.text, "authority": item.authority}
+                for item in corpus.evidence
+            ],
+            "repositories": [
+                repo.model_dump(mode="json")
+                for repo in (github.cached_repositories() or [])
+            ],
+            "mcp": mcp_manifest,
         }
 
     @app.get("/api/contact")

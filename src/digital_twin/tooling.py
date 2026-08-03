@@ -226,7 +226,7 @@ class ToolRegistry:
         *,
         available_seconds: float,
     ) -> tuple[ToolResult, int]:
-        started = time.monotonic()
+        started = time.perf_counter()
         spec, arguments, _, _ = self.describe_call(call)
         if spec is None:
             result = ToolResult(
@@ -769,7 +769,9 @@ def _short(value: str, limit: int = 80) -> str:
 
 
 def _duration_ms(started: float) -> int:
-    return max(0, round((time.monotonic() - started) * 1_000))
+    # perf_counter, not monotonic: on Windows monotonic ticks about every 15.6 ms,
+    # so a tool that timed out after 10 ms could report a duration of exactly zero.
+    return max(0, round((time.perf_counter() - started) * 1_000))
 
 
 assert set(RepoArgs.model_fields["name"].annotation.__args__) == set(REPOSITORIES)

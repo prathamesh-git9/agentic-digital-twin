@@ -62,14 +62,15 @@
     toastTimer = setTimeout(() => (el.toast.hidden = true), 3800);
   }
 
-  // The published static build has no server behind it. twin-local.js answers
-  // the same endpoints from a compiled corpus and returns undefined for the ones
-  // that genuinely need a database, so one code path serves both deployments.
-  const offline = window.__TWIN_LOCAL__ || null;
+  // twin-local.js loads in both deployments, but only the static build lets it
+  // answer endpoints: there it is the whole backend, here it is only the engine
+  // behind the retrieval explorer.
+  const engine = window.__TWIN_LOCAL__ || null;
+  const offline = engine && window.__TWIN_OFFLINE__ === true;
 
   async function api(path, options = {}) {
     if (offline) {
-      const local = await offline.handle(path, options);
+      const local = await engine.handle(path, options);
       if (local !== undefined) return local;
     }
     const res = await fetch(path, {
@@ -519,6 +520,129 @@
     io.observe(host);
   }
 
+  /* ---------- retrieval explorer ---------- */
+
+  const rankList = (title, rows, note) => `
+    <div class="rank">
+      <span class="rank-head">${esc(title)}</span>
+      ${note ? `<span class="rank-note">${esc(note)}</span>` : ""}
+      <ol>${rows.map((row) => `
+        <li><span class="rank-src">${esc(row.label)}</span>
+        <span class="rank-score">${row.score.toFixed(3)}</span></li>`).join("")}</ol>
+    </div>`;
+
+  function renderRetrieval(host, result) {
+    if (!result) {
+      host.innerHTML = `<p class="retrieval-empty">Every term in that query is a stop
+        word, so there is nothing to score. Try a noun.</p>`;
+      return;
+    }
+    // The fused column is the interesting one: showing where each result placed
+    // in the two input rankings is what makes the fusion legible rather than
+    // magic.
+    const fused = result.fused.map((row) => {
+      const from = [
+        row.lexicalRank ? `BM25 #${row.lexicalRank}` : null,
+        row.denseRank ? `trigram #${row.denseRank}` : null,
+      ].filter(Boolean).join(" · ");
+      return `
+        <li>
+          <span class="rank-src">${esc(row.label)}</span>
+          <span class="rank-score">${row.score.toFixed(4)}</span>
+          <span class="rank-from">${esc(from || "unranked in both")}</span>
+          <p class="rank-text">${esc(row.text.slice(0, 190))}${row.text.length > 190 ? "…" : ""}</p>
+        </li>`;
+    }).join("");
+
+    host.innerHTML = `
+      <p class="retrieval-meta">${esc(result.scanned)} chunks scanned ·
+        ${esc(result.terms.length)} query terms after expansion ·
+        ${esc(result.lexical.length)} matched lexically ·
+        ${esc(result.dense.length)} matched by trigram</p>
+      <div class="rank-row">
+        ${rankList("BM25", result.lexical, "term weighting")}
+        ${rankList("Trigram cosine", result.dense, "surface similarity")}
+      </div>
+      <div class="rank fused">
+        <span class="rank-head">Fused (RRF, k=60)</span>
+        <span class="rank-note">what the answer is built from</span>
+        <ol>${fused}</ol>
+      </div>`;
+  }
+
+  function armRetrieval() {
+    const form = $("#retrieval-form");
+    const input = $("#retrieval-input");
+    const out = $("#retrieval-out");
+    if (!form || !engine) {
+      // Without the engine there is nothing honest to show, so the section goes
+      // rather than sitting there broken.
+      $("#ai-systems")?.remove();
+      return;
+    }
+    const run = async () => {
+      out.innerHTML = `<p class="retrieval-empty">Scoring…</p>`;
+      try {
+        const [{ corpus }, result] = await Promise.all([
+          engine.load(),
+          engine.explore(input.value.trim()),
+        ]);
+        renderRetrieval(out, result);
+        renderMcp(corpus.mcp);
+      } catch {
+        $("#ai-systems")?.remove();
+      }
+    };
+    form.addEventListener("submit", (e) => { e.preventDefault(); run(); });
+    // First paint is deferred until the section is approached: building the
+    // index costs a corpus fetch nobody above the fold asked for.
+    if (!("IntersectionObserver" in window)) { run(); return; }
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) { io.disconnect(); run(); }
+    }, { rootMargin: "300px 0px" });
+    io.observe(form);
+  }
+
+  /* ---------- MCP servers ---------- */
+
+  // Rendered from the manifest the mcp-servers repo publishes, so this panel
+  // cannot claim a server that was not built. Absent manifest, absent panel.
+  function renderMcp(manifest) {
+    const panel = $("#mcp-panel");
+    const grid = $("#mcp-grid");
+    if (!panel || !grid) return;
+    const servers = Array.isArray(manifest) ? manifest : manifest?.servers;
+    if (!Array.isArray(servers) || !servers.length) return;
+
+    const count = (value) => (Array.isArray(value) ? value.length : 0);
+    $("#mcp-lede").textContent =
+      `${servers.length} servers speaking the Model Context Protocol — each exposing `
+      + `tools, resources and prompts with structured output schemas. Source and `
+      + `client configuration are public.`;
+    grid.innerHTML = servers.map((server) => {
+      const counts = [
+        [count(server.tools), "tools"],
+        [count(server.resources), "resources"],
+        [count(server.prompts), "prompts"],
+      ].filter(([n]) => n > 0);
+      const names = (server.tools || []).slice(0, 6)
+        .map((tool) => esc(typeof tool === "string" ? tool : tool.name || ""))
+        .filter(Boolean);
+      return `
+        <article class="mcp-card">
+          <h4>${esc(server.name || "server")}</h4>
+          <p>${esc(server.description || "")}</p>
+          ${counts.length ? `<div class="mcp-counts">${counts
+            .map(([n, label]) => `<span><b>${esc(n)}</b>${esc(label)}</span>`)
+            .join("")}</div>` : ""}
+          ${names.length ? `<div class="topics">${names
+            .map((name) => `<span>${name}</span>`).join("")}</div>` : ""}
+          ${server.install ? `<code class="mcp-install">${esc(server.install)}</code>` : ""}
+        </article>`;
+    }).join("");
+    panel.hidden = false;
+  }
+
   /* ---------- scroll progress ---------- */
 
   const progress = $("#progress");
@@ -583,6 +707,7 @@
     // Nothing here needs the network, so it must not wait behind it.
     stagger(".timeline .reveal", 80);
     armReveals();
+    armRetrieval();
 
     let start;
     try {

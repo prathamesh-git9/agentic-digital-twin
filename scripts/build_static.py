@@ -62,15 +62,28 @@ def _repo_snapshot(offline: bool) -> list[dict[str, Any]]:
 
 
 def _mcp_manifest() -> dict[str, Any] | None:
-    """The sibling mcp-servers repo publishes a manifest; include it when built."""
-    candidate = ROOT.parent / "mcp-servers" / "docs" / "manifest.json"
-    if not candidate.is_file():
-        return None
-    try:
-        return json.loads(candidate.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
-        print(f"  mcp-servers manifest present but unreadable ({exc}); skipping")
-        return None
+    """The MCP server manifest, vendored into data/ so the server can read it too.
+
+    Preference order matters: a sibling mcp-servers checkout is the live source,
+    but CI has no such checkout, so the vendored copy is what actually ships.
+    """
+    vendored = ROOT / "data" / "mcp-manifest.json"
+    sibling = ROOT.parent / "mcp-servers" / "docs" / "manifest.json"
+    for candidate in (sibling, vendored):
+        if not candidate.is_file():
+            continue
+        try:
+            loaded = json.loads(candidate.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            print(f"  {candidate.name} unreadable ({exc}); skipping")
+            continue
+        if candidate is sibling:
+            vendored.write_text(
+                json.dumps(loaded, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+            )
+            print(f"  vendored manifest from {sibling.parent.parent.name}")
+        return loaded
+    return None
 
 
 def _corpus_payload(corpus: ProfileCorpus) -> list[dict[str, str]]:
@@ -143,15 +156,17 @@ def _rewrite_shell(html: str) -> str:
     """
     html = html.replace('href="/static/', 'href="./').replace('src="/static/', 'src="./')
     html = html.replace('<a class="bar-left" href="/">', '<a class="bar-left" href="./">')
-    # The offline engine must define itself before app.js runs, so it loads as a
-    # blocking classic script ahead of the deferred application.
+    # Both builds load twin-local.js; only this one lets it answer endpoints.
     replaced = html.replace(
-        '<script src="./app.js',
-        '<script src="./twin-local.js?v=1"></script>\n    <script src="./app.js',
+        '<script src="./twin-local.js',
+        "<script>window.__TWIN_OFFLINE__ = true;</script>\n"
+        '    <script src="./twin-local.js',
         1,
     )
     if replaced == html:
-        raise SystemExit("shell no longer loads ./app.js; static boot order is broken")
+        raise SystemExit(
+            "shell no longer loads ./twin-local.js; the static build cannot answer"
+        )
     return replaced
 
 

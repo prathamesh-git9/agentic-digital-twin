@@ -7,6 +7,10 @@
   rankings fused with reciprocal rank fusion -- and then it composes the answer
   extractively from the retrieved chunks.
 
+  It loads in both deployments. Only the static build lets it answer endpoints
+  (app.js gates that on window.__TWIN_OFFLINE__); the server build loads it for
+  the retrieval explorer alone.
+
   Extractive is a deliberate limit, not a shortcut: with no model call there is
   nothing to hallucinate, so every sentence shown is a chunk that exists in
   data/corpus.json, and the UI says so. The server build keeps the same
@@ -19,7 +23,9 @@
 (() => {
   "use strict";
 
-  const CORPUS_URL = "./data/corpus.json";
+  // The static build ships the corpus beside the page; the server exposes the
+  // same shape so the retrieval explorer works in both deployments.
+  const CORPUS_URLS = ["./data/corpus.json", "/api/corpus"];
 
   const CONTRACT_RE =
     /\b(?:salary|compensation|pay|offer|accept|contract|start date|joining date|notice period|negotiate)\b/i;
@@ -294,15 +300,60 @@
 
   let ready = null;
 
+  async function fetchCorpus() {
+    let last;
+    for (const url of CORPUS_URLS) {
+      try {
+        const response = await fetch(url);
+        if (response.ok) return await response.json();
+        last = new Error(`${url} -> ${response.status}`);
+      } catch (error) {
+        last = error;
+      }
+    }
+    throw last || new Error("corpus unavailable");
+  }
+
   function load() {
     if (ready) return ready;
-    ready = fetch(CORPUS_URL)
-      .then((response) => {
-        if (!response.ok) throw new Error(`corpus ${response.status}`);
-        return response.json();
-      })
-      .then((corpus) => ({ corpus, index: buildIndex(corpus.items) }));
+    ready = fetchCorpus().then((corpus) => ({
+      corpus,
+      index: buildIndex(corpus.items),
+    }));
+    ready.catch(() => { ready = null; });
     return ready;
+  }
+
+  /* ---------- retrieval explorer ---------- */
+
+  // Exposed so the page can show the two rankings and their fusion side by
+  // side. A claim of RAG experience is worth less than a working retriever the
+  // reader can type into.
+  async function explore(query, limit = 5) {
+    const { index } = await load();
+    const terms = expand(tokenize(query));
+    if (!terms.length) return null;
+    const lexical = bm25(index, terms);
+    const dense = semantic(index, query);
+    const fused = fuse([lexical, dense]);
+    const label = (id) => index.items[id].source;
+    const rankOf = (ranking, id) => {
+      const at = ranking.findIndex(([other]) => other === id);
+      return at < 0 ? null : at + 1;
+    };
+    return {
+      terms,
+      scanned: index.items.length,
+      lexical: lexical.slice(0, limit).map(([id, score]) => ({ label: label(id), score })),
+      dense: dense.slice(0, limit).map(([id, score]) => ({ label: label(id), score })),
+      fused: fused.slice(0, limit).map(([id, score]) => ({
+        label: label(id),
+        score,
+        text: index.items[id].text,
+        lexicalRank: rankOf(lexical, id),
+        denseRank: rankOf(dense, id),
+      })),
+    };
   }
 
   const json = (body) => body;
@@ -354,5 +405,5 @@
     return undefined;
   }
 
-  window.__TWIN_LOCAL__ = { handle, load };
+  window.__TWIN_LOCAL__ = { handle, load, explore };
 })();

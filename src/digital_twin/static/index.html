@@ -313,6 +313,31 @@
         </div>
       </section>
 
+      <!--
+        A claim of RAG experience is worth less than a retriever the reader can
+        type into. This section runs the same pipeline that answered above and
+        shows both rankings and their fusion, rather than describing them.
+      -->
+      <section class="band" id="ai-systems">
+        <div class="band-head reveal"><span class="kicker">AI systems</span><h2>The retrieval is running on this page.</h2></div>
+
+        <div class="retrieval reveal">
+          <p class="retrieval-lede">Answers here are not generated from a prompt and hoped for. A hybrid retriever scores every chunk of the CV corpus two ways &mdash; Okapi&nbsp;BM25 for term weighting, character-trigram cosine for the morphological variants BM25 misses &mdash; then fuses the two rankings with reciprocal rank fusion, which combines by position so an unbounded BM25 score cannot swamp a bounded cosine. Type anything and watch all three stages.</p>
+          <form class="retrieval-form" id="retrieval-form">
+            <label class="sr-only" for="retrieval-input">Retrieval query</label>
+            <input id="retrieval-input" type="text" value="prompt injection defence" autocomplete="off" spellcheck="false">
+            <button class="btn sm" type="submit">Retrieve</button>
+          </form>
+          <div class="retrieval-out" id="retrieval-out"></div>
+        </div>
+
+        <div class="mcp reveal" id="mcp-panel" hidden>
+          <div class="band-head"><span class="kicker">Model Context Protocol</span><h3 id="mcp-title">MCP servers</h3></div>
+          <p class="mcp-lede" id="mcp-lede"></p>
+          <div class="mcp-grid" id="mcp-grid"></div>
+        </div>
+      </section>
+
       <section class="band" id="work">
         <div class="band-head reveal"><span class="kicker">Open source</span><h2>Ten systems, built around correctness.</h2></div>
         <div class="cards" id="work-cards"></div>
@@ -389,6 +414,9 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
+    <!-- Defines the retrieval engine app.js reads. Deferred scripts run in order,
+         so this is guaranteed to be in place before the application boots. -->
+    <script src="/static/twin-local.js?v=30" defer></script>
     <script src="/static/app.js?v=30" defer></script>
   </body>
 </html>
