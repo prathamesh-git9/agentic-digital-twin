@@ -92,7 +92,11 @@ def test_widget_and_standalone_pages_ship_without_a_frontend_build(
     widget = client.get("/widget.js")
 
     assert index.status_code == embed.status_code == widget.status_code == 200
-    assert "what's your name?" in index.text.casefold()
+    # Assert the onboarding contract ships, not its exact prose: the name
+    # prompt, a working skip path, and that the ask is marked optional.
+    assert 'id="identity-form"' in index.text
+    assert 'id="visitor-name"' in index.text
+    assert 'id="skip-button"' in index.text
     assert "optional" in index.text.casefold()
     assert "__prathameshTwinWidget" in widget.text
     assert "frame-ancestors *" in index.headers["content-security-policy"]
