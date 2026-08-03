@@ -14,6 +14,7 @@ from pydantic import BaseModel
 
 from .config import Settings
 from .deliverability import DeliverabilityPreflight, DeliverabilityReport
+from .email_utils import recipient_key
 from .mailer import MailSender
 from .models import Database, OutreachDraft
 from .profile import ProfileCorpus
@@ -330,6 +331,12 @@ class OutreachService:
             candidate_id=candidate.id,
             recipient=email.address,
             recipient_status=email.status,
+            recipient_pattern=email.pattern,
+            recipient_score=email.score,
+            recipient_why=email.why,
+            recipient_source_url=email.source_url,
+            recipient_source_kind=email.source_kind,
+            recipient_company_level=email.company_level,
             subject=variants[0].subject,
             variants=[variant.model_dump(mode="json") for variant in variants],
             linkedin=linkedin,
@@ -361,6 +368,13 @@ class OutreachService:
                 "decision": decision.decision,
                 "reason": decision.reason,
                 "template": template,
+                "recipient_status": email.status,
+                "pattern": email.pattern,
+                "score": email.score,
+                "why": email.why,
+                "source_url": email.source_url,
+                "source_kind": email.source_kind,
+                "company_level": email.company_level,
             },
         )
 
@@ -389,6 +403,14 @@ class OutreachService:
             "reason": decision.reason,
             "template": template,
             "variant": variant_id,
+            "kind": draft.kind,
+            "recipient_status": draft.recipient_status,
+            "pattern": draft.recipient_pattern,
+            "score": draft.recipient_score,
+            "why": draft.recipient_why,
+            "source_url": draft.recipient_source_url,
+            "source_kind": draft.recipient_source_kind,
+            "company_level": draft.recipient_company_level,
         }
         if automatic:
             single_allowed = (
@@ -460,7 +482,7 @@ class OutreachService:
                     preflight=report,
                 )
             send_key = hashlib.sha256(
-                f"{draft.recipient.casefold()}|{draft.kind}".encode()
+                f"{recipient_key(draft.recipient)}|{draft.kind}".encode()
             ).hexdigest()
             _, reserved = self.database.record_outreach_action(
                 session_id=draft.session_id,
@@ -524,15 +546,38 @@ class OutreachService:
         candidate_today = [
             action for action in today if action.candidate_id == draft.candidate_id
         ]
-        if len(candidate_today) >= self.settings.outreach_candidate_daily_cap:
+        current_campaign = [
+            action
+            for action in candidate_today
+            if action.session_id == draft.session_id
+            and action.metadata_value.get("kind", draft.kind) == draft.kind
+        ]
+        campaign_ids = {
+            (action.session_id, action.metadata_value.get("kind", "initial"))
+            for action in candidate_today
+        }
+        if not current_campaign and (
+            len(campaign_ids) >= self.settings.outreach_candidate_daily_cap
+        ):
             return "The per-candidate daily send cap has been reached."
         ever_sent = [
             action
             for action in self.database.outreach_actions_for()
             if action.action == "email.sent"
-            and action.recipient.casefold() == draft.recipient.casefold()
+            and recipient_key(action.recipient) == recipient_key(draft.recipient)
         ]
         if ever_sent and draft.kind == "initial":
+            return "Once-only initial outreach has already been sent to this person."
+        prior_person_campaign = [
+            action
+            for action in self.database.outreach_actions_for(
+                candidate_id=draft.candidate_id
+            )
+            if action.action == "email.sent"
+            and action.session_id != draft.session_id
+            and action.metadata_value.get("kind", "initial") == "initial"
+        ]
+        if prior_person_campaign and draft.kind == "initial":
             return "Once-only initial outreach has already been sent to this person."
         return None
 

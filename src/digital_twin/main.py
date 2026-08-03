@@ -24,9 +24,14 @@ from .deliverability import DeliverabilityPreflight, DnspythonTXTResolver, TXTRe
 from .email_discovery import (
     DnspythonMXResolver,
     EmailDiscoveryService,
+    EmailHarvester,
     HunterVerificationAdapter,
     MXResolver,
+    attach_email_discovery,
+    select_send_targets,
 )
+from .email_harvesting import PublicEmailHarvester
+from .email_utils import normalize_address, recipient_key
 from .engagement import (
     CompanyFitService,
     NotificationService,
@@ -63,11 +68,11 @@ from .research import (
     SearchProvider,
     SerperSearchProvider,
     TavilySearchProvider,
-    attach_candidate_email,
 )
 from .research_sources import PageFetcher, ScraplingPageFetcher
 from .roles import OpenRoleService, PublicATSClient, RoleDiscoveryResult
 from .schemas import (
+    BounceRequest,
     ChatRequest,
     ChatResponse,
     ConfirmCandidateRequest,
@@ -114,6 +119,12 @@ def _draft_payload(draft: Any) -> dict[str, Any]:
         "candidate_id": draft.candidate_id,
         "recipient": draft.recipient,
         "recipient_status": draft.recipient_status,
+        "recipient_pattern": draft.recipient_pattern,
+        "recipient_score": draft.recipient_score,
+        "recipient_why": draft.recipient_why,
+        "recipient_source_url": draft.recipient_source_url,
+        "recipient_source_kind": draft.recipient_source_kind,
+        "recipient_company_level": draft.recipient_company_level,
         "subject": draft.subject,
         "variants": draft.variants,
         "linkedin": draft.linkedin,
@@ -166,6 +177,7 @@ def create_app(
     github_service: GitHubService | None = None,
     page_fetcher: PageFetcher | None = None,
     mx_resolver: MXResolver | None = None,
+    email_harvester: EmailHarvester | None = None,
     txt_resolver: TXTResolver | None = None,
     mail_sender: MailSender | None = None,
     ats_client: PublicATSClient | None = None,
@@ -235,6 +247,17 @@ def create_app(
         mx_resolver=mx_resolver
         or DnspythonMXResolver(timeout=settings.email_mx_timeout_seconds),
         verifier=email_verifier,
+        harvester=(
+            email_harvester
+            if email_harvester is not None
+            else PublicEmailHarvester(
+                timeout=settings.research_source_timeout_seconds,
+                github_token=settings.github_token,
+            )
+            if production_research
+            else None
+        ),
+        bounce_counts=database.pattern_bounce_counts,
     )
     role_service = OpenRoleService(
         corpus,
@@ -326,6 +349,7 @@ def create_app(
     app.state.role_results = role_results
     app.state.send_decisions = send_decisions
     app.state.outreach = outreach
+    app.state.email_discovery = email_discovery
     app.state.linkedin = linkedin
 
     @app.middleware("http")
@@ -400,11 +424,7 @@ def create_app(
                 enriched_candidates.append(candidate)
                 continue
             discovery = await email_discovery.discover(candidate, dossier)
-            enriched_candidates.append(
-                attach_candidate_email(candidate, discovery.selected)
-                if discovery.selected
-                else candidate
-            )
+            enriched_candidates.append(attach_email_discovery(candidate, discovery))
         outcome = outcome.model_copy(update={"candidates": enriched_candidates})
         per_candidate_roles: dict[str, RoleDiscoveryResult] = {}
         for candidate in outcome.candidates:
@@ -442,7 +462,12 @@ def create_app(
         outreach_cards: list[dict[str, Any]] = []
         auto_work: list[tuple[Any, str, str, str | None]] = []
         for candidate in outcome.candidates:
-            if candidate.email is None:
+            targets = select_send_targets(
+                candidate.emails
+                or ([candidate.email] if candidate.email is not None else []),
+                inferred_send_max=settings.inferred_send_max,
+            )
+            if not targets:
                 if candidate.id in {
                     *decision.candidate_ids,
                     *decision.fanout_candidate_ids,
@@ -466,12 +491,6 @@ def create_app(
                 template = "fanout"
             else:
                 template = "selected"
-            variants = composer.variants(
-                candidate,
-                candidate.email,
-                role=best_role,
-                template=template,
-            )
             linkedin_profile = next(
                 (profile for profile in candidate.profiles if profile.kind == "linkedin"),
                 None,
@@ -489,44 +508,53 @@ def create_app(
                     "your team."
                 ),
             }
-            draft = outreach.create_draft(
-                session_id=session_id,
-                candidate=candidate,
-                email=candidate.email,
-                variants=variants,
-                linkedin=linkedin_draft,
-            )
-            outreach.record_decision(
-                session_id=session_id,
-                candidate=candidate,
-                email=candidate.email,
-                decision=decision,
-                template=template,
-            )
-            outreach_cards.append(
-                {
-                    "candidate_id": candidate.id,
-                    "draft_id": draft.id,
-                    "recipient": candidate.email.model_dump(mode="json"),
-                    "variants": [
-                        variant.model_dump(mode="json") for variant in variants[0:3]
-                    ],
-                    "linkedin": linkedin_draft,
-                    "template": template,
-                }
-            )
-            if settings.autosend and (
-                candidate.id in decision.candidate_ids
-                or candidate.id in decision.fanout_candidate_ids
-            ):
-                auto_work.append(
-                    (
-                        draft,
-                        variants[0].id,
-                        template,
-                        best_role.title if best_role else None,
-                    )
+            for target_index, email in enumerate(targets):
+                variants = composer.variants(
+                    candidate,
+                    email,
+                    role=best_role,
+                    template=template,
                 )
+                draft = outreach.create_draft(
+                    session_id=session_id,
+                    candidate=candidate,
+                    email=email,
+                    variants=variants,
+                    linkedin=linkedin_draft,
+                )
+                outreach.record_decision(
+                    session_id=session_id,
+                    candidate=candidate,
+                    email=email,
+                    decision=decision,
+                    template=template,
+                )
+                outreach_cards.append(
+                    {
+                        "candidate_id": candidate.id,
+                        "draft_id": draft.id,
+                        "recipient": email.model_dump(mode="json"),
+                        "recipient_rank": target_index + 1,
+                        "recipient_count": len(targets),
+                        "variants": [
+                            variant.model_dump(mode="json") for variant in variants[0:3]
+                        ],
+                        "linkedin": linkedin_draft,
+                        "template": template,
+                    }
+                )
+                if settings.autosend and (
+                    candidate.id in decision.candidate_ids
+                    or candidate.id in decision.fanout_candidate_ids
+                ):
+                    auto_work.append(
+                        (
+                            draft,
+                            variants[0].id,
+                            template,
+                            best_role.title if best_role else None,
+                        )
+                    )
         research_results[session_id] = outcome
         database.update_visit(
             session_id,
@@ -1055,7 +1083,12 @@ def create_app(
         )
         database.update_visit(session_id, handoff_notified=True)
         roles = role_results.get(session_id, {}).get(candidate.id)
-        draft = database.latest_outreach_draft_for(session_id, candidate.id)
+        candidate_drafts = [
+            value
+            for value in database.outreach_drafts_for(session_id)
+            if value.candidate_id == candidate.id
+        ]
+        draft = candidate_drafts[0] if candidate_drafts else None
         return ConfirmCandidateResponse(
             status="confirmed",
             candidate=candidate,
@@ -1069,6 +1102,7 @@ def create_app(
                     "recipient_status": draft.recipient_status,
                     "variants": draft.variants,
                     "linkedin": draft.linkedin,
+                    "drafts": [_draft_payload(value) for value in candidate_drafts],
                     "consent": "Confirmation authorises preparation, not manual sending.",
                 }
                 if draft
@@ -1088,8 +1122,10 @@ def create_app(
             research.cache.purge(identity.name)
         prior_outcome = research_results.pop(session_id, None)
         for candidate in prior_outcome.candidates if prior_outcome else []:
-            if candidate.email:
-                database.suppress(candidate.email.address, "session research opt-out")
+            for email in candidate.emails or (
+                [candidate.email] if candidate.email is not None else []
+            ):
+                database.suppress(email.address, "session research opt-out")
         role_results.pop(session_id, None)
         send_decisions.pop(session_id, None)
         database.purge_research_artifacts(session_id)
@@ -1360,6 +1396,61 @@ def create_app(
         database.suppress(payload.address, payload.reason)
         return {"status": "suppressed"}
 
+    @app.post("/api/owner/outreach/bounces")
+    async def record_outreach_bounce(
+        payload: BounceRequest,
+        owner: str = Depends(require_owner),
+    ) -> dict[str, Any]:
+        address = normalize_address(payload.address)
+        _, separator, domain = address.rpartition("@")
+        if not separator or not domain:
+            raise HTTPException(
+                status_code=422, detail="A valid email address is required"
+            )
+        prior = next(
+            (
+                action
+                for action in database.outreach_actions()
+                if recipient_key(action.recipient) == recipient_key(address)
+            ),
+            None,
+        )
+        prior_metadata = prior.metadata_value if prior else {}
+        pattern = payload.pattern or (
+            str(prior_metadata.get("pattern")) if prior_metadata.get("pattern") else None
+        )
+        database.suppress(address, payload.reason)
+        bounce_count = None
+        if pattern:
+            bounce_count = database.record_pattern_bounce(domain, pattern)
+            email_discovery.record_bounce(domain, pattern)
+        database.record_outreach_action(
+            session_id=payload.session_id or (prior.session_id if prior else "owner"),
+            draft_id=prior.draft_id if prior else "bounce",
+            candidate_id=payload.candidate_id
+            or (prior.candidate_id if prior else "unknown"),
+            recipient=address,
+            body_hash=prior.body_hash if prior else "",
+            action="email.bounced",
+            approver=owner,
+            transport=prior.transport if prior else "provider-report",
+            metadata={
+                "recipient_status": "bounced",
+                "pattern": pattern,
+                "why": payload.reason,
+                "domain": domain,
+                "pattern_bounce_count": bounce_count,
+            },
+        )
+        return {
+            "status": "bounced",
+            "address": address,
+            "suppressed": True,
+            "domain": domain,
+            "pattern": pattern,
+            "pattern_bounce_count": bounce_count,
+        }
+
     @app.post("/api/sessions/{session_id}/outreach/follow-up", status_code=201)
     async def draft_follow_up(
         session_id: str,
@@ -1536,7 +1627,7 @@ def create_app(
         for action in actions:
             variant = str(action.metadata_value.get("variant") or "unassigned")
             counts = performance.setdefault(
-                variant, {"sent": 0, "compose": 0, "failed": 0}
+                variant, {"sent": 0, "compose": 0, "failed": 0, "bounced": 0}
             )
             if action.action == "email.sent":
                 counts["sent"] += 1
@@ -1544,6 +1635,8 @@ def create_app(
                 counts["compose"] += 1
             elif action.action == "email.failed":
                 counts["failed"] += 1
+            elif action.action == "email.bounced":
+                counts["bounced"] += 1
         return {
             "actions": [
                 {
