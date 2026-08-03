@@ -32,7 +32,14 @@ from digital_twin.profile import ProfileCorpus  # noqa: E402
 
 STATIC = ROOT / "src" / "digital_twin" / "static"
 SITE_URL = "https://prathamesh-git9.github.io/digital-twin"
-COPY = ("styles.css", "app.js", "twin-local.js", "favicon.svg", "widget.js")
+COPY = (
+    "styles.css",
+    "app.js",
+    "twin-local.js",
+    "favicon.svg",
+    "widget.js",
+    "avatar.webp",
+)
 
 
 def _repo_snapshot(offline: bool) -> list[dict[str, Any]]:
