@@ -887,7 +887,7 @@
           ${r.live === false ? "" : `<p>${esc(r.description || "")}</p>`}
           ${facts.length ? `<div class="facts">${facts.map((f) => `<span>${esc(f)}</span>`).join("")}</div>` : ""}
           ${r.topics?.length
-            ? `<div class="topics">${r.topics.slice(0, 4)
+            ? `<div class="topics">${r.topics.slice(0, 3)
                 .map((t) => `<span>${esc(t)}</span>`).join("")}</div>`
             : ""}
         </article>`;

@@ -952,125 +952,191 @@ html[data-theme="dark"] {
   .step-meta { grid-column: 2; }
 }
 
-/* ================= the page under the header ================= */
+/* =====================================================================
+   SURFACES — one system, replacing six
+
+   The sections above accumulated as "glass pass", "surfaces over solid
+   ground", "chat legibility fixes", "more glass" and "liquid glass", each
+   re-answering the same question for the same elements. That is why the
+   composer was made opaque for legibility and then handed a translucent
+   fill again two sections later. Everything a surface needs is decided
+   here, once, and this is the last word in the file.
+
+   Three tiers, and the rule that picks between them:
+
+     glass       something floats over the sky and nothing important is
+                 behind it — rails, pills, chips, cards in the hero
+     glass-heavy the visitor's own words scroll behind it, so it has to be
+                 unreadable through — the header, the composer, its veil,
+                 sheets, the feed
+     solid       it sits on an opaque band, where translucency renders as
+                 nothing at all — skill cards, the closing panel, repos
+
+   The heavy tier is not opaque. A 0.86 fill under a 30px blur turns the
+   text behind it into a soft wash of its own colour, which is what makes
+   iOS glass read as glass rather than as frosted plastic — and what a
+   0.46 fill under a 20px blur never did, because it left the words legible.
+   ===================================================================== */
+
+:root {
+  --g-blur: blur(30px) saturate(180%);
+  --g-blur-soft: blur(18px) saturate(150%);
+  --g-fill: rgba(255, 255, 255, .58);
+  --g-fill-heavy: rgba(255, 255, 255, .86);
+  --g-fill-bar: rgba(255, 255, 255, .93);
+  --g-edge: rgba(255, 255, 255, .8);
+  --g-spec: linear-gradient(152deg, rgba(255, 255, 255, .85), rgba(255, 255, 255, .12) 40%, transparent 66%);
+  --g-shadow: 0 1px 2px rgba(20, 70, 140, .05), 0 10px 28px rgba(20, 70, 140, .10);
+  --g-shadow-lift: 0 2px 5px rgba(20, 70, 140, .07), 0 20px 46px rgba(20, 70, 140, .16);
+}
+html[data-theme="dark"] {
+  --g-fill: rgba(22, 40, 62, .55);
+  --g-fill-heavy: rgba(11, 22, 36, .88);
+  --g-fill-bar: rgba(8, 16, 27, .94);
+  --g-edge: rgba(150, 195, 245, .18);
+  --g-spec: linear-gradient(152deg, rgba(180, 215, 255, .16), rgba(180, 215, 255, .03) 42%, transparent 68%);
+  --g-shadow: 0 1px 2px rgba(0, 0, 0, .34), 0 12px 32px rgba(0, 0, 0, .42);
+  --g-shadow-lift: 0 2px 6px rgba(0, 0, 0, .4), 0 24px 56px rgba(0, 0, 0, .55);
+}
+
+/* --- the two glass tiers ------------------------------------------- */
+
+.panel, .person, .visitor, .feed, .tile,
+.suggestions button, .quickfacts span, .cite, .turn-actions button,
+.bar, .bar.solid, #composer, .turn.you .text,
+.over-panel, .modal-card, .toast {
+  backdrop-filter: var(--g-blur);
+  -webkit-backdrop-filter: var(--g-blur);
+  border: 1px solid var(--g-edge);
+  box-shadow: var(--g-shadow);
+}
+
+.panel, .person, .visitor, .tile,
+.suggestions button, .quickfacts span, .cite, .turn-actions button {
+  background: var(--g-fill);
+}
+
+/* Anything the conversation scrolls behind. */
+.bar.solid, #composer, .turn.you .text, .feed,
+.over-panel, .modal-card {
+  background: var(--g-fill-heavy);
+}
+
+/* Chips and pills are small and sit over quiet ground; a lighter blur keeps
+   them from looking like cut-outs. */
+.suggestions button, .quickfacts span, .cite, .turn-actions button, .tile {
+  backdrop-filter: var(--g-blur-soft);
+  -webkit-backdrop-filter: var(--g-blur-soft);
+}
+
+/* The specular sheen along the top-left edge is the tell of the material.
+   It sits above the fill and below the content. */
+.panel::before, .person::before, #composer::before,
+.over-panel::before, .modal-card::before, .feed::before {
+  content: ""; position: absolute; inset: 0; border-radius: inherit;
+  background: var(--g-spec); pointer-events: none; opacity: .9;
+}
+.panel > *, .person > *, #composer > *, .modal-card > *, .feed > * {
+  position: relative; z-index: 1;
+}
+
+/* The radii iOS uses: generous, and larger on the bigger surface. */
+.panel, .person, .feed { border-radius: 20px; }
+#composer { border-radius: 24px; }
+.modal-card { border-radius: 26px; }
+.tile { border-radius: 14px; }
+.turn.you .text { border-radius: 20px 20px 6px 20px; }
+
+/* --- the header ----------------------------------------------------- */
 
 /*
-  Everything below was one fault with several faces: the page's lower half was
-  built as if nothing were floating above it.
+  Glass over the sky is the point of the design. The same bar over scrolling
+  serif body copy sliced headings in half and smeared the line beneath them,
+  because a 0.46 fill hides nothing. At the top of the page it stays light;
+  the moment the page moves it takes the heavy tier — still glass, now
+  opaque enough that what passes under it is a wash rather than words.
 */
-
-/* A blurred translucent bar over the sky is the point of the design. The same
-   bar over scrolling serif body copy sliced headings in half and smeared the
-   line underneath. It goes solid the moment the page moves. */
+.bar { background: var(--g-fill); border-bottom: 1px solid transparent; }
+/* Heavier than the general heavy tier: a navigation bar has a whole page
+   travelling under it, and at 0.86 body copy was still legible through it. iOS
+   takes its own bars close to opaque for the same reason — the colour behind
+   still bleeds, the words do not. */
 .bar.solid {
-  background: var(--paper);
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  border-bottom-color: var(--line);
+  background: var(--g-fill-bar);
+  border-bottom-color: var(--g-edge);
+  box-shadow: var(--g-shadow);
 }
+
+/* --- solid ground --------------------------------------------------- */
 
 /* The lower bands were 88% opaque, so the sticky rails and the dock note from
-   the screen above kept ghosting through the text. */
+   the screen above kept ghosting through the text. Nothing is behind them
+   worth showing, so they are simply paper. */
 .bands { background: var(--paper); backdrop-filter: none; }
-
-/* Every nav and "Jump to" link landed its section's kicker underneath the
-   header, so each jump arrived on a decapitated heading. */
-.band, .ask-hero { scroll-margin-top: 88px; }
-
-/* 108px of padding on each of six bands made a 5,800px page out of about
-   three screens of content. */
-.band { padding-top: clamp(56px, 7vh, 84px); }
-
-/*
-  The bands were 940px wide but their contents were not: a 90px date column
-  plus prose capped at 64ch filled about 640px of it, so every section sat
-  left of centre with a dead third down the right-hand side. Narrowing the
-  band to the measure the text actually wants centres the whole block instead
-  of centring a container around off-centre content.
-*/
-.band { max-width: 830px; }
-.foot { margin-top: clamp(56px, 8vh, 90px); }
-.timeline { margin-top: 32px; }
-.skillgrid, .projects, .cards { margin-top: 32px; }
-.faq { margin-top: 28px; }
-
-/*
-  The repository grid drew its hairlines by showing a coloured container
-  through 1px gaps. Ten repositories in a three-column grid leaves two empty
-  cells, and those cells rendered as solid blocks of that colour. Individual
-  outlined cards have no empty cell to expose.
-*/
-.cards {
-  background: none; border: 0; border-radius: 0;
-  gap: 10px; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-}
-.card {
+.skillcard, .cta, .card, .certrow span {
+  backdrop-filter: none; -webkit-backdrop-filter: none;
   background: var(--paper-2); border: 1px solid var(--line);
-  border-radius: 16px; padding: 20px;
 }
-.card:hover { border-color: var(--line-2); background: var(--paper-2); }
-.facts { display: flex; gap: 10px; margin-top: 12px; }
-.facts span { font: 400 11.5px/1 var(--mono); color: var(--ink-3); }
-/* Without live metadata a card is a name and a link, so it should not hold the
-   height of one that has a description. */
-.card.bare { padding: 16px 20px; }
-.work-note { font-size: 13px; color: var(--ink-3); margin-top: 20px; max-width: 60ch; }
+.cta { background: linear-gradient(168deg, var(--paper-2), var(--paper) 72%); }
+.skillcard::before, .cta::before { display: none; }
 
-/* ================= the dock has to actually cover ================= */
+/* --- overlays ------------------------------------------------------- */
+
+.over-panel { border-left: 1px solid var(--g-edge); border-radius: 26px 0 0 26px; }
+.over-scrim { backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
+.modal { backdrop-filter: blur(14px) saturate(140%); -webkit-backdrop-filter: blur(14px) saturate(140%); }
+.toast {
+  background: color-mix(in srgb, var(--ink) 88%, transparent);
+  color: var(--paper); border-color: transparent;
+}
+
+/* Browsers without backdrop-filter get opaque surfaces rather than a page of
+   washed-out ghosts. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .panel, .person, .visitor, .tile, .suggestions button,
+  .quickfacts span, .cite, .turn-actions button { background: var(--paper-2); }
+  .bar, .bar.solid, #composer, .turn.you .text, .feed,
+  .over-panel, .modal-card { background: var(--paper); }
+}
+
+/* =====================================================================
+   THE DOCK
+   ===================================================================== */
 
 /*
-  The veil under the composer was reduced to a blur with no fill, because an
-  opaque one painted a visible rectangle across the scene. The cost was that it
-  stopped covering anything: on a phone the answer ran legibly underneath the
-  composer and between the suggestion pills, which is the single thing that made
-  the page look broken.
+  The veil under the composer had been reduced to a blur with no fill, because
+  an opaque one painted a visible rectangle across the scene. The cost was that
+  it stopped covering anything: on a phone the answer ran legibly underneath
+  the composer and between the suggestion pills, which is the single thing that
+  made the page look broken.
 
-  Both requirements hold at once. The fill is opaque, so nothing shows through;
-  it spans the viewport rather than the column, so it has no vertical edges to
-  read as a rectangle; it fades in at the top, so text dissolves rather than
-  meeting a line; and it only exists once there is a conversation to cover, so
-  the empty page still shows the sky exactly as designed.
+  Every requirement holds at once. It is heavy glass, so what passes under it
+  dissolves; it fades out on each open side, so it has no edge to read as a
+  rectangle; and it exists only once there is a conversation to cover, so the
+  opening screen still shows the sky exactly as designed.
 */
 .thread:not(:empty) ~ .dock::before {
-  left: 50%;
-  right: auto;
-  width: 100vw;
-  transform: translateX(-50%);
-  background: var(--paper);
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  mask-image: linear-gradient(to bottom, transparent 0, #000 26px);
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 26px);
+  left: 50%; right: auto; width: 100vw; transform: translateX(-50%);
+  background: var(--g-fill-heavy);
+  backdrop-filter: var(--g-blur);
+  -webkit-backdrop-filter: var(--g-blur);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 28px);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 28px);
 }
 
-/*
-  The composer had been made opaque once already, for exactly this reason, and
-  the liquid-glass pass handed it a translucent fill again — so answers showed
-  through the input and read as clipped mid-sentence. It keeps the glass border
-  and shadow; only the fill goes solid.
-*/
-#composer { background: var(--paper); backdrop-filter: none; -webkit-backdrop-filter: none; }
-#composer::before { display: none; }
-
-/*
-  Full width is right where there are no rails. Once they appear, a veil across
-  the whole viewport parks a permanent white band over the bottom of the "Jump
-  to" panel. So above the rail breakpoint it covers the conversation column plus
-  a bleed, and fades out on all three open sides — which is what kept the
-  original from reading as a rectangle in the first place.
-*/
+/* Full width is right where there are no rails. Once they appear, a veil across
+   the whole viewport parks a permanent band over the bottom of the "Jump to"
+   panel, so it narrows to the conversation column plus a bleed and fades on
+   three sides. */
 @media (min-width: 901px) {
   .thread:not(:empty) ~ .dock::before {
-    left: -44px;
-    right: -44px;
-    width: auto;
-    transform: none;
+    left: -44px; right: -44px; width: auto; transform: none;
     mask-image:
-      linear-gradient(to bottom, transparent 0, #000 26px),
+      linear-gradient(to bottom, transparent 0, #000 28px),
       linear-gradient(to right, transparent 0, #000 44px,
                       #000 calc(100% - 44px), transparent 100%);
     -webkit-mask-image:
-      linear-gradient(to bottom, transparent 0, #000 26px),
+      linear-gradient(to bottom, transparent 0, #000 28px),
       linear-gradient(to right, transparent 0, #000 44px,
                       #000 calc(100% - 44px), transparent 100%);
     mask-composite: intersect;
@@ -1078,10 +1144,9 @@ html[data-theme="dark"] {
   }
 }
 
-/*
-  Four suggestions stack into four rows on a phone, which drove the dock up over
-  half the screen. One scrolling row keeps it to the height of the composer.
-*/
+#composer:focus-within { border-color: var(--clay); box-shadow: var(--g-shadow-lift), 0 0 0 4px var(--clay-soft); }
+.suggestions button:hover { border-color: var(--clay); color: var(--clay); box-shadow: var(--g-shadow-lift); }
+
 /*
   A non-wrapping row of pills is as wide as the pills, and that min-content
   width propagates up: the conversation column inflated past the viewport and
@@ -1092,15 +1157,94 @@ html[data-theme="dark"] {
 */
 .deck .ask-hero { max-width: 100%; }
 
+/* Four suggestions stack into four rows on a phone, which drove the dock up
+   over half the screen. One scrolling row keeps it to the composer's height. */
 @media (max-width: 620px) {
   .suggestions {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-    margin-inline: -4px;
-    padding: 2px 4px;
+    flex-wrap: nowrap; overflow-x: auto;
+    scrollbar-width: none; -ms-overflow-style: none;
+    margin-inline: -4px; padding: 2px 4px;
   }
   .suggestions::-webkit-scrollbar { display: none; }
   .suggestions button { flex: none; }
 }
+
+/*
+  The scene is a fixed 100vh block, so the ridges stopped dead against the paper
+  below in a hard line the full width of the page — the moment where the design
+  visibly ran out. It dissolves instead.
+*/
+.scene::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0;
+  height: 160px; pointer-events: none;
+  background: linear-gradient(to bottom, transparent, var(--paper));
+}
+
+/* =====================================================================
+   RHYTHM — and the empty screen at the bottom
+   ===================================================================== */
+
+/*
+  The thread carried 310px of padding so the last answer could "scroll clear of
+  the sticky dock". It never needed to: the dock's flow position is after the
+  thread, so it releases from the viewport bottom exactly when the thread ends
+  and the final line is already above it. All the padding bought was a dead
+  screen between the last answer and the page below — roughly 590px of nothing,
+  which is the white space at the bottom of the page.
+
+  What the dock genuinely obscures is a turn arriving while it is still pinned.
+  That is scrollIntoView's problem, and scroll-margin-bottom is its answer.
+*/
+.thread { padding-bottom: 28px; }
+.turn { scroll-margin-bottom: 280px; }
+.ask-hero { padding-bottom: 64px; }
+
+/* Every nav and "Jump to" link landed its section's kicker underneath the
+   header, so each jump arrived on a decapitated heading. */
+.band, .ask-hero { scroll-margin-top: 88px; }
+
+/*
+  The bands were 940px wide but their contents were not: a date column plus
+  prose capped at 64ch filled about 640px, so every section sat left of centre
+  with a dead third down the right. And 108px of padding on each of six bands
+  made a 5,800px page out of about three screens.
+*/
+.band { max-width: 830px; padding-top: clamp(56px, 7vh, 84px); }
+.foot { margin-top: clamp(56px, 8vh, 90px); }
+.timeline { margin-top: 32px; }
+.skillgrid, .projects, .cards { margin-top: 32px; }
+.faq { margin-top: 28px; }
+
+/*
+  The repository grid drew its hairlines by showing a coloured container through
+  1px gaps. Ten repositories in a three-column grid leaves two empty cells, and
+  those rendered as solid blocks of that colour. Outlined cards have no empty
+  cell to expose.
+*/
+.cards {
+  background: none; border: 0; border-radius: 0;
+  gap: 10px; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+}
+/*
+  Live descriptions run to four or five lines in a 254px column, so cards came
+  out at wildly different heights and the grid read as rubble. Clamping the
+  description and holding the topics to a single row makes every card the same
+  shape, which is the whole point of a card.
+*/
+.card {
+  border-radius: 16px; padding: 20px;
+  display: flex; flex-direction: column; gap: 9px;
+}
+.card:hover { border-color: var(--line-2); }
+.card p {
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+  overflow: hidden; margin-top: 0;
+}
+.card .topics { flex-wrap: nowrap; overflow: hidden; margin-top: auto; }
+.card .topics span { flex: none; }
+.facts { display: flex; gap: 10px; margin-top: 12px; }
+.facts span { font: 400 11.5px/1 var(--mono); color: var(--ink-3); }
+/* Without live metadata a card is a name and a link, so it should not hold the
+   height of one that has a description. */
+.card.bare { padding: 16px 20px; }
+.work-note { font-size: 13px; color: var(--ink-3); margin-top: 20px; max-width: 60ch; }
