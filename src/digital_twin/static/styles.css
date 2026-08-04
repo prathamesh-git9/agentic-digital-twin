@@ -1067,18 +1067,63 @@ html[data-theme="dark"] {
   box-shadow: var(--g-shadow);
 }
 
-/* --- solid ground --------------------------------------------------- */
+/* --- ground --------------------------------------------------------- */
 
-/* The lower bands were 88% opaque, so the sticky rails and the dock note from
-   the screen above kept ghosting through the text. Nothing is behind them
-   worth showing, so they are simply paper. */
-.bands { background: var(--paper); backdrop-filter: none; }
-.skillcard, .cta, .card, .certrow span {
-  backdrop-filter: none; -webkit-backdrop-filter: none;
-  background: var(--paper-2); border: 1px solid var(--line);
+/*
+  The whole page below the hero was flat white, and that is the real answer to
+  "why is there white space at the bottom": there is no hole in the layout — the
+  largest empty run anywhere on the page is 108px — the lower two thirds simply
+  had nothing in them but small grey text on paper.
+
+  It is also why glass stopped at the fold. Glass is not a colour, it is a
+  behaviour: it refracts what is behind it, and behind a band there was nothing
+  to refract. So the atmosphere continues past the hero as a fixed wash of very
+  soft colour, the page scrolls over it, and every surface below can be the same
+  material as every surface above.
+*/
+.bands {
+  background:
+    radial-gradient(68% 42% at 8% 6%, rgba(120, 180, 255, .20), transparent 62%),
+    radial-gradient(56% 38% at 94% 26%, rgba(150, 205, 255, .17), transparent 64%),
+    radial-gradient(76% 46% at 22% 58%, rgba(108, 168, 240, .16), transparent 66%),
+    radial-gradient(58% 38% at 88% 84%, rgba(140, 195, 255, .17), transparent 64%),
+    var(--paper);
+  background-attachment: fixed;
+  backdrop-filter: none;
 }
-.cta { background: linear-gradient(168deg, var(--paper-2), var(--paper) 72%); }
-.skillcard::before, .cta::before { display: none; }
+html[data-theme="dark"] .bands {
+  background:
+    radial-gradient(68% 42% at 8% 6%, rgba(60, 120, 210, .17), transparent 62%),
+    radial-gradient(56% 38% at 94% 26%, rgba(80, 140, 230, .14), transparent 64%),
+    radial-gradient(76% 46% at 22% 58%, rgba(50, 110, 200, .15), transparent 66%),
+    radial-gradient(58% 38% at 88% 84%, rgba(70, 130, 220, .14), transparent 64%),
+    var(--paper);
+  background-attachment: fixed;
+}
+
+/* Now that the ground has colour in it, the surfaces standing on it are the
+   same material as the ones over the sky. */
+.skillcard, .cta, .card, .certrow span, .faq, .edu {
+  background: var(--g-fill);
+  backdrop-filter: var(--g-blur);
+  -webkit-backdrop-filter: var(--g-blur);
+  border: 1px solid var(--g-edge);
+  box-shadow: var(--g-shadow);
+}
+.skillcard, .card { border-radius: 20px; }
+/* Grid rows stretch to their tallest card, so a short list left a pane of empty
+   glass under it. Cards size to their own content instead. */
+.skillgrid { align-items: start; }
+.cta { border-radius: 30px; }
+.faq, .edu { border-radius: 22px; padding: 6px 26px; }
+.skillcard::before, .cta::before, .faq::before {
+  content: ""; position: absolute; inset: 0; border-radius: inherit;
+  background: var(--g-spec); pointer-events: none; opacity: .75;
+}
+.skillcard, .cta, .faq { position: relative; }
+.skillcard > *, .cta > *, .faq > * { position: relative; z-index: 1; }
+.faq details:first-of-type { border-top: 0; }
+.edu { padding: 22px 26px; margin-top: 18px; border-top: 1px solid var(--g-edge); }
 
 /* --- overlays ------------------------------------------------------- */
 
@@ -1130,15 +1175,19 @@ html[data-theme="dark"] {
    three sides. */
 @media (min-width: 901px) {
   .thread:not(:empty) ~ .dock::before {
-    left: -44px; right: -44px; width: auto; transform: none;
+    /* The bleed has to stay inside the deck's own padding, which is
+       clamp(16px, 3vw, 28px) and therefore never less than 27px at this
+       breakpoint. At 44px the veil hung 16px past the right edge of a 1080px
+       viewport and put the document into horizontal overflow. */
+    left: -24px; right: -24px; width: auto; transform: none;
     mask-image:
       linear-gradient(to bottom, transparent 0, #000 28px),
-      linear-gradient(to right, transparent 0, #000 44px,
-                      #000 calc(100% - 44px), transparent 100%);
+      linear-gradient(to right, transparent 0, #000 34px,
+                      #000 calc(100% - 34px), transparent 100%);
     -webkit-mask-image:
       linear-gradient(to bottom, transparent 0, #000 28px),
-      linear-gradient(to right, transparent 0, #000 44px,
-                      #000 calc(100% - 44px), transparent 100%);
+      linear-gradient(to right, transparent 0, #000 34px,
+                      #000 calc(100% - 34px), transparent 100%);
     mask-composite: intersect;
     -webkit-mask-composite: source-in;
   }
@@ -1230,6 +1279,30 @@ html[data-theme="dark"] {
   made a 5,800px page out of about three screens.
 */
 .band { max-width: 830px; padding-top: clamp(56px, 7vh, 84px); }
+
+/*
+  On a wide screen an 830px column in a 1440px window is a strip of text with
+  300px of nothing either side of it, and the section headings left a further
+  dead third inside that. Giving the heading its own column beside the content
+  uses the width the window actually has, and holding it there while its section
+  scrolls past means you always know which section you are in.
+
+  #cta has no heading to put in the first column, so it stays a single block.
+*/
+@media (min-width: 1080px) {
+  .band:not(#cta) {
+    max-width: 1160px;
+    display: grid;
+    grid-template-columns: 244px minmax(0, 1fr);
+    gap: 26px 60px;
+    align-items: start;
+  }
+  .band-head { grid-column: 1; position: sticky; top: 100px; max-width: none; }
+  .band-head h2 { font-size: clamp(21px, 1.7vw, 26px); margin-top: 12px; }
+  .band > :not(.band-head) { grid-column: 2; margin-top: 0; }
+  .timeline li:first-child { border-top: 0; padding-top: 0; }
+  .project:first-of-type { border-top: 0; padding-top: 0; }
+}
 .foot { margin-top: clamp(56px, 8vh, 90px); }
 .timeline { margin-top: 32px; }
 .skillgrid, .projects, .cards { margin-top: 32px; }
@@ -1265,6 +1338,8 @@ html[data-theme="dark"] {
 .facts { display: flex; gap: 10px; margin-top: 12px; }
 .facts span { font: 400 11.5px/1 var(--mono); color: var(--ink-3); }
 /* Without live metadata a card is a name and a link, so it should not hold the
-   height of one that has a description. */
-.card.bare { padding: 16px 20px; }
+   height — or the grid — of one that has a description. */
+.cards.bare { grid-template-columns: repeat(auto-fill, minmax(178px, 1fr)); gap: 8px; }
+.cards.bare .card { padding: 13px 17px; border-radius: 14px; }
+.cards.bare .card h3 { font-size: 14px; }
 .work-note { font-size: 13px; color: var(--ink-3); margin-top: 20px; max-width: 60ch; }

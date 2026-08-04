@@ -883,6 +883,9 @@
       // repository without live metadata is shown as a plain link and the
       // section says once why the detail is missing.
       const live = repos.filter((r) => r.live !== false).length;
+      // With no metadata there is nothing for a full-size card to hold, and ten
+      // empty boxes look like a failure. They collapse to a link list instead.
+      host.classList.toggle("bare", !live);
       host.innerHTML = repos.map((r) => {
         const facts = [r.language, r.stars ? `${r.stars}★` : null].filter(Boolean);
         return `
