@@ -28,17 +28,24 @@
     drawer: $("#drawer"), drawerTitle: $("#drawer-title"), drawerBody: $("#drawer-body"),
     drawerClose: $("#drawer-close"),
     projectsButton: $("#projects-button"), jdButton: $("#jd-button"),
-    themeButton: $("#theme-button"),
+    themeButton: $("#theme-button"), resetButton: $("#reset-button"),
+    railBudget: $("#rail-budget"), railBudgetRow: $("#rail-budget-row"),
     toast: $("#toast"),
   };
 
   const state = {
     sessionId: null, events: null, candidates: [], active: null,
     drafts: [], busy: false, unread: 0,
-    // The answer currently in flight: the tool events arrive on the session's
-    // SSE stream and have to find the turn that is waiting for them.
-    pending: null,
+    // The in-flight answer: the SSE tool events and the abort control both need
+    // to reach the turn that is currently waiting.
+    pending: null, controller: null,
+    // Replayed into the thread after a reload so a refresh does not throw the
+    // conversation away.
+    transcript: [],
+    calendar: null,
   };
+
+  const STORE_KEY = "twin-session";
 
   // Deliberately answerable from the CV corpus. A suggested question that
   // triggers an honest refusal is a poor first impression of a grounded twin.
@@ -281,6 +288,8 @@
 
   /* ---------- chat ---------- */
 
+  let replaying = false;
+
   // The claim status is the whole point of a grounded twin, so it is stated on
   // the turn rather than left for the visitor to infer from the wording.
   function badges(extra) {
@@ -335,24 +344,61 @@
     // "nearest" only scrolls when the turn is actually off-screen. Aligning to
     // "end" threw the page down past the conversation into the sections below,
     // so the answer landed above the fold and the chat looked like it had done
-    // nothing at all.
-    div.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    // nothing at all. Replaying a stored transcript scrolls nowhere: the visitor
+    // should land where they landed on any other page load.
+    if (!replaying) div.scrollIntoView({ behavior: "smooth", block: "nearest" });
     return div;
   }
 
+  /* ---------- transcript persistence ---------- */
+
+  // A reload used to discard the conversation while the server still held the
+  // history, so the visitor's own screen disagreed with the session behind it.
+  function record(role, text, extra) {
+    state.transcript.push({ role, text, extra: extra || {} });
+    try {
+      sessionStorage.setItem(STORE_KEY, JSON.stringify({
+        sessionId: state.sessionId, turns: state.transcript.slice(-40),
+      }));
+    } catch { /* private mode: the conversation simply does not survive reload */ }
+  }
+
+  function forgetLocally() {
+    state.transcript = [];
+    try { sessionStorage.removeItem(STORE_KEY); } catch { /* nothing stored */ }
+  }
+
+  /* ---------- asking ---------- */
+
+  function setSending(sending) {
+    el.send.dataset.mode = sending ? "stop" : "send";
+    el.send.setAttribute("aria-label", sending ? "Stop" : "Send");
+  }
+
+  function showBudget(response) {
+    if (typeof response.budget_remaining !== "number" || !el.railBudget) return;
+    el.railBudgetRow.hidden = false;
+    el.railBudget.textContent = `${response.budget_remaining.toLocaleString()} tokens`;
+  }
+
   async function ask(text) {
-    if (!text.trim() || state.busy || !state.sessionId) return;
+    text = String(text || "").trim();
+    if (!text || state.busy || !state.sessionId) return;
     state.busy = true;
-    el.send.disabled = true;
+    setSending(true);
     if (el.intro) el.intro.hidden = true;
+    // Recorded here rather than in the suggestion handler, so a question the
+    // visitor typed also drops out of the follow-ups.
+    asked.add(text);
     turn("you", text);
+    record("you", text);
     el.input.value = "";
     el.input.style.height = "auto";
+
     // A grounded answer takes several seconds. Silent dots are indistinguishable
     // from a broken page, so the live tool loop is shown as it runs; the timed
     // copy below is only the fallback for the retrieval-only path, where no tool
-    // events are emitted at all. It used to claim a search that may never have
-    // happened.
+    // events are emitted at all.
     const pending = turn("twin", "");
     const slot = pending.querySelector(".text");
     slot.innerHTML =
@@ -372,30 +418,59 @@
       if (elapsed === 12) label.textContent = "Still working — verifying every claim…";
     }, 1000);
 
+    const controller = new AbortController();
+    state.controller = controller;
+    // Purging mid-answer aborts this request and clears the thread. The turn it
+    // was going to append belongs to a session that no longer exists, so the
+    // session id is captured here and every write below is gated on it.
+    const sessionId = state.sessionId;
+    const current = () => state.sessionId === sessionId;
     try {
-      const r = await api(`/api/sessions/${state.sessionId}/chat`, {
-        method: "POST", body: JSON.stringify({ message: text }),
+      const r = await api(`/api/sessions/${sessionId}/chat`, {
+        method: "POST",
+        body: JSON.stringify({ message: text }),
+        signal: controller.signal,
       });
       pending.remove();
-      turn("twin", r.answer, {
+      if (!current()) return;
+      const extra = {
         sources: r.sources, grounded: r.grounded, refusal: r.refusal,
         tailored_for: r.tailored_for, trace: r.trace,
-      });
+      };
+      turn("twin", r.answer, extra);
+      record("twin", r.answer, extra);
+      showBudget(r);
+      offerFollowUps();
     } catch (e) {
       pending.remove();
-      turn("twin", `Sorry — ${e.message}`);
+      if (!current()) return;
+      // Aborting only stops this browser waiting; the server finishes the turn
+      // it already started, so the wording promises nothing more than that.
+      const message = e.name === "AbortError"
+        ? "Stopped waiting for that answer. Ask again whenever you like."
+        : `Sorry — ${e.message}`;
+      turn("twin", message);
+      record("twin", message);
     } finally {
       clearInterval(ticker);
       state.pending = null;
+      state.controller = null;
       state.busy = false;
-      el.send.disabled = false;
-      // preventScroll matters: refocusing the composer otherwise drags the
-      // viewport down to it, past the answer that just arrived.
-      el.input.focus({ preventScroll: true });
+      setSending(false);
+      if (current()) {
+        el.resetButton.hidden = false;
+        // preventScroll matters: refocusing the composer otherwise drags the
+        // viewport down to it, past the answer that just arrived.
+        el.input.focus({ preventScroll: true });
+      }
     }
   }
 
-  el.composer.addEventListener("submit", (e) => { e.preventDefault(); ask(el.input.value); });
+  el.composer.addEventListener("submit", (e) => {
+    e.preventDefault();
+    if (state.busy) { state.controller?.abort(); return; }
+    ask(el.input.value);
+  });
   el.input.addEventListener("keydown", (e) => {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); ask(el.input.value); }
   });
@@ -404,9 +479,41 @@
     el.input.style.height = `${Math.min(el.input.scrollHeight, 170)}px`;
   });
 
-  el.starters.innerHTML = STARTERS.map((s) => `<button type="button">${esc(s)}</button>`).join("");
+  /* ---------- suggestions ---------- */
+
+  // Every follow-up is answerable from the CV corpus, and asked questions drop
+  // out of the list so the rail never suggests something already answered.
+  const FOLLOW_UPS = [
+    "What did he actually ship at matriXploit?",
+    "How does he handle failures in a tool loop?",
+    "What has he built with retrieval and embeddings?",
+    "Where is his security work strongest?",
+    "What is he weakest at?",
+    "Which of his repositories should I read first?",
+    "How does he test the systems he builds?",
+    "What is he looking for in his next role?",
+  ];
+  const asked = new Set();
+
+  // Not a question: this chip opens the role-fit drawer, which is the thing a
+  // recruiter came to do.
+  const JD_CHIP = "Check him against a job description";
+
+  function renderSuggestions(items) {
+    el.starters.innerHTML = items.map((s) =>
+      `<button type="button"${s === JD_CHIP ? ' data-action="jd"' : ""}>${esc(s)}</button>`,
+    ).join("");
+  }
+
+  function offerFollowUps() {
+    renderSuggestions([...FOLLOW_UPS.filter((q) => !asked.has(q)).slice(0, 3), JD_CHIP]);
+  }
+
+  renderSuggestions(STARTERS);
   el.starters.addEventListener("click", (e) => {
-    if (e.target.tagName === "BUTTON") ask(e.target.textContent);
+    if (e.target.tagName !== "BUTTON") return;
+    if (e.target.dataset.action === "jd") { el.jdButton.click(); return; }
+    ask(e.target.textContent);
   });
 
   /* ---------- events ---------- */
@@ -602,6 +709,10 @@
     rows.innerHTML = "<p>Loading…</p>";
     contactSheet.hidden = false;
     const items = [];
+    // Only offered when the owner has actually configured a booking link.
+    if (state.calendar?.url) {
+      items.push([state.calendar.url, "Book a call", state.calendar.cta || "Find a time"]);
+    }
     try {
       const c = await api("/api/contact");
       if (c.email) items.push([`mailto:${c.email}`, "Email", c.email]);
@@ -644,6 +755,100 @@
     const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
     document.documentElement.dataset.theme = next;
     localStorage.setItem("twin-theme", next);
+  });
+
+  /* ---------- session lifecycle ---------- */
+
+  // GET /calendar only needs the session to exist, so it doubles as the cheapest
+  // liveness probe for a stored session id — and tells us whether there is a
+  // booking link worth offering.
+  async function probeSession(sessionId) {
+    try {
+      const calendar = await api(`/api/sessions/${sessionId}/calendar`);
+      state.calendar = calendar.configured && calendar.url ? calendar : null;
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  async function restoreSession() {
+    let stored = null;
+    try { stored = JSON.parse(sessionStorage.getItem(STORE_KEY) || "null"); } catch { /* corrupt */ }
+    if (!stored?.sessionId || !(await probeSession(stored.sessionId))) {
+      forgetLocally();
+      return false;
+    }
+    state.sessionId = stored.sessionId;
+    state.transcript = Array.isArray(stored.turns) ? stored.turns : [];
+    if (!state.transcript.length) return true;
+
+    replaying = true;
+    state.transcript.forEach((t) => turn(t.role, t.text, t.extra || {}));
+    replaying = false;
+    state.transcript.filter((t) => t.role === "you").forEach((t) => asked.add(t.text));
+    if (el.intro) el.intro.hidden = true;
+    el.resetButton.hidden = false;
+    offerFollowUps();
+    return true;
+  }
+
+  async function newSession() {
+    const s = await api("/api/sessions", { method: "POST", body: "{}" });
+    state.sessionId = s.session_id;
+    forgetLocally();
+    await probeSession(state.sessionId);
+    return s;
+  }
+
+  // Stop and purge, as promised: the server deletes the visit, its research and
+  // its messages, and the browser drops its own copy of the transcript.
+  el.resetButton.addEventListener("click", async () => {
+    const sessionId = state.sessionId;
+    if (!sessionId) return;
+    // Cleared first: an answer still in flight checks this before writing itself
+    // into a thread the visitor has just asked to be rid of.
+    state.sessionId = null;
+    state.controller?.abort();
+    el.resetButton.disabled = true;
+    try {
+      await api(`/api/sessions/${sessionId}`, { method: "DELETE" });
+    } catch (e) {
+      toast(e.message);
+    }
+    state.events?.close();
+    el.messages.innerHTML = "";
+    el.visitorCard.hidden = true;
+    el.people.hidden = true;
+    el.feedList.innerHTML = "";
+    el.bellDot.hidden = true;
+    state.unread = 0;
+    el.railBudgetRow.hidden = true;
+    asked.clear();
+    forgetLocally();
+    if (el.intro) el.intro.hidden = false;
+    renderSuggestions(STARTERS);
+    try {
+      await newSession();
+      openEvents();
+      toast("Session purged. Starting fresh.");
+    } catch (e) {
+      toast(e.message);
+    }
+    el.resetButton.disabled = false;
+    el.resetButton.hidden = true;
+  });
+
+  // Recruiters live on the keyboard: the composer is one key away from anywhere
+  // on the page.
+  document.addEventListener("keydown", (e) => {
+    const typing = /^(INPUT|TEXTAREA)$/.test(document.activeElement?.tagName || "");
+    const shortcut = (e.key === "/" && !typing)
+      || ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k");
+    if (!shortcut) return;
+    e.preventDefault();
+    el.input.scrollIntoView({ behavior: "smooth", block: "center" });
+    el.input.focus({ preventScroll: true });
   });
 
   /* ---------- landing sections ---------- */
@@ -771,13 +976,17 @@
     armReveals();
 
     try {
-      const s = await api("/api/sessions", { method: "POST", body: "{}" });
-      state.sessionId = s.session_id;
+      // A reload resumes the same session and thread where possible. Only a
+      // genuinely new visit is worth interrupting with the identity prompt.
+      const resumed = await restoreSession();
+      if (!resumed) await newSession();
       // No greeting turn: the opening line above the input already says what
       // the twin is and what it can be asked, and repeating it reads as a bug.
       openEvents();
-      el.onboarding.hidden = false;
-      el.visitorName.focus();
+      if (!resumed) {
+        el.onboarding.hidden = false;
+        el.visitorName.focus();
+      }
     } catch (e) {
       turn("twin", `Couldn't start a session: ${e.message}`);
     }

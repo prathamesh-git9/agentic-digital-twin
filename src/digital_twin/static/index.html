@@ -149,7 +149,12 @@
             </button>
           </form>
           <div class="suggestions" id="starters"></div>
-          <p class="dock-note"><span id="model-note"></span> · Answers are evidence-backed. Contractual questions go to Prathamesh.</p>
+          <div class="dock-note">
+            <p><span id="model-note"></span> · Answers are evidence-backed. Contractual questions go to Prathamesh.</p>
+            <!-- The README promises immediate stop-and-purge; this is the control
+                 that actually calls DELETE /api/sessions/{id}. -->
+            <button class="linkish" id="reset-button" type="button" hidden>Clear &amp; forget this session</button>
+          </div>
         </div>
       </section>
 
@@ -175,6 +180,9 @@
             <div><span class="k">Grounding</span><span class="v ok">per claim</span></div>
             <div><span class="k">Repos</span><span class="v" id="rail-repos">10</span></div>
             <div><span class="k">Sources</span><span class="v">CV + GitHub</span></div>
+            <!-- Filled from the chat response: the hard per-session token budget
+                 is a real limit, so it is stated rather than hidden. -->
+            <div id="rail-budget-row" hidden><span class="k">Session budget</span><span class="v" id="rail-budget">—</span></div>
           </div>
         </section>
       </aside>
