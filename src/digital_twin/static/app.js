@@ -553,6 +553,10 @@
       live.label.textContent = "Consulting public sources…";
       live.steps.push({ ...p, status: "running" });
       live.host.innerHTML = stepRows(live.steps);
+      // Activity only logged research and failures, so a session where every
+      // tool succeeded left the panel empty and the bell pointless. The calls
+      // are the activity.
+      note(p.phrase || `Called ${p.tool}`);
     });
 
     src.addEventListener("tool.result", (e) => {

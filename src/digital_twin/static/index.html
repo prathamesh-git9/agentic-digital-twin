@@ -8,7 +8,7 @@
     <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
     <!-- Version stamp: static assets ship without Cache-Control, so browsers
          apply heuristic freshness and can serve a stale stylesheet. -->
-    <link rel="stylesheet" href="/static/styles.css?v=39">
+    <link rel="stylesheet" href="/static/styles.css?v=40">
   </head>
   <body>
     <a class="skip-link" href="#composer-input">Skip to chat</a>
@@ -58,7 +58,9 @@
 
     <div class="feed-wrap"><div class="feed" id="feed" hidden>
       <div class="feed-head"><span>Activity</span><button class="linkish" id="feed-close" type="button">Close</button></div>
-      <ul id="feed-list"></ul>
+      <!-- Hidden by CSS as soon as a real entry joins it, so the panel is never
+           an unexplained empty box. -->
+      <ul id="feed-list"><li class="feed-empty">Nothing yet. What the twin looks up as it answers shows here.</li></ul>
     </div></div>
 
     <main>
@@ -361,6 +363,6 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-    <script src="/static/app.js?v=39" defer></script>
+    <script src="/static/app.js?v=40" defer></script>
   </body>
 </html>
