@@ -903,6 +903,31 @@ html[data-theme="dark"] {
    than the plain text it was measured against. */
 .thread { padding-bottom: 310px; }
 
+/* ================= job-description fit ================= */
+
+.fit-head { display: flex; align-items: center; gap: 18px; margin: 22px 0 26px; }
+.fit-meter {
+  flex: none; width: 84px; height: 84px; border-radius: 50%;
+  display: grid; place-content: center; text-align: center;
+  background:
+    radial-gradient(closest-side, var(--paper) 74%, transparent 75%),
+    conic-gradient(var(--clay) calc(var(--pct) * 1%), var(--line) 0);
+}
+.fit-meter strong { font-size: 19px; font-weight: 600; letter-spacing: -.02em; }
+.fit-summary { font-size: 14px; color: var(--ink-2); }
+
+.fit-group { margin-bottom: 26px; }
+.fit-group h3 { font: 400 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); margin: 0 0 12px; }
+.fit-group h3 span { color: var(--clay); }
+.fit-row { border-left: 2px solid var(--line-2); padding: 2px 0 2px 14px; margin-bottom: 14px; }
+.fit-row.ok { border-left-color: var(--ok); }
+.fit-row strong { display: block; font-size: 14px; font-weight: 550; }
+.fit-row p { font-size: 13px; color: var(--ink-2); margin-top: 5px; }
+.fit-row .cite { display: inline-block; margin-top: 8px; }
+.fit-row.gap strong { color: var(--ink-2); }
+.fit-empty, .fit-caveat { font-size: 13px; color: var(--ink-3); }
+.fit-caveat { border-top: 1px solid var(--line); padding-top: 16px; }
+
 @media (max-width: 520px) {
   .thread { padding-bottom: 270px; }
   .step { grid-template-columns: 14px minmax(0, 1fr); }

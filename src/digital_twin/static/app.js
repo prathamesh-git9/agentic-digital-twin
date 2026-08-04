@@ -518,27 +518,77 @@
     } catch (e) { openDrawer("Selected work", `<p>${esc(e.message)}</p>`); }
   });
 
+  /*
+    Job-description fit. The response fields are coverage_percent, matched
+    (requirement/evidence/source), not_evidenced, summary and caveat — the gap
+    list was previously read from a field name the API never returned, so the
+    honest half of the analysis never reached the screen.
+  */
+  function renderFit(fit) {
+    const matched = fit.matched || [];
+    const gaps = fit.not_evidenced || [];
+    const pct = Math.max(0, Math.min(100, Number(fit.coverage_percent) || 0));
+    return `
+      <div class="fit-head">
+        <!-- The summary beside it already names the ratio in words, so the ring
+             carries the number alone rather than a caption it cannot fit. -->
+        <div class="fit-meter" data-pct="${pct}" role="img"
+             aria-label="${pct}% of recognised requirements are directly evidenced">
+          <strong>${pct}%</strong>
+        </div>
+        <p class="fit-summary">${esc(fit.summary || "")}</p>
+      </div>
+      <div class="fit-group">
+        <h3>Evidenced <span>${matched.length}</span></h3>
+        ${matched.length ? matched.map((m) => `
+          <div class="fit-row ok">
+            <strong>${esc(m.requirement || "")}</strong>
+            ${m.evidence ? `<p>${esc(m.evidence)}</p>` : ""}
+            ${m.source ? `<span class="cite">${esc(m.source)}</span>` : ""}
+          </div>`).join("") : "<p class='fit-empty'>Nothing in this description matched the CV directly.</p>"}
+      </div>
+      <div class="fit-group">
+        <h3>Not evidenced here <span>${gaps.length}</span></h3>
+        ${gaps.length ? gaps.map((g) => `
+          <div class="fit-row gap">
+            <strong>${esc(g.requirement || g)}</strong>
+            <p>Not stated in this CV. The twin will not claim it.</p>
+          </div>`).join("") : "<p class='fit-empty'>Every requirement it could parse is evidenced.</p>"}
+      </div>
+      ${fit.caveat ? `<p class="fit-caveat">${esc(fit.caveat)}</p>` : ""}
+      <div class="sheet-actions"><button type="button" class="btn ghost" id="fit-copy">Copy this analysis</button></div>`;
+  }
+
   el.jdButton.addEventListener("click", () => {
     openDrawer("Role fit", `
+      <p class="over-lede">Paste a job description. Requirements are split into
+        directly evidenced and not evidenced — never quietly upgraded.</p>
       <form class="jd-form" id="jd-form">
         <textarea id="jd-input" placeholder="Paste the job description…"></textarea>
         <div class="sheet-actions"><button type="submit" class="btn">Check fit</button></div>
       </form><div id="jd-results"></div>`);
+    $("#jd-input").focus();
     $("#jd-form").addEventListener("submit", async (e) => {
       e.preventDefault();
       const description = $("#jd-input").value.trim();
-      if (!description) return;
+      if (description.length < 20) { toast("Paste a little more of the description."); return; }
       const out = $("#jd-results");
-      out.innerHTML = "<p>Checking…</p>";
+      out.innerHTML = "<p>Checking every requirement against the CV…</p>";
       try {
         const fit = await api(`/api/sessions/${state.sessionId}/jd-fit`, {
           method: "POST", body: JSON.stringify({ description }),
         });
-        out.innerHTML = `<div class="repo"><strong>Summary</strong><p>${esc(fit.summary || "")}</p></div>` +
-          (fit.matched || fit.matched_requirements || []).map((m) =>
-            `<div class="repo"><strong>✓ ${esc(m.requirement || m)}</strong><p>${esc(m.source || "")}</p></div>`).join("") +
-          (fit.unevidenced || fit.unevidenced_requirements || []).map((m) =>
-            `<div class="repo"><strong>— ${esc(m.requirement || m)}</strong><p>Not in the CV.</p></div>`).join("");
+        out.innerHTML = renderFit(fit);
+        // The app sends style-src 'self', so the coverage ring cannot carry an
+        // inline style attribute. CSSOM is not inline style, and is allowed.
+        const meter = $(".fit-meter", out);
+        meter?.style.setProperty("--pct", meter.dataset.pct);
+        $("#fit-copy").addEventListener("click", async () => {
+          try {
+            await navigator.clipboard.writeText(out.innerText.trim());
+            toast("Analysis copied.");
+          } catch { toast("Your browser blocked clipboard access."); }
+        });
       } catch (err) { out.innerHTML = `<p>${esc(err.message)}</p>`; }
     });
   });
