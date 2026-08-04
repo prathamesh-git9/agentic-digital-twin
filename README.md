@@ -45,6 +45,12 @@ authorised effect. Tests assert the boundary directly.
 - Per-IP/session sliding-window limits, a hard per-session token budget, maximum input sizes,
   safe external URLs, security headers, and an offline scripted provider.
 - A dependency-free, responsive interface with dark/light themes and a one-tag floating widget.
+- The agent's tool loop is visible as it runs: each `tool.call`/`tool.result` frame paints a
+  step with its status, duration and source hosts, and the finished trace stays folded under
+  the answer it produced. Every answer states whether it is grounded, refused for lack of
+  evidence, or declined as outside what the twin may decide.
+- Visitor-side session control: the conversation survives a reload, and one button purges the
+  session server-side and drops the browser's copy of the transcript.
 
 ![Authority-gate candidate review using explicitly synthetic evidence data](artifacts/research-flow.png)
 
