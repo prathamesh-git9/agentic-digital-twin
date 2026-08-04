@@ -141,10 +141,19 @@ main { position: relative; z-index: 2; }
 
 /* ---------- motion ---------- */
 
-.reveal { opacity: 0; transform: translateY(18px); transition: opacity .7s var(--ease), transform .7s var(--ease); }
-.reveal.in { opacity: 1; transform: none; }
-.reveal.d1 { transition-delay: .09s; }
-.reveal.d2 { transition-delay: .18s; }
+/*
+  Content is visible by default and the animation is an enhancement layered on
+  top. It used to be the other way round: every .reveal started at opacity 0 and
+  needed JavaScript to become visible, so anything that stopped this page's
+  script — an error before armReveals, a blocked file, an extension — left the
+  whole page below the hero as blank white. The page must never depend on JS to
+  render what it already has in the HTML.
+*/
+.reveal { opacity: 1; transform: none; }
+html.reveals .reveal { opacity: 0; transform: translateY(18px); transition: opacity .7s var(--ease), transform .7s var(--ease); }
+html.reveals .reveal.in { opacity: 1; transform: none; }
+html.reveals .reveal.d1 { transition-delay: .09s; }
+html.reveals .reveal.d2 { transition-delay: .18s; }
 
 /* ---------- ask hero ---------- */
 

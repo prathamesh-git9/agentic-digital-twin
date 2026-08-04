@@ -982,6 +982,19 @@
     });
   }
 
+  /*
+    Armed here rather than in boot(), and immediately: the class is what hides
+    the content, so it must never be set without the observer that reveals it
+    being set up in the same breath. Everything before this point in the file is
+    declarations, so nothing can throw in between — and if this file never runs
+    at all, the stylesheet leaves the page visible.
+  */
+  if ("IntersectionObserver" in window) {
+    document.documentElement.classList.add("reveals");
+    stagger(".timeline .reveal", 80);
+    armReveals();
+  }
+
   /* ---------- boot ---------- */
 
   (async function boot() {
@@ -1001,8 +1014,6 @@
     } catch { el.contactLink?.remove(); }
 
     loadWorkCards();
-    stagger(".timeline .reveal", 80);
-    armReveals();
 
     try {
       // A reload resumes the same session and thread where possible. Only a
