@@ -8,7 +8,11 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 from .profile import EvidenceItem, tokens
-from .security import contains_prompt_injection, sanitize_external_text
+from .security import (
+    contains_prompt_injection,
+    sanitize_answer_text,
+    sanitize_external_text,
+)
 
 NUMBER_RE = re.compile(r"\b\d+(?:\.\d+)?%?\b")
 OWNER_REFERENCE_RE = re.compile(
@@ -203,7 +207,7 @@ class GroundingVerifier:
                 item.text for item in evidence if item.source in set(source_order)
             )
             if not mixes_external_owner_claim and self._supported(reply, supporting):
-                clean = sanitize_external_text(reply, max_length=1600)
+                clean = sanitize_answer_text(reply, max_length=1600)
                 if clean:
                     return VerifiedAnswer(clean, source_order, True, False)
 

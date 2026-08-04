@@ -35,6 +35,9 @@ SENSITIVE_TERMS = re.compile(
 TAG_RE = re.compile(r"<[^>]+>")
 CONTROL_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 SPACE_RE = re.compile(r"\s+")
+# Whitespace that is not a line break, so answer text can keep its paragraphs.
+HORIZONTAL_SPACE_RE = re.compile(r"[^\S\n]+")
+BLANK_LINES_RE = re.compile(r"\n{3,}")
 NAME_RE = re.compile(r"[^\w\s'.-]", re.UNICODE)
 
 
@@ -50,6 +53,25 @@ def sanitize_external_text(value: str, *, max_length: int = 240) -> str:
     """Make fetched content inert, or reject it when it carries commands."""
     clean = html.unescape(CONTROL_RE.sub(" ", TAG_RE.sub(" ", value or "")))
     clean = SPACE_RE.sub(" ", clean).strip()
+    if contains_prompt_injection(clean) or contains_sensitive_traits(clean):
+        return ""
+    return clean[:max_length].rstrip()
+
+
+def sanitize_answer_text(value: str, *, max_length: int = 240) -> str:
+    """Make the twin's own drafted reply inert without flattening its shape.
+
+    `sanitize_external_text` collapses every run of whitespace, which is right
+    for a fetched page but wrong for the one piece of model output a visitor
+    reads as prose: paragraphs and lists arrived as a single unbroken slab.
+    Line structure survives here; tags, control characters, injected
+    instructions and sensitive categories are treated exactly as before.
+    """
+    clean = html.unescape(CONTROL_RE.sub(" ", TAG_RE.sub(" ", value or "")))
+    clean = clean.replace("\r\n", "\n").replace("\r", "\n")
+    clean = HORIZONTAL_SPACE_RE.sub(" ", clean)
+    clean = "\n".join(line.strip() for line in clean.split("\n"))
+    clean = BLANK_LINES_RE.sub("\n\n", clean).strip()
     if contains_prompt_injection(clean) or contains_sensitive_traits(clean):
         return ""
     return clean[:max_length].rstrip()
