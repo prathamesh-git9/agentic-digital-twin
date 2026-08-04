@@ -951,3 +951,156 @@ html[data-theme="dark"] {
   .step { grid-template-columns: 14px minmax(0, 1fr); }
   .step-meta { grid-column: 2; }
 }
+
+/* ================= the page under the header ================= */
+
+/*
+  Everything below was one fault with several faces: the page's lower half was
+  built as if nothing were floating above it.
+*/
+
+/* A blurred translucent bar over the sky is the point of the design. The same
+   bar over scrolling serif body copy sliced headings in half and smeared the
+   line underneath. It goes solid the moment the page moves. */
+.bar.solid {
+  background: var(--paper);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-bottom-color: var(--line);
+}
+
+/* The lower bands were 88% opaque, so the sticky rails and the dock note from
+   the screen above kept ghosting through the text. */
+.bands { background: var(--paper); backdrop-filter: none; }
+
+/* Every nav and "Jump to" link landed its section's kicker underneath the
+   header, so each jump arrived on a decapitated heading. */
+.band, .ask-hero { scroll-margin-top: 88px; }
+
+/* 108px of padding on each of six bands made a 5,800px page out of about
+   three screens of content. */
+.band { padding-top: clamp(56px, 7vh, 84px); }
+
+/*
+  The bands were 940px wide but their contents were not: a 90px date column
+  plus prose capped at 64ch filled about 640px of it, so every section sat
+  left of centre with a dead third down the right-hand side. Narrowing the
+  band to the measure the text actually wants centres the whole block instead
+  of centring a container around off-centre content.
+*/
+.band { max-width: 830px; }
+.foot { margin-top: clamp(56px, 8vh, 90px); }
+.timeline { margin-top: 32px; }
+.skillgrid, .projects, .cards { margin-top: 32px; }
+.faq { margin-top: 28px; }
+
+/*
+  The repository grid drew its hairlines by showing a coloured container
+  through 1px gaps. Ten repositories in a three-column grid leaves two empty
+  cells, and those cells rendered as solid blocks of that colour. Individual
+  outlined cards have no empty cell to expose.
+*/
+.cards {
+  background: none; border: 0; border-radius: 0;
+  gap: 10px; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+}
+.card {
+  background: var(--paper-2); border: 1px solid var(--line);
+  border-radius: 16px; padding: 20px;
+}
+.card:hover { border-color: var(--line-2); background: var(--paper-2); }
+.facts { display: flex; gap: 10px; margin-top: 12px; }
+.facts span { font: 400 11.5px/1 var(--mono); color: var(--ink-3); }
+/* Without live metadata a card is a name and a link, so it should not hold the
+   height of one that has a description. */
+.card.bare { padding: 16px 20px; }
+.work-note { font-size: 13px; color: var(--ink-3); margin-top: 20px; max-width: 60ch; }
+
+/* ================= the dock has to actually cover ================= */
+
+/*
+  The veil under the composer was reduced to a blur with no fill, because an
+  opaque one painted a visible rectangle across the scene. The cost was that it
+  stopped covering anything: on a phone the answer ran legibly underneath the
+  composer and between the suggestion pills, which is the single thing that made
+  the page look broken.
+
+  Both requirements hold at once. The fill is opaque, so nothing shows through;
+  it spans the viewport rather than the column, so it has no vertical edges to
+  read as a rectangle; it fades in at the top, so text dissolves rather than
+  meeting a line; and it only exists once there is a conversation to cover, so
+  the empty page still shows the sky exactly as designed.
+*/
+.thread:not(:empty) ~ .dock::before {
+  left: 50%;
+  right: auto;
+  width: 100vw;
+  transform: translateX(-50%);
+  background: var(--paper);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  mask-image: linear-gradient(to bottom, transparent 0, #000 26px);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 26px);
+}
+
+/*
+  The composer had been made opaque once already, for exactly this reason, and
+  the liquid-glass pass handed it a translucent fill again — so answers showed
+  through the input and read as clipped mid-sentence. It keeps the glass border
+  and shadow; only the fill goes solid.
+*/
+#composer { background: var(--paper); backdrop-filter: none; -webkit-backdrop-filter: none; }
+#composer::before { display: none; }
+
+/*
+  Full width is right where there are no rails. Once they appear, a veil across
+  the whole viewport parks a permanent white band over the bottom of the "Jump
+  to" panel. So above the rail breakpoint it covers the conversation column plus
+  a bleed, and fades out on all three open sides — which is what kept the
+  original from reading as a rectangle in the first place.
+*/
+@media (min-width: 901px) {
+  .thread:not(:empty) ~ .dock::before {
+    left: -44px;
+    right: -44px;
+    width: auto;
+    transform: none;
+    mask-image:
+      linear-gradient(to bottom, transparent 0, #000 26px),
+      linear-gradient(to right, transparent 0, #000 44px,
+                      #000 calc(100% - 44px), transparent 100%);
+    -webkit-mask-image:
+      linear-gradient(to bottom, transparent 0, #000 26px),
+      linear-gradient(to right, transparent 0, #000 44px,
+                      #000 calc(100% - 44px), transparent 100%);
+    mask-composite: intersect;
+    -webkit-mask-composite: source-in;
+  }
+}
+
+/*
+  Four suggestions stack into four rows on a phone, which drove the dock up over
+  half the screen. One scrolling row keeps it to the height of the composer.
+*/
+/*
+  A non-wrapping row of pills is as wide as the pills, and that min-content
+  width propagates up: the conversation column inflated past the viewport and
+  every line of the answer was clipped. `max-width: none` on the deck's copy of
+  the hero is what let it happen — clamping the item to its own grid track is
+  what stops it. (min-width: 0 does not: the track is definite, so the item is
+  not being sized by its automatic minimum in the first place.)
+*/
+.deck .ask-hero { max-width: 100%; }
+
+@media (max-width: 620px) {
+  .suggestions {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    margin-inline: -4px;
+    padding: 2px 4px;
+  }
+  .suggestions::-webkit-scrollbar { display: none; }
+  .suggestions button { flex: none; }
+}

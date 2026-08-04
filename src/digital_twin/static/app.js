@@ -873,15 +873,32 @@
       const data = await api("/api/github");
       const repos = data.repositories || data.repos || [];
       if (!repos.length) return;
-      host.innerHTML = repos.map((r) => `
-        <article class="card">
+      // GitHub allows 60 unauthenticated calls an hour per IP, which a shared
+      // host exhausts routinely. The service fills the gap with a placeholder
+      // description; printing that ten times reads as ten broken cards, so a
+      // repository without live metadata is shown as a plain link and the
+      // section says once why the detail is missing.
+      const live = repos.filter((r) => r.live !== false).length;
+      host.innerHTML = repos.map((r) => {
+        const facts = [r.language, r.stars ? `${r.stars}★` : null].filter(Boolean);
+        return `
+        <article class="card${r.live === false ? " bare" : ""}">
           <h3><a href="${esc(r.url || r.html_url)}" target="_blank" rel="noopener noreferrer">${esc(r.name)}</a></h3>
-          <p>${esc(r.description || "")}</p>
+          ${r.live === false ? "" : `<p>${esc(r.description || "")}</p>`}
+          ${facts.length ? `<div class="facts">${facts.map((f) => `<span>${esc(f)}</span>`).join("")}</div>` : ""}
           ${r.topics?.length
-            ? `<div class="topics">${r.topics.slice(0, 5)
+            ? `<div class="topics">${r.topics.slice(0, 4)
                 .map((t) => `<span>${esc(t)}</span>`).join("")}</div>`
             : ""}
-        </article>`).join("");
+        </article>`;
+      }).join("");
+      const note = $("#work-note");
+      if (note && !live) {
+        note.textContent =
+          "GitHub's public API is rate-limited at the moment, so the live detail "
+          + "is missing. Every name links straight to the repository.";
+        note.hidden = false;
+      }
     } catch {
       host.closest(".band")?.remove();
     }
@@ -890,16 +907,21 @@
   /* ---------- scroll progress ---------- */
 
   const progress = $("#progress");
-  if (progress) {
-    const paint = () => {
+  const bar = document.querySelector(".bar");
+  const paint = () => {
+    if (progress) {
       const max = document.documentElement.scrollHeight - window.innerHeight;
       const pct = max > 0 ? (window.scrollY / max) * 100 : 0;
       progress.style.width = `${pct}%`;
-    };
-    addEventListener("scroll", paint, { passive: true });
-    addEventListener("resize", paint);
-    paint();
-  }
+    }
+    // Frosted glass is right over the sky at the top of the page and wrong
+    // everywhere else: body copy scrolling under a blurred translucent bar came
+    // out smeared and sliced mid-line. Past the first scroll it goes solid.
+    bar?.classList.toggle("solid", window.scrollY > 8);
+  };
+  addEventListener("scroll", paint, { passive: true });
+  addEventListener("resize", paint);
+  paint();
 
   /* ---------- copy an answer ---------- */
 

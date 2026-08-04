@@ -8,7 +8,7 @@
     <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
     <!-- Version stamp: static assets ship without Cache-Control, so browsers
          apply heuristic freshness and can serve a stale stylesheet. -->
-    <link rel="stylesheet" href="/static/styles.css?v=30">
+    <link rel="stylesheet" href="/static/styles.css?v=36">
   </head>
   <body>
     <a class="skip-link" href="#composer-input">Skip to chat</a>
@@ -286,6 +286,7 @@
 
       <section class="band" id="work">
         <div class="band-head reveal"><span class="kicker">Open source</span><h2>Ten systems, built around correctness.</h2></div>
+        <p class="work-note" id="work-note" hidden></p>
         <div class="cards" id="work-cards"></div>
         <div class="certs reveal">
           <span class="kicker">Also completed</span>
@@ -360,6 +361,6 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-    <script src="/static/app.js?v=30" defer></script>
+    <script src="/static/app.js?v=36" defer></script>
   </body>
 </html>
