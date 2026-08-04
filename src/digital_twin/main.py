@@ -392,6 +392,14 @@ def create_app(
         )
         if request.url.path.startswith("/api/"):
             response.headers["Cache-Control"] = "no-store"
+        elif request.url.path.startswith("/static/"):
+            # Static assets shipped with no Cache-Control at all, so browsers
+            # applied heuristic freshness and could serve a stylesheet from
+            # minutes ago against a page that had already moved on. The version
+            # stamp in index.html was a workaround for this and only worked when
+            # the HTML itself was fresh. no-cache still allows a 304 — it just
+            # requires the browser to ask first.
+            response.headers["Cache-Control"] = "no-cache"
         return response
 
     def client_hash(request: Request) -> str:
