@@ -35,6 +35,9 @@
   const state = {
     sessionId: null, events: null, candidates: [], active: null,
     drafts: [], busy: false, unread: 0,
+    // The answer currently in flight: the tool events arrive on the session's
+    // SSE stream and have to find the turn that is waiting for them.
+    pending: null,
   };
 
   // Deliberately answerable from the CV corpus. A suggested question that
@@ -53,6 +56,74 @@
 
   const initialsOf = (n) => String(n || "?").split(/\s+/).filter(Boolean).slice(0, 2)
     .map((p) => p[0].toUpperCase()).join("");
+
+  const secs = (ms) => (ms >= 1000 ? `${(ms / 1000).toFixed(1)}s` : `${ms}ms`);
+
+  /*
+    Answers arrive as plain text that frequently contains paragraphs and dashed
+    lists. Rendered with white-space: pre-wrap they collapsed into one grey slab,
+    so the structure the model actually produced is reconstructed here. The input
+    is escaped first: only the tags added below can reach the DOM.
+  */
+  function format(text) {
+    const bold = (s) => s.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
+    return String(text || "")
+      .split(/\n{2,}/)
+      .map((block) => {
+        const lines = block.split("\n").map((l) => l.trim()).filter(Boolean);
+        const bulleted = lines.length > 1 && lines.every((l) => /^[-*•]\s+/.test(l));
+        const numbered = lines.length > 1 && lines.every((l) => /^\d+[.)]\s+/.test(l));
+        if (bulleted || numbered) {
+          const tag = numbered ? "ol" : "ul";
+          const items = lines
+            .map((l) => `<li>${bold(esc(l.replace(/^([-*•]|\d+[.)])\s+/, "")))}</li>`)
+            .join("");
+          return `<${tag}>${items}</${tag}>`;
+        }
+        return `<p>${bold(esc(block.trim())).replace(/\n/g, "<br>")}</p>`;
+      })
+      .join("");
+  }
+
+  /*
+    A step in the agent's tool loop. The same markup serves the live view and the
+    provenance panel kept underneath the finished answer, so what the visitor
+    watched happen is exactly what stays on the record.
+  */
+  function stepRow(step) {
+    const status = step.status || "running";
+    // "ok" would only repeat what the marker already says; anything else is
+    // worth naming, because a blocked or timed-out call changes how much the
+    // answer rests on.
+    const meta = [
+      status === "running" || status === "ok" ? null : status,
+      typeof step.duration_ms === "number" ? secs(step.duration_ms) : null,
+      step.cached ? "cached" : null,
+    ].filter(Boolean).join(" · ");
+    // The tool reports one URL per result; several usually share a host, and
+    // three repetitions of the same domain says nothing extra.
+    const hosts = new Map();
+    (step.source_urls || []).forEach((u) => {
+      let host = u;
+      try { host = new URL(u).hostname.replace(/^www\./, ""); } catch { /* raw */ }
+      if (!hosts.has(host)) hosts.set(host, u);
+    });
+    const links = [...hosts].slice(0, 3).map(([host, u]) =>
+      `<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(host)}</a>`).join("");
+    return `
+      <li class="step" data-seq="${esc(step.sequence)}" data-status="${esc(status)}">
+        <span class="step-mark" aria-hidden="true"></span>
+        <span class="step-body">
+          <span class="step-phrase">${esc(step.phrase || step.tool || "Working")}</span>
+          ${step.summary ? `<span class="step-summary">${esc(step.summary)}</span>` : ""}
+          ${links ? `<span class="step-links">${links}</span>` : ""}
+        </span>
+        ${meta ? `<span class="step-meta">${esc(meta)}</span>` : ""}
+      </li>`;
+  }
+
+  const stepRows = (steps) => steps.map(stepRow).join("");
+  const stepsList = (steps) => `<ol class="steps">${stepRows(steps)}</ol>`;
 
   let toastTimer;
   function toast(msg) {
@@ -210,17 +281,54 @@
 
   /* ---------- chat ---------- */
 
-  function turn(role, text, cites) {
+  // The claim status is the whole point of a grounded twin, so it is stated on
+  // the turn rather than left for the visitor to infer from the wording.
+  function badges(extra) {
+    const out = [];
+    // The two refusals are not the same thing and must not read the same. A
+    // contractual question is declined on policy and still cites the boundary
+    // it was declined under; an unevidenced one is refused for lack of proof.
+    if (extra.refusal) {
+      out.push(extra.grounded
+        ? '<span class="badge warn">Not the twin\'s to answer</span>'
+        : '<span class="badge warn">No evidence for this</span>');
+    } else if (extra.grounded) {
+      out.push('<span class="badge ok">Grounded in sources</span>');
+    }
+    if (extra.tailored_for) {
+      out.push(`<span class="badge">Tailored for ${esc(extra.tailored_for)}</span>`);
+    }
+    return out.length ? `<div class="badges">${out.join("")}</div>` : "";
+  }
+
+  function turn(role, text, extra = {}) {
     const div = document.createElement("div");
     div.className = `turn ${role}`;
-    const chips = (cites || []).map((c) => `<span class="cite">${esc(c)}</span>`).join("");
+    const sources = extra.sources || [];
+    const trace = extra.trace || [];
+    const chips = sources.map((c) => `<span class="cite">${esc(c)}</span>`).join("");
+    const spent = trace.reduce((total, s) => total + (s.duration_ms || 0), 0);
+    const calls = `${trace.length} tool ${trace.length === 1 ? "call" : "calls"}`;
+    // Every tool call the agent actually made stays attached to the answer it
+    // produced. Collapsed by default: it is provenance, not the answer.
+    const provenance = trace.length
+      ? `<details class="trace">
+           <summary>How this was assembled · ${calls} · ${secs(spent)}</summary>
+           ${stepsList(trace)}
+         </details>`
+      : "";
     div.innerHTML = `
       <div class="bubble">
         <span class="label">${role === "twin" ? "Prathamesh" : "You"}</span>
-        <div class="text">${esc(text)}</div>
+        <div class="text">${role === "twin" ? format(text) : esc(text)}</div>
+        ${role === "twin" && text ? badges(extra) : ""}
         ${chips ? `<div class="cites">${chips}</div>` : ""}
+        ${provenance}
         ${role === "twin" && text
-          ? `<div class="turn-actions"><button type="button" data-copy>Copy</button></div>`
+          ? `<div class="turn-actions">
+               <button type="button" data-copy>Copy</button>
+               ${sources.length ? '<button type="button" data-copy-cited>Copy with sources</button>' : ""}
+             </div>`
           : ""}
       </div>`;
     el.messages.appendChild(div);
@@ -241,35 +349,44 @@
     el.input.value = "";
     el.input.style.height = "auto";
     // A grounded answer takes several seconds. Silent dots are indistinguishable
-    // from a broken page, so say what is happening and keep a running clock.
+    // from a broken page, so the live tool loop is shown as it runs; the timed
+    // copy below is only the fallback for the retrieval-only path, where no tool
+    // events are emitted at all. It used to claim a search that may never have
+    // happened.
     const pending = turn("twin", "");
     const slot = pending.querySelector(".text");
     slot.innerHTML =
       '<span class="waiting"><span class="typing"><i></i><i></i><i></i></span>' +
-      '<span class="waiting-label">Searching his CV and repositories…</span>' +
-      '<span class="waiting-clock">0s</span></span>';
+      '<span class="waiting-label">Retrieving evidence from his CV and repositories…</span>' +
+      '<span class="waiting-clock">0s</span></span>' +
+      '<ol class="steps live"></ol>';
     const startedAt = Date.now();
     const clock = slot.querySelector(".waiting-clock");
     const label = slot.querySelector(".waiting-label");
+    state.pending = { steps: [], host: slot.querySelector(".steps"), label, tooled: false };
     const ticker = setInterval(() => {
-      const secs = Math.round((Date.now() - startedAt) / 1000);
-      clock.textContent = `${secs}s`;
-      if (secs === 4) label.textContent = "Drafting a grounded answer…";
-      if (secs === 12) label.textContent = "Still working — verifying every claim…";
+      const elapsed = Math.round((Date.now() - startedAt) / 1000);
+      clock.textContent = `${elapsed}s`;
+      if (state.pending?.tooled) return;
+      if (elapsed === 4) label.textContent = "Drafting a grounded answer…";
+      if (elapsed === 12) label.textContent = "Still working — verifying every claim…";
     }, 1000);
 
     try {
       const r = await api(`/api/sessions/${state.sessionId}/chat`, {
         method: "POST", body: JSON.stringify({ message: text }),
       });
-      clearInterval(ticker);
       pending.remove();
-      turn("twin", r.answer, r.sources);
+      turn("twin", r.answer, {
+        sources: r.sources, grounded: r.grounded, refusal: r.refusal,
+        tailored_for: r.tailored_for, trace: r.trace,
+      });
     } catch (e) {
-      clearInterval(ticker);
       pending.remove();
       turn("twin", `Sorry — ${e.message}`);
     } finally {
+      clearInterval(ticker);
+      state.pending = null;
       state.busy = false;
       el.send.disabled = false;
       // preventScroll matters: refocusing the composer otherwise drags the
@@ -311,6 +428,34 @@
     src.addEventListener("research.dossier", (e) => {
       const p = JSON.parse(e.data);
       if (p.candidates?.length) renderPeople(p.candidates);
+    });
+
+    /*
+      The agent publishes every tool call and result as it happens. Rendering
+      them live is what makes the execution contract visible: the visitor sees
+      which public sources were touched, in order, while they wait — and the
+      same list stays attached to the finished answer.
+    */
+    src.addEventListener("tool.call", (e) => {
+      const p = JSON.parse(e.data);
+      const live = state.pending;
+      if (!live) return;
+      live.tooled = true;
+      // The step list below spells out each call, so the headline stays the
+      // headline rather than repeating the last row verbatim.
+      live.label.textContent = "Consulting public sources…";
+      live.steps.push({ ...p, status: "running" });
+      live.host.innerHTML = stepRows(live.steps);
+    });
+
+    src.addEventListener("tool.result", (e) => {
+      const p = JSON.parse(e.data);
+      const live = state.pending;
+      if (!live) return;
+      const step = live.steps.find((s) => s.call_id === p.call_id);
+      if (step) Object.assign(step, p);
+      live.host.innerHTML = stepRows(live.steps);
+      if (p.status && p.status !== "ok") note(`${p.tool}: ${p.status}`);
     });
 
     src.addEventListener("outreach.ready", (e) => {
@@ -506,13 +651,21 @@
   // Recruiters paste answers into their notes or ATS; making that one click
   // keeps the twin's exact wording intact rather than a lossy manual selection.
   el.messages.addEventListener("click", async (event) => {
-    const button = event.target.closest("[data-copy]");
+    const button = event.target.closest("[data-copy], [data-copy-cited]");
     if (!button) return;
-    const text = button.closest(".turn")?.querySelector(".text")?.innerText || "";
+    const bubble = button.closest(".turn");
+    const answer = bubble?.querySelector(".text")?.innerText.trim() || "";
+    const withSources = button.hasAttribute("data-copy-cited");
+    // Pasting an answer into an ATS without its sources strips exactly the part
+    // that makes it checkable, so citations travel with it on request.
+    const cited = [...(bubble?.querySelectorAll(".cite") || [])]
+      .map((n) => `- ${n.textContent}`).join("\n");
+    const payload = withSources && cited ? `${answer}\n\nSources:\n${cited}` : answer;
+    const label = button.textContent;
     try {
-      await navigator.clipboard.writeText(text.trim());
+      await navigator.clipboard.writeText(payload);
       button.textContent = "Copied";
-      setTimeout(() => (button.textContent = "Copy"), 1800);
+      setTimeout(() => (button.textContent = label), 1800);
     } catch {
       toast("Your browser blocked clipboard access.");
     }

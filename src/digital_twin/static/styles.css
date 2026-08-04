@@ -825,3 +825,86 @@ html[data-theme="dark"] {
 
 /* 10px was below comfortable for the rail labels. */
 .panel-label { font-size: 10.5px; letter-spacing: .14em; }
+
+/* ================= set answers as prose ================= */
+
+/*
+  Answers arrive with paragraphs and lists. Rendered as pre-wrapped plain text
+  they collapsed into a single slab, so the structure is now real markup and the
+  whitespace rule has to step aside for it.
+*/
+.turn.twin .text { white-space: normal; }
+.turn.twin .text > * + * { margin-top: 1em; }
+.turn.twin .text ul, .turn.twin .text ol { margin: 0; padding-left: 1.15em; }
+.turn.twin .text li + li { margin-top: .4em; }
+.turn.twin .text li::marker { color: var(--ink-3); }
+.turn.twin .text b { font-weight: 640; }
+
+/* ================= answer status ================= */
+
+.badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+.badge {
+  font: 400 11px/1 var(--mono); color: var(--ink-3);
+  border: 1px solid var(--line); border-radius: 999px; padding: 5px 10px;
+}
+.badge.ok { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 42%, transparent); }
+.badge.warn { color: var(--ink-2); border-color: var(--line-2); }
+.badge.ok::before, .badge.warn::before {
+  content: "●"; font-size: 7px; vertical-align: middle; margin-right: 6px;
+}
+
+/* ================= the visible tool loop ================= */
+
+/*
+  The agent publishes every tool call and result while it runs. Showing them —
+  live, then folded under the answer they produced — is the difference between
+  asserting the execution contract and letting a visitor watch it hold.
+*/
+.steps { list-style: none; margin: 14px 0 0; padding: 0; display: flex; flex-direction: column; gap: 9px; }
+.steps:empty { display: none; }
+.step {
+  display: grid; grid-template-columns: 14px minmax(0, 1fr) auto; gap: 10px;
+  align-items: start; font-family: var(--sans); font-size: 13px;
+}
+.step-mark {
+  width: 7px; height: 7px; margin-top: 6px; border-radius: 50%;
+  background: var(--ink-3); justify-self: center;
+}
+.step[data-status="running"] .step-mark { background: var(--clay); animation: blink 1.3s var(--ease) infinite; }
+.step[data-status="ok"] .step-mark { background: var(--ok); }
+.step[data-status="empty"] .step-mark { background: var(--ink-3); }
+.step[data-status="blocked"] .step-mark,
+.step[data-status="timeout"] .step-mark,
+.step[data-status="failed"] .step-mark { background: transparent; box-shadow: inset 0 0 0 1.5px var(--ink-3); }
+.step-body { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.step-phrase { color: var(--ink-2); }
+.step-summary { font-size: 12px; color: var(--ink-3); line-height: 1.5; }
+.step-links { display: flex; flex-wrap: wrap; gap: 8px; }
+.step-links a { font: 400 11px/1 var(--mono); color: var(--clay); text-decoration: none; }
+.step-links a:hover { text-decoration: underline; }
+.step-meta { font: 400 11px/1.5 var(--mono); color: var(--ink-3); white-space: nowrap; }
+
+/* Live steps sit under the waiting line inside the pending bubble. */
+.waiting + .steps.live { margin-top: 16px; }
+
+.trace { margin-top: 16px; border-top: 1px solid var(--line); padding-top: 12px; max-width: 62ch; }
+.trace summary {
+  cursor: pointer; list-style: none; font-family: var(--sans);
+  font-size: 12.5px; color: var(--ink-3);
+  display: flex; align-items: center; gap: 8px;
+}
+.trace summary::-webkit-details-marker { display: none; }
+.trace summary::before { content: "▸"; color: var(--clay); font-size: 10px; transition: transform .18s var(--ease); }
+.trace[open] summary::before { transform: rotate(90deg); }
+.trace summary:hover { color: var(--ink-2); }
+
+/* An answer now carries a status badge, its citations and a provenance panel
+   beneath the prose, so the thread needs more room to clear the sticky dock
+   than the plain text it was measured against. */
+.thread { padding-bottom: 310px; }
+
+@media (max-width: 520px) {
+  .thread { padding-bottom: 270px; }
+  .step { grid-template-columns: 14px minmax(0, 1fr); }
+  .step-meta { grid-column: 2; }
+}
