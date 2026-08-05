@@ -35,7 +35,20 @@
   const state = {
     sessionId: null, events: null, candidates: [], active: null,
     drafts: [], busy: false, unread: 0, contact: null,
+    // The answer in flight: the tool events arrive on the session's SSE stream
+    // and have to reach the turn that is waiting for them.
+    pending: null,
   };
+
+  // The hard per-session token budget is a real limit, so it is stated rather
+  // than hidden. Absent from layouts that have no rail to state it in.
+  function showBudget(response) {
+    const row = $("#rail-budget-row");
+    const value = $("#rail-budget");
+    if (!row || !value || typeof response.budget_remaining !== "number") return;
+    row.hidden = false;
+    value.textContent = `${response.budget_remaining.toLocaleString()} tokens`;
+  }
 
   // Deliberately answerable from the CV corpus. A suggested question that
   // triggers an honest refusal is a poor first impression of a grounded twin.
@@ -220,7 +233,83 @@
 
   /* ---------- chat ---------- */
 
-  function turn(role, text, cites, trace) {
+  const secs = (ms) => (ms >= 1000 ? `${(ms / 1000).toFixed(1)}s` : `${ms}ms`);
+
+  /*
+    Answers arrive as plain text that frequently contains paragraphs and dashed
+    lists. Rendered with white-space: pre-wrap they collapse into one grey slab,
+    so the structure the model produced is reconstructed here. The input is
+    escaped first: only the tags added below can reach the DOM.
+  */
+  function format(text) {
+    const bold = (s) => s.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
+    return String(text || "")
+      .split(/\n{2,}/)
+      .map((block) => {
+        const lines = block.split("\n").map((l) => l.trim()).filter(Boolean);
+        const bulleted = lines.length > 1 && lines.every((l) => /^[-*•]\s+/.test(l));
+        const numbered = lines.length > 1 && lines.every((l) => /^\d+[.)]\s+/.test(l));
+        if (bulleted || numbered) {
+          const tag = numbered ? "ol" : "ul";
+          return `<${tag}>${lines
+            .map((l) => `<li>${bold(esc(l.replace(/^([-*•]|\d+[.)])\s+/, "")))}</li>`)
+            .join("")}</${tag}>`;
+        }
+        return `<p>${bold(esc(block.trim())).replace(/\n/g, "<br>")}</p>`;
+      })
+      .join("");
+  }
+
+  /* One call in the agent's tool loop, live and then kept under the answer. */
+  function stepRow(step) {
+    const status = step.status || "running";
+    const meta = [
+      status === "running" || status === "ok" ? null : status,
+      typeof step.duration_ms === "number" ? secs(step.duration_ms) : null,
+      step.cached ? "cached" : null,
+    ].filter(Boolean).join(" · ");
+    const hosts = new Map();
+    (step.source_urls || []).forEach((u) => {
+      let host = u;
+      try { host = new URL(u).hostname.replace(/^www\./, ""); } catch { /* raw */ }
+      if (!hosts.has(host)) hosts.set(host, u);
+    });
+    const links = [...hosts].slice(0, 3).map(([host, u]) =>
+      `<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(host)}</a>`).join("");
+    return `
+      <li class="step" data-seq="${esc(step.sequence)}" data-status="${esc(status)}">
+        <span class="step-mark" aria-hidden="true"></span>
+        <span class="step-body">
+          <span class="step-phrase">${esc(step.phrase || step.tool || "Working")}</span>
+          ${step.summary ? `<span class="step-summary">${esc(step.summary)}</span>` : ""}
+          ${links ? `<span class="step-links">${links}</span>` : ""}
+        </span>
+        ${meta ? `<span class="step-meta">${esc(meta)}</span>` : ""}
+      </li>`;
+  }
+
+  const stepRows = (steps) => steps.map(stepRow).join("");
+
+  // The claim status is the point of a grounded twin, so it is stated rather
+  // than left to be inferred from the wording. The two refusals are not the
+  // same thing: a contractual question is declined on policy and still cites
+  // the boundary it was declined under; an unevidenced one lacks proof.
+  function badges(meta) {
+    const out = [];
+    if (meta.refusal) {
+      out.push(meta.grounded
+        ? '<span class="badge warn">Not the twin\'s to answer</span>'
+        : '<span class="badge warn">No evidence for this</span>');
+    } else if (meta.grounded) {
+      out.push('<span class="badge ok">Grounded in sources</span>');
+    }
+    if (meta.tailored_for) {
+      out.push(`<span class="badge">Tailored for ${esc(meta.tailored_for)}</span>`);
+    }
+    return out.length ? `<div class="badges">${out.join("")}</div>` : "";
+  }
+
+  function turn(role, text, cites, trace, meta = {}) {
     const div = document.createElement("div");
     div.className = `turn ${role}`;
     // "CV › Experience › matriXploit Pvt. Ltd. › Software Engineer" is
@@ -231,20 +320,37 @@
       const short = parts.length > 2 ? parts.slice(-2).join(" › ") : parts.join(" › ");
       return `<span class="cite" title="${esc(c)}">${esc(short)}</span>`;
     }).join("");
-    // Showing the retrieval shape is the point, not decoration: it is what
-    // separates a grounded answer from a confident-sounding one.
-    const retrieval = trace
-      ? `<div class="trace">${esc(trace.candidates)} chunks scored · BM25 + trigram ·`
-        + ` fused by RRF · ${esc((cites || []).length)} cited</div>`
-      : "";
+    /*
+      Two different things arrive as `trace` and both are worth showing. The
+      static build retrieves in the browser and reports the shape of that
+      retrieval. The server runs a bounded tool loop and reports every call it
+      made. Reading `.candidates` off the server's array gave "undefined chunks
+      scored" on every answer the server produced.
+    */
+    const steps = Array.isArray(trace) ? trace : [];
+    const spent = steps.reduce((total, s) => total + (s.duration_ms || 0), 0);
+    const calls = `${steps.length} tool ${steps.length === 1 ? "call" : "calls"}`;
+    const retrieval = steps.length
+      ? `<details class="trace-panel">
+           <summary>How this was assembled · ${calls} · ${secs(spent)}</summary>
+           <ol class="steps">${stepRows(steps)}</ol>
+         </details>`
+      : (trace && typeof trace === "object" && trace.candidates !== undefined
+        ? `<div class="trace">${esc(trace.candidates)} chunks scored · BM25 + trigram ·`
+          + ` fused by RRF · ${esc((cites || []).length)} cited</div>`
+        : "");
     div.innerHTML = `
       <div class="bubble">
         <span class="label">${role === "twin" ? "Prathamesh" : "You"}</span>
-        <div class="text">${esc(text)}</div>
+        <div class="text">${role === "twin" ? format(text) : esc(text)}</div>
+        ${role === "twin" && text ? badges(meta) : ""}
         ${chips ? `<div class="cites">${chips}</div>` : ""}
         ${retrieval}
         ${role === "twin" && text
-          ? `<div class="turn-actions"><button type="button" data-copy>Copy</button></div>`
+          ? `<div class="turn-actions">
+               <button type="button" data-copy>Copy</button>
+               ${(cites || []).length ? '<button type="button" data-copy-cited>Copy with sources</button>' : ""}
+             </div>`
           : ""}
       </div>`;
     el.messages.appendChild(div);
@@ -273,30 +379,40 @@
     const slot = pending.querySelector(".text");
     slot.innerHTML =
       '<span class="waiting"><span class="typing"><i></i><i></i><i></i></span>' +
-      '<span class="waiting-label">Searching his CV and repositories…</span>' +
-      '<span class="waiting-clock">0s</span></span>';
+      '<span class="waiting-label">Retrieving evidence from his CV and repositories…</span>' +
+      '<span class="waiting-clock">0s</span></span>' +
+      '<ol class="steps live"></ol>';
     const startedAt = Date.now();
     const clock = slot.querySelector(".waiting-clock");
     const label = slot.querySelector(".waiting-label");
+    // The tool events arrive on the session stream and have to find the turn
+    // that is waiting for them.
+    state.pending = { steps: [], host: slot.querySelector(".steps"), label, tooled: false };
     const ticker = setInterval(() => {
-      const secs = Math.round((Date.now() - startedAt) / 1000);
-      clock.textContent = `${secs}s`;
-      if (secs === 4) label.textContent = "Drafting a grounded answer…";
-      if (secs === 12) label.textContent = "Still working. Verifying every claim…";
+      const elapsed = Math.round((Date.now() - startedAt) / 1000);
+      clock.textContent = `${elapsed}s`;
+      // Once real tool events are arriving they say what is happening; the timed
+      // copy is only the fallback for the retrieval-only path.
+      if (state.pending?.tooled) return;
+      if (elapsed === 4) label.textContent = "Drafting a grounded answer…";
+      if (elapsed === 12) label.textContent = "Still working. Verifying every claim…";
     }, 1000);
 
     try {
       const r = await api(`/api/sessions/${state.sessionId}/chat`, {
         method: "POST", body: JSON.stringify({ message: text }),
       });
-      clearInterval(ticker);
       pending.remove();
-      turn("twin", r.answer, r.sources, r.trace);
+      turn("twin", r.answer, r.sources, r.trace, {
+        grounded: r.grounded, refusal: r.refusal, tailored_for: r.tailored_for,
+      });
+      showBudget(r);
     } catch (e) {
-      clearInterval(ticker);
       pending.remove();
       turn("twin", `Sorry, ${e.message}`);
     } finally {
+      clearInterval(ticker);
+      state.pending = null;
       state.busy = false;
       el.send.disabled = false;
       // preventScroll matters: refocusing the composer otherwise drags the
@@ -338,6 +454,37 @@
     src.addEventListener("research.dossier", (e) => {
       const p = JSON.parse(e.data);
       if (p.candidates?.length) renderPeople(p.candidates);
+    });
+
+    /*
+      The agent publishes every tool call and result as it happens. Rendering
+      them live is what makes the execution contract visible: which public
+      sources were touched, in order, while the visitor waits — and the same
+      list stays attached to the finished answer.
+    */
+    src.addEventListener("tool.call", (e) => {
+      const p = JSON.parse(e.data);
+      const live = state.pending;
+      if (!live) return;
+      live.tooled = true;
+      // The step list spells out each call, so the headline stays a headline
+      // rather than repeating the last row verbatim.
+      live.label.textContent = "Consulting public sources…";
+      live.steps.push({ ...p, status: "running" });
+      live.host.innerHTML = stepRows(live.steps);
+      // Activity logged only research and failures, so a session where every
+      // tool succeeded left the panel empty. The calls are the activity.
+      note(p.phrase || `Called ${p.tool}`);
+    });
+
+    src.addEventListener("tool.result", (e) => {
+      const p = JSON.parse(e.data);
+      const live = state.pending;
+      if (!live) return;
+      const step = live.steps.find((s) => s.call_id === p.call_id);
+      if (step) Object.assign(step, p);
+      live.host.innerHTML = stepRows(live.steps);
+      if (p.status && p.status !== "ok") note(`${p.tool}: ${p.status}`);
     });
 
     src.addEventListener("outreach.ready", (e) => {
@@ -400,27 +547,69 @@
     } catch (e) { openDrawer("Selected work", `<p>${esc(e.message)}</p>`); }
   });
 
+  /*
+    Job-description fit. The response fields are coverage_percent, matched
+    (requirement/evidence/source), not_evidenced, summary and caveat. The gap
+    list was read from `fit.unevidenced`, a name the API has never returned, so
+    the honest half of the analysis — the requirements the CV does not evidence —
+    rendered as nothing on every description ever pasted in.
+  */
+  function renderFit(fit) {
+    const matched = fit.matched || [];
+    const gaps = fit.not_evidenced || [];
+    const pct = Math.max(0, Math.min(100, Number(fit.coverage_percent) || 0));
+    return `
+      <div class="fit-head">
+        <div class="fit-meter" data-pct="${pct}" role="img"
+             aria-label="${pct}% of recognised requirements are directly evidenced">
+          <strong>${pct}%</strong>
+        </div>
+        <p class="fit-summary">${esc(fit.summary || "")}</p>
+      </div>
+      <div class="fit-group">
+        <h3>Evidenced <span>${matched.length}</span></h3>
+        ${matched.length ? matched.map((m) => `
+          <div class="fit-row ok">
+            <strong>${esc(m.requirement || "")}</strong>
+            ${m.evidence ? `<p>${esc(m.evidence)}</p>` : ""}
+            ${m.source ? `<span class="cite">${esc(m.source)}</span>` : ""}
+          </div>`).join("") : "<p class='fit-empty'>Nothing in this description matched the CV directly.</p>"}
+      </div>
+      <div class="fit-group">
+        <h3>Not evidenced here <span>${gaps.length}</span></h3>
+        ${gaps.length ? gaps.map((g) => `
+          <div class="fit-row gap">
+            <strong>${esc(g.requirement || g)}</strong>
+            <p>Not stated in this CV. The twin will not claim it.</p>
+          </div>`).join("") : "<p class='fit-empty'>Every requirement it could parse is evidenced.</p>"}
+      </div>
+      ${fit.caveat ? `<p class="fit-caveat">${esc(fit.caveat)}</p>` : ""}`;
+  }
+
   el.jdButton.addEventListener("click", () => {
     openDrawer("Role fit", `
+      <p class="over-lede">Paste a job description. Requirements are split into
+        directly evidenced and not evidenced, never quietly upgraded.</p>
       <form class="jd-form" id="jd-form">
         <textarea id="jd-input" placeholder="Paste the job description…"></textarea>
         <div class="sheet-actions"><button type="submit" class="btn">Check fit</button></div>
       </form><div id="jd-results"></div>`);
+    $("#jd-input")?.focus();
     $("#jd-form").addEventListener("submit", async (e) => {
       e.preventDefault();
       const description = $("#jd-input").value.trim();
-      if (!description) return;
+      if (description.length < 20) { toast("Paste a little more of the description."); return; }
       const out = $("#jd-results");
-      out.innerHTML = "<p>Checking…</p>";
+      out.innerHTML = "<p>Checking every requirement against the CV…</p>";
       try {
         const fit = await api(`/api/sessions/${state.sessionId}/jd-fit`, {
           method: "POST", body: JSON.stringify({ description }),
         });
-        out.innerHTML = `<div class="repo"><strong>Summary</strong><p>${esc(fit.summary || "")}</p></div>` +
-          (fit.matched || fit.matched_requirements || []).map((m) =>
-            `<div class="repo"><strong>✓ ${esc(m.requirement || m)}</strong><p>${esc(m.source || "")}</p></div>`).join("") +
-          (fit.unevidenced || fit.unevidenced_requirements || []).map((m) =>
-            `<div class="repo"><strong>✕ ${esc(m.requirement || m)}</strong><p>Not in the CV.</p></div>`).join("");
+        out.innerHTML = renderFit(fit);
+        // style-src is 'self', so the coverage ring cannot carry an inline style
+        // attribute. CSSOM is not inline style, and is allowed.
+        const meter = $(".fit-meter", out);
+        meter?.style.setProperty("--pct", meter.dataset.pct);
       } catch (err) { out.innerHTML = `<p>${esc(err.message)}</p>`; }
     });
   });
@@ -753,13 +942,21 @@
   // Recruiters paste answers into their notes or ATS; making that one click
   // keeps the twin's exact wording intact rather than a lossy manual selection.
   el.messages.addEventListener("click", async (event) => {
-    const button = event.target.closest("[data-copy]");
+    const button = event.target.closest("[data-copy], [data-copy-cited]");
     if (!button) return;
-    const text = button.closest(".turn")?.querySelector(".text")?.innerText || "";
+    const bubble = button.closest(".turn");
+    const answer = bubble?.querySelector(".text")?.innerText.trim() || "";
+    // Pasting an answer into an ATS without its sources strips exactly the part
+    // that makes it checkable, so citations travel with it on request.
+    const cited = [...(bubble?.querySelectorAll(".cite") || [])]
+      .map((n) => `- ${n.getAttribute("title") || n.textContent}`).join("\n");
+    const withSources = button.hasAttribute("data-copy-cited");
+    const payload = withSources && cited ? `${answer}\n\nSources:\n${cited}` : answer;
+    const label = button.textContent;
     try {
-      await navigator.clipboard.writeText(text.trim());
+      await navigator.clipboard.writeText(payload);
       button.textContent = "Copied";
-      setTimeout(() => (button.textContent = "Copy"), 1800);
+      setTimeout(() => (button.textContent = label), 1800);
     } catch {
       toast("Your browser blocked clipboard access.");
     }
@@ -775,6 +972,11 @@
       items.forEach((n) => n.classList.add("in"));
       return;
     }
+    // The stylesheet leaves content visible by default; this class is what hides
+    // it for the animation. Setting it here, in the same breath as the observer
+    // that reveals it, means no failure path can leave the page blank — which is
+    // what an opacity:0 default did whenever this file stopped early.
+    document.documentElement.classList.add("reveals");
     const io = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         if (!entry.isIntersecting) return;

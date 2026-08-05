@@ -1124,16 +1124,16 @@ html[data-theme="dark"] {
 /* Live steps sit under the waiting line inside the pending bubble. */
 .waiting + .steps.live { margin-top: 16px; }
 
-.trace { margin-top: 16px; border-top: 1px solid var(--line); padding-top: 12px; max-width: 62ch; }
-.trace summary {
+.trace-panel { margin-top: 16px; border-top: 1px solid var(--line); padding-top: 12px; max-width: 62ch; }
+.trace-panel summary {
   cursor: pointer; list-style: none; font-family: var(--sans);
   font-size: 12.5px; color: var(--ink-3);
   display: flex; align-items: center; gap: 8px;
 }
-.trace summary::-webkit-details-marker { display: none; }
-.trace summary::before { content: "▸"; color: var(--clay); font-size: 10px; transition: transform .18s var(--ease); }
-.trace[open] summary::before { transform: rotate(90deg); }
-.trace summary:hover { color: var(--ink-2); }
+.trace-panel summary::-webkit-details-marker { display: none; }
+.trace-panel summary::before { content: "▸"; color: var(--clay); font-size: 10px; transition: transform .18s var(--ease); }
+.trace-panel[open] summary::before { transform: rotate(90deg); }
+.trace-panel summary:hover { color: var(--ink-2); }
 
 /* An answer now carries a status badge, its citations and a provenance panel
    beneath the prose, so the thread needs more room to clear the sticky dock
