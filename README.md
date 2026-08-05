@@ -20,6 +20,9 @@ authorised effect. Tests assert the boundary directly.
 
 - Source-grounded chat over the exact structured CV corpus in [`data/profile.yaml`](data/profile.yaml)
   and live GitHub metadata. Every factual answer names its sources.
+- BM25 evidence ranking with an auditable recruiter-vocabulary alias map, measured against a
+  golden question set: recall@8 went from 12/24 to 24/24, removing false refusals about
+  qualifications the CV plainly contains. See [Retrieval quality](#retrieval-quality).
 - A second verification pass checks every drafted claim against its cited evidence, including
   numeric claims. Unsupported claims are removed; an empty answer becomes an honest refusal.
 - Optional-name onboarding with a real Skip path. Research runs in the background and never
@@ -272,11 +275,43 @@ OpenAPI documentation is at `/docs`.
 - [Chat flow screenshot](artifacts/chat-flow.png)
 - [Research/authority-gate screenshot](artifacts/research-flow.png)
 
-The test suite runs without network access or API keys. It covers the context authority gate,
-rich field attribution/no invented profiles, robots/timeouts, email confidence and MX, ATS
-detection/ranking, safe referral/fanout copy, exact-body tokens, DNS refusal, global/once-only
-caps, LinkedIn approval/challenge/caps, mocked Pushover, injection/grounding, rate/token limits,
-dashboard authentication, and session purge.
+The test suite runs without network access or API keys (`135 passed`). It covers the context
+authority gate, rich field attribution/no invented profiles, robots/timeouts, email confidence
+and MX, ATS detection/ranking, safe referral/fanout copy, exact-body tokens, DNS refusal,
+global/once-only caps, LinkedIn approval/challenge/caps, mocked Pushover, injection/grounding,
+retrieval recall, rate/token limits, dashboard authentication, and session purge.
+
+## Retrieval quality
+
+The twin refuses when nothing it retrieved supports a claim, which makes retrieval recall a
+credibility property rather than a relevance nicety. A visitor who asks about a master's degree
+and is told "I don't have reliable evidence for that" has been given a false negative about a
+real qualification.
+
+Ranking counted overlapping tokens, which had two problems. Every token weighed the same, so
+"engineer" — in most of the CV — counted as much as "Kafka", which appears once. And recruiters
+do not use CV vocabulary: someone asks about *message queues* where the CV says Kafka and SQS,
+or *containers* where it says Docker. With no shared token the corpus returned nothing at all.
+
+Ranking is now BM25, so a rare matching term outranks a common one, plus a hand-written alias
+map from recruiter vocabulary onto words this CV actually uses. Measured against
+[`data/retrieval_eval.yaml`](data/retrieval_eval.yaml), 24 questions whose answers were argued
+from the CV itself:
+
+| | recall@8 | MRR | questions returning no evidence |
+| --- | --- | --- | --- |
+| Token overlap | 12/24 (50%) | 0.368 | 1 |
+| BM25 + aliases | 24/24 (100%) | 0.896 | 0 |
+
+Two things keep this from being a way to overstate experience. The alias map is data, reviewable
+in a diff, and a test asserts every expansion target is vocabulary that genuinely appears in
+`profile.yaml` — an alias cannot point at a technology the CV lacks. And expansion only changes
+*which evidence is retrieved*; the grounding verifier is untouched, so asking about Kubernetes
+still supports no Kubernetes claim, because there is nothing to find.
+
+**Read the 100% with the caveat it deserves.** The eval set and the alias map were written in the
+same sitting, so the set measures whether known vocabulary gaps stay closed, not how the ranker
+handles phrasing nobody anticipated. It is a regression gate, not evidence of general recall.
 
 ## Deployment
 

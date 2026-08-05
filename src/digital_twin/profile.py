@@ -7,6 +7,8 @@ from typing import Any
 
 import yaml
 
+from .retrieval import BM25Index
+
 TOKEN_RE = re.compile(r"[a-z0-9+#.]+", re.I)
 STOP_WORDS = {
     "a",
@@ -64,6 +66,7 @@ class ProfileCorpus:
         self.data: dict[str, Any] = loaded
         self.show_phone = show_phone
         self.evidence = self._flatten()
+        self._index: BM25Index | None = None
 
     def _flatten(self) -> list[EvidenceItem]:
         items: list[EvidenceItem] = []
@@ -130,20 +133,20 @@ class ProfileCorpus:
         )
         return items
 
+    @property
+    def index(self) -> BM25Index:
+        # Built once per corpus: the document frequencies are what make a rare
+        # term outrank a common one, so they have to span the whole corpus.
+        if self._index is None:
+            self._index = BM25Index(
+                [f"{item.source} {item.text}" for item in self.evidence]
+            )
+        return self._index
+
     def retrieve(self, query: str, limit: int = 8) -> list[EvidenceItem]:
-        query_tokens = tokens(query)
-        scored: list[tuple[float, int, EvidenceItem]] = []
-        for index, item in enumerate(self.evidence):
-            haystack = tokens(f"{item.source} {item.text}")
-            overlap = query_tokens & haystack
-            score = len(overlap) * 2.0
-            if query_tokens and query_tokens <= haystack:
-                score += 2.0
-            if overlap and "summary" in item.source.casefold():
-                score += 0.15
-            scored.append((score, -index, item))
-        scored.sort(reverse=True, key=lambda row: (row[0], row[1]))
-        return [item for score, _, item in scored if score > 0][:limit]
+        return [self.evidence[position] for _, position in self.index.score(query)][
+            :limit
+        ]
 
     @property
     def skills(self) -> dict[str, list[str]]:

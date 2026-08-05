@@ -1,0 +1,154 @@
+# Golden retrieval set for the chat corpus.
+#
+# Each case is a question a recruiter plausibly types, paired with the CV
+# source that genuinely answers it. Expectations are argued from the corpus --
+# "which entry in profile.yaml contains this answer?" -- not from whatever the
+# ranker currently returns, so the set is allowed to disagree with the ranker.
+#
+# `expect_any` lists sources where any one of them is a correct top-k result,
+# because several CV entries can legitimately answer the same question.
+#
+# `unanswerable` cases assert the opposite: nothing in this CV supports the
+# claim, so no source is expected. Retrieval may still return loosely related
+# entries -- that is not a failure, because the grounding verifier is what
+# decides whether a claim is supported. These cases exist to catch an alias map
+# that has started inventing coverage.
+schema_version: 1
+k: 8
+cases:
+  - id: message-queues
+    question: Do you have experience with message queues?
+    expect_any: ["CV › Skills › Event and Data Systems"]
+    note: Recruiter vocabulary; the CV says Kafka and SQS.
+
+  - id: containers
+    question: Have you worked with containers?
+    expect_any: ["CV › Skills › Developer Tools and Integrations"]
+    note: The CV says Docker, never "containers".
+
+  - id: asynchronous
+    question: Any experience with asynchronous processing?
+    expect_any: ["CV › Skills › Event and Data Systems"]
+    note: The CV says "event driven pipelines".
+
+  - id: monitoring
+    question: What monitoring and alerting have you set up?
+    expect_any: ["CV › Skills › Observability and Reliability"]
+    note: The CV says logs, metrics, traces, dashboards.
+
+  - id: appsec
+    question: Have you done any appsec or vulnerability work?
+    expect_any:
+      - "CV › Projects › SAFECode"
+      - "CV › Skills › Security and Operations"
+
+  - id: masters-degree
+    question: Do you have a masters degree?
+    expect_any: ["CV › Education › Dublin Business School"]
+    note: >-
+      Returned zero evidence under lexical overlap, so the twin refused a
+      question the CV answers outright. This is the case the alias map exists
+      for.
+
+  - id: vector-databases
+    question: What is your experience with vector databases?
+    expect_any: ["CV › Skills › Event and Data Systems"]
+    note: The CV says "vector store familiarity" and "embeddings familiarity".
+
+  - id: agentic
+    question: Have you built agentic systems?
+    expect_any:
+      - "CV › Skills › AI and Agent Systems"
+      - "CV › Projects › Agentic Job Application Platform"
+
+  - id: evals
+    question: Tell me about your evals experience
+    expect_any: ["CV › Projects › AI Agent Evaluation Harness"]
+
+  - id: cloud
+    question: What cloud platforms have you used?
+    expect_any:
+      - "CV › Certifications"
+      - "CV › Skills › Developer Tools and Integrations"
+
+  - id: authorisation
+    question: Have you worked on authorisation?
+    expect_any:
+      - "CV › Skills › Back-End Engineering"
+      - "CV › Experience › matriXploit Pvt. Ltd. › Software Engineer"
+
+  - id: backend
+    question: What is your backend experience?
+    expect_any:
+      - "CV › Skills › Back-End Engineering"
+      - "CV › Summary"
+
+  - id: cicd
+    question: Any devops or deployment pipeline work?
+    expect_any: ["CV › Skills › Developer Tools and Integrations"]
+
+  - id: prompt-injection
+    question: How do you handle prompt injection?
+    expect_any: ["CV › Skills › Security and Operations"]
+
+  - id: kafka-direct
+    question: Have you used Kafka?
+    expect_any: ["CV › Skills › Event and Data Systems"]
+
+  - id: location
+    question: Where are you based?
+    expect_any: ["CV › Contact"]
+
+  - id: current-role
+    question: What are you working on right now?
+    expect_any:
+      - "CV › Experience › Freelance › Software Engineer, AI and Automation Systems"
+
+  - id: cybersecurity
+    question: Did you study cybersecurity?
+    expect_any: ["CV › Education › Dublin Business School"]
+
+  - id: testing
+    question: How do you approach testing?
+    expect_any:
+      - "CV › Skills › Security and Operations"
+      - "CV › Experience › matriXploit Pvt. Ltd. › Software Engineer"
+
+  - id: spring-boot
+    question: Do you know Spring Boot?
+    expect_any:
+      - "CV › Skills › Back-End Engineering"
+      - "CV › Experience › matriXploit Pvt. Ltd. › Software Engineer"
+
+  - id: observability-tools
+    question: Have you used OpenTelemetry or Datadog?
+    expect_any: ["CV › Skills › Observability and Reliability"]
+
+  - id: llm-integration
+    question: Which LLM providers have you integrated?
+    expect_any:
+      - "CV › Skills › AI and Agent Systems"
+      - "CV › Experience › Freelance › Software Engineer, AI and Automation Systems"
+
+  - id: guardrails
+    question: What guardrails do you build into agents?
+    expect_any:
+      - "CV › Skills › AI and Agent Systems"
+      - "CV › Experience › Freelance › Software Engineer, AI and Automation Systems"
+
+  - id: databases
+    question: What databases have you worked with?
+    expect_any:
+      - "CV › Skills › Languages"
+      - "CV › Skills › Back-End Engineering"
+      - "CV › Education › Savitribai Phule Pune University"
+
+unanswerable:
+  - id: kubernetes
+    question: How much Kubernetes have you run in production?
+  - id: rust
+    question: Do you know Rust?
+  - id: google
+    question: Have you worked at Google?
+  - id: terraform
+    question: Do you write Terraform?
