@@ -1,0 +1,223 @@
+# Labelled claims for the grounding verifier.
+#
+# The verifier is what stands between a fluent model and a recruiter reading
+# something Prathamesh never did. It had never been measured.
+#
+# `accept: true` means the claim is genuinely supported by its evidence and
+# dropping it would make the twin refuse a question it can answer. `accept:
+# false` means the claim asserts something the evidence does not, and accepting
+# it would put a fabrication in front of a hiring manager.
+#
+# The two failure directions are not equally bad. A false rejection costs a
+# refusal on an answerable question. A false acceptance claims he worked at
+# Google. The thresholds are chosen accordingly.
+schema_version: 1
+evidence:
+  auth: >-
+    Refactored nearly 50% of a legacy authentication module, reducing duplicated
+    logic and improving flow design so changes became easier to test, review, and
+    extend safely.
+  debugging: >-
+    Investigated complex failures by tracing execution paths, isolating edge cases,
+    and rewriting unclear components into smaller modules, improving debugging speed
+    and service stability by about 30%.
+  ai_skills: >-
+    LLM integrations, OpenAI APIs, Claude integrations, agentic workflows, function
+    calling, tool orchestration, retries, guardrails, prompt contracts, MCP
+    familiarity, model serving patterns.
+  event_skills: >-
+    event driven pipelines, Kafka familiarity, SQS familiarity, context assembly,
+    RAG concepts, embeddings familiarity, vector store familiarity, caching and
+    rate-limiting concepts.
+  freelance: >-
+    Built LLM-powered back-end services in Python and Java-adjacent service patterns
+    for agentic workflows, including tool orchestration, structured outputs, retries,
+    validation, and safety checks.
+  backend: >-
+    Built and maintained back-end applications using Java, Spring Boot, Python, SQL,
+    and REST APIs, contributing to new features, bug fixes, and service improvements
+    across shared production systems.
+  regressions: >-
+    Added diagnostics, health checks, and regression-focused checks around shared
+    services, reducing regressions by about 35% and improving visibility into
+    abnormal behavior.
+  education: >-
+    MSc in Cybersecurity, 1:1 Class Honours, Sep 2024 to Sep 2025. Coursework:
+    Software Engineering, Database Systems, Distributed Systems, Network Security,
+    Software Security.
+  safecode: >-
+    Built an AI-assisted code review tool that analyzed source code for
+    vulnerabilities and returned structured findings for triage and follow-up.
+  contact: >-
+    Prathamesh Kalamkar is based in Dublin, Ireland and can be contacted at
+    prathameh7744yt@gmail.com.
+
+cases:
+  # --- Supported: faithful restatements and reasonable paraphrases ----------
+  - id: auth-direct
+    evidence: auth
+    claim: He refactored nearly 50% of a legacy authentication module.
+    accept: true
+  - id: auth-paraphrase
+    evidence: auth
+    claim: >-
+      He reduced duplicated logic in a legacy authentication module and improved
+      its flow design.
+    accept: true
+  - id: debugging-numbers
+    evidence: debugging
+    claim: He improved debugging speed and service stability by about 30%.
+    accept: true
+  - id: debugging-paraphrase
+    evidence: debugging
+    claim: >-
+      He investigated complex failures by tracing execution paths and isolating
+      edge cases.
+    accept: true
+  - id: ai-skills-subset
+    evidence: ai_skills
+    claim: He has worked with OpenAI APIs and Claude integrations.
+    accept: true
+  - id: ai-skills-tooling
+    evidence: ai_skills
+    claim: He builds guardrails, retries, and tool orchestration into agentic workflows.
+    accept: true
+  - id: event-kafka
+    evidence: event_skills
+    claim: He has familiarity with Kafka and SQS on event driven pipelines.
+    accept: true
+  - id: event-rag
+    evidence: event_skills
+    claim: He has worked with RAG concepts, embeddings, and vector store familiarity.
+    accept: true
+  - id: freelance-services
+    evidence: freelance
+    claim: He built LLM-powered back-end services in Python for agentic workflows.
+    accept: true
+  - id: freelance-outputs
+    evidence: freelance
+    claim: >-
+      His agentic work included structured outputs, retries, validation, and safety
+      checks.
+    accept: true
+  - id: backend-stack
+    evidence: backend
+    claim: He built back-end applications using Java, Spring Boot, Python, SQL, and REST APIs.
+    accept: true
+  - id: regressions-number
+    evidence: regressions
+    claim: He reduced regressions by about 35% with diagnostics and health checks.
+    accept: true
+  - id: education-degree
+    evidence: education
+    claim: He holds an MSc in Cybersecurity.
+    accept: true
+  - id: education-coursework
+    evidence: education
+    claim: His coursework covered Distributed Systems and Network Security.
+    accept: true
+  - id: safecode-tool
+    evidence: safecode
+    claim: >-
+      He built an AI-assisted code review tool that analyzed source code for
+      vulnerabilities.
+    accept: true
+  - id: contact-location
+    evidence: contact
+    claim: He is based in Dublin, Ireland.
+    accept: true
+
+  # --- Fabrications: a name the evidence never mentions ---------------------
+  - id: fake-employer
+    evidence: auth
+    claim: At Google, he refactored nearly 50% of a legacy authentication module.
+    accept: false
+    note: One added word, and the overlap ratio barely moves.
+  - id: fake-technology
+    evidence: auth
+    claim: He refactored the legacy authentication module in Rust and Kubernetes.
+    accept: false
+  - id: fake-title
+    evidence: debugging
+    claim: As a Staff Engineer he improved debugging speed and service stability.
+    accept: false
+  - id: fake-model
+    evidence: ai_skills
+    claim: He has worked with OpenAI APIs, Claude integrations, and Gemini fine-tuning.
+    accept: false
+  - id: fake-cloud
+    evidence: freelance
+    claim: He built LLM-powered back-end services on Azure for agentic workflows.
+    accept: false
+  - id: fake-university
+    evidence: education
+    claim: He holds an MSc in Cybersecurity from Trinity College.
+    accept: false
+  - id: fake-framework
+    evidence: backend
+    claim: >-
+      He built back-end applications using Java, Spring Boot, Django, and REST APIs.
+    accept: false
+  - id: fake-city
+    evidence: contact
+    claim: He is based in Dublin and works out of London.
+    accept: false
+  - id: fake-broker
+    evidence: event_skills
+    claim: He has familiarity with Kafka, SQS, and RabbitMQ pipelines.
+    accept: false
+
+  # --- Fabrications with no capitalised name -------------------------------
+  - id: invented-leadership
+    evidence: auth
+    claim: He led a team of engineers who refactored the legacy authentication module.
+    accept: false
+  - id: invented-management
+    evidence: debugging
+    claim: >-
+      He managed the on-call rotation while improving debugging speed and service
+      stability.
+    accept: false
+  - id: invented-scale
+    evidence: backend
+    claim: >-
+      He built back-end applications serving millions of daily active users using
+      Java and Spring Boot.
+    accept: false
+  - id: invented-ownership
+    evidence: safecode
+    claim: >-
+      He founded and sold an AI-assisted code review tool that analyzed source code
+      for vulnerabilities.
+    accept: false
+
+  # --- Fabricated or altered numbers ---------------------------------------
+  - id: inflated-percentage
+    evidence: auth
+    claim: He refactored nearly 90% of a legacy authentication module.
+    accept: false
+  - id: invented-years
+    evidence: backend
+    claim: >-
+      He spent 12 years building back-end applications using Java, Spring Boot, and
+      REST APIs.
+    accept: false
+  - id: invented-team-size
+    evidence: regressions
+    claim: >-
+      He reduced regressions by about 35% across a team of 40 engineers.
+    accept: false
+
+  # --- Wrong evidence entirely ---------------------------------------------
+  - id: unrelated-claim
+    evidence: auth
+    claim: He managed a Kubernetes cluster of 400 nodes.
+    accept: false
+  - id: swapped-subject
+    evidence: education
+    claim: He built LLM-powered back-end services in Python for agentic workflows.
+    accept: false
+  - id: credential-inflation
+    evidence: education
+    claim: He holds a PhD in Cybersecurity.
+    accept: false

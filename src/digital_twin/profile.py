@@ -46,7 +46,17 @@ STOP_WORDS = {
 
 
 def tokens(value: str) -> set[str]:
-    return {token.casefold() for token in TOKEN_RE.findall(value)} - STOP_WORDS
+    """Tokenise for overlap comparisons.
+
+    Dots stay inside the pattern so "node.js", "gmail.com", and "3.11" survive
+    as single tokens, which also glues sentence-ending punctuation on: a claim
+    ending "...in Cybersecurity." produced `cybersecurity.`, which matched
+    nothing, and the grounding verifier refused a true statement over a full
+    stop. Surrounding dots are stripped, interior ones kept.
+    """
+
+    found = {token.casefold().strip(".") for token in TOKEN_RE.findall(value)}
+    return {token for token in found if token} - STOP_WORDS
 
 
 @dataclass(frozen=True, slots=True)

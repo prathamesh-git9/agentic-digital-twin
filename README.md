@@ -24,7 +24,9 @@ authorised effect. Tests assert the boundary directly.
   golden question set: recall@8 went from 12/24 to 24/24, removing false refusals about
   qualifications the CV plainly contains. See [Retrieval quality](#retrieval-quality).
 - A second verification pass checks every drafted claim against its cited evidence, including
-  numeric claims. Unsupported claims are removed; an empty answer becomes an honest refusal.
+  numeric claims and any name the claim introduces. Unsupported claims are removed; an empty
+  answer becomes an honest refusal. Measured on a labelled set: precision 0.556 to 0.941 once
+  added-content fabrications were caught. See [Claim verification](#claim-verification).
 - Optional-name onboarding with a real Skip path. Research runs in the background and never
   gates chat.
 - Live SSE research progress, attributed person/company dossiers, rich identity cards, public
@@ -275,7 +277,7 @@ OpenAPI documentation is at `/docs`.
 - [Chat flow screenshot](artifacts/chat-flow.png)
 - [Research/authority-gate screenshot](artifacts/research-flow.png)
 
-The test suite runs without network access or API keys (`135 passed`). It covers the context
+The test suite runs without network access or API keys (`177 passed`). It covers the context
 authority gate, rich field attribution/no invented profiles, robots/timeouts, email confidence
 and MX, ATS detection/ranking, safe referral/fanout copy, exact-body tokens, DNS refusal,
 global/once-only caps, LinkedIn approval/challenge/caps, mocked Pushover, injection/grounding,
@@ -312,6 +314,45 @@ still supports no Kubernetes claim, because there is nothing to find.
 **Read the 100% with the caveat it deserves.** The eval set and the alias map were written in the
 same sitting, so the set measures whether known vocabulary gaps stay closed, not how the ranker
 handles phrasing nobody anticipated. It is a regression gate, not evidence of general recall.
+
+## Claim verification
+
+The verifier is the last thing between a fluent model and a recruiter reading something
+Prathamesh never did. It was never measured, and measuring it was unflattering: against
+[`data/grounding_eval.yaml`](data/grounding_eval.yaml) — 36 claims labelled from the CV, 20 of
+them fabrications — it accepted **12 of the 20**, including:
+
+> At Google, he refactored nearly 50% of a legacy authentication module.
+
+The mechanism is a token-overlap ratio, and a ratio barely moves when one word is appended to an
+otherwise faithful sentence. Overlap cannot see *added* content, which is exactly how a fluent
+model fabricates: it restates the evidence correctly and slips in an employer, a job title, a
+framework, or a model name.
+
+Three changes, each measured:
+
+| | precision | recall | fabrications accepted |
+| --- | --- | --- | --- |
+| As shipped (0.34, overlap only) | 0.556 | 0.938 | 12 / 20 |
+| Now (0.65 + unsupported-name check) | 0.941 | 1.000 | 1 / 20 |
+
+1. **A name in a claim must appear in the retrieved evidence.** Capitalised words are checked
+   against everything retrieved, not just the cited item, so a claim may legitimately name
+   something a neighbouring bullet establishes — but a name found nowhere is dropped.
+2. **The overlap threshold moved from 0.34 to 0.65**, chosen from the sweep rather than by feel.
+   Below it fabrications survive; above it honest paraphrases start being refused with nothing
+   further caught.
+3. **A tokeniser fix.** The pattern keeps dots so `node.js` survives, which also glued
+   sentence-ending periods on: a claim ending "...in Cybersecurity." produced `cybersecurity.`,
+   matched nothing, and the verifier refused a true statement over a full stop. Recall was losing
+   claims to punctuation.
+
+Two limits are stated rather than smoothed away. One labelled fabrication still passes — *"He
+founded and sold an AI-assisted code review tool…"*, which invents ownership using only lowercase
+words the evidence already contains — and a test pins it so the gap stays visible. And a name in
+the opening position of a sentence is not detected, because "Building reliable services" and
+"Google paid for it" are indistinguishable to this rule; refusing that position would refuse
+ordinary prose.
 
 ## Deployment
 

@@ -19,6 +19,43 @@ OWNER_REFERENCE_RE = re.compile(
     r"\b(?:i|i'm|i've|me|my|mine|prathamesh|kalamkar|he|him|his)\b", re.I
 )
 
+# Fraction of a claim's content words that must appear in its evidence. Chosen
+# by measurement against data/grounding_eval.yaml rather than by feel: at the
+# previous 0.34 the verifier accepted 12 of 20 labelled fabrications, and above
+# 0.65 it starts refusing honest paraphrases without catching anything more.
+SUPPORT_THRESHOLD = 0.65
+
+# Words that begin a sentence are capitalised by grammar, not because they name
+# anything, so they cannot be judged as entities.
+SENTENCE_START_RE = re.compile(r"(?:^|(?<=[.!?])\s+|(?<=[:;])\s+)")
+CAPITALISED_RE = re.compile(r"\b[A-Z][\w+#.]*")
+
+# Capitalised words that are ordinary prose in a first-person answer rather than
+# the name of an employer, technology, or credential.
+ENTITY_ALLOWLIST = {
+    "i",
+    "i'm",
+    "i've",
+    "he",
+    "his",
+    "him",
+    "prathamesh",
+    "kalamkar",
+    "the",
+    "a",
+    "an",
+    "my",
+    "we",
+    "it",
+    "that",
+    "this",
+    "there",
+    "they",
+    "you",
+    "yes",
+    "no",
+}
+
 
 class DraftClaim(BaseModel):
     text: str = Field(min_length=1, max_length=800)
@@ -177,9 +214,17 @@ class GroundingVerifier:
         for item in evidence:
             evidence_by_source.setdefault(item.source, []).append(item)
 
+        # Names are checked against everything retrieved, not just the cited
+        # item. A claim citing one bullet may legitimately name a technology
+        # that a neighbouring bullet establishes; what must not happen is a
+        # name appearing that no retrieved evidence contains at all.
+        retrieved_text = "\n".join(item.text for item in evidence)
+
         accepted: list[DraftClaim] = []
         for claim in draft.claims:
             if contains_prompt_injection(claim.text):
+                continue
+            if self.unsupported_entities(claim.text, retrieved_text):
                 continue
             sources = evidence_by_source.get(claim.source, [])
             if any(self._source_supports(claim.text, item) for item in sources):
@@ -206,7 +251,11 @@ class GroundingVerifier:
             supporting = "\n".join(
                 item.text for item in evidence if item.source in set(source_order)
             )
-            if not mixes_external_owner_claim and self._supported(reply, supporting):
+            if (
+                not mixes_external_owner_claim
+                and not self.unsupported_entities(reply, retrieved_text)
+                and self._supported(reply, supporting)
+            ):
                 clean = sanitize_answer_text(reply, max_length=1600)
                 if clean:
                     return VerifiedAnswer(clean, source_order, True, False)
@@ -224,6 +273,40 @@ class GroundingVerifier:
         return cls._supported(claim, evidence.text)
 
     @staticmethod
+    def named_entities(text: str) -> set[str]:
+        """Return capitalised names, ignoring words capitalised by grammar."""
+
+        starts = {match.end() for match in SENTENCE_START_RE.finditer(text)}
+        found: set[str] = set()
+        for match in CAPITALISED_RE.finditer(text):
+            if match.start() in starts:
+                continue
+            word = match.group().casefold().strip(".")
+            if word and word not in ENTITY_ALLOWLIST:
+                found.add(word)
+        return found
+
+    @classmethod
+    def unsupported_entities(cls, claim: str, evidence_text: str) -> set[str]:
+        """Names in the claim that appear nowhere in the retrieved evidence.
+
+        Token overlap is a ratio, so appending a fabrication to a well-supported
+        sentence barely moves it: "At Google, he refactored nearly 50% of a
+        legacy authentication module" shares almost every word with the real
+        bullet and passed. The words that do the damage in a recruiter-facing
+        answer are names -- an employer, a technology, a job title, a
+        credential -- and a name that appears in no retrieved evidence is not
+        something this system is entitled to say.
+        """
+
+        known = {token.strip(".") for token in tokens(evidence_text)}
+        return {
+            entity
+            for entity in cls.named_entities(claim)
+            if entity not in known and entity.rstrip("s") not in known
+        }
+
+    @staticmethod
     def _supported(claim: str, evidence: str) -> bool:
         claim_numbers = set(NUMBER_RE.findall(claim))
         evidence_numbers = set(NUMBER_RE.findall(evidence))
@@ -233,4 +316,7 @@ class GroundingVerifier:
         evidence_tokens = tokens(evidence)
         if not claim_tokens:
             return False
-        return len(claim_tokens & evidence_tokens) / len(claim_tokens) >= 0.34
+        return (
+            len(claim_tokens & evidence_tokens) / len(claim_tokens)
+            >= SUPPORT_THRESHOLD
+        )
