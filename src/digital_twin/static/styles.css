@@ -1142,8 +1142,25 @@ html[data-theme="dark"] {
 
 /* ================= dock controls ================= */
 
-.dock-note { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-top: 14px; }
+/*
+  Scoped to a container, not to the note itself. The published shell writes the
+  note as a single <p class="dock-note"> with the model name in a span inside
+  it, so a flex row with space-between took that span for a flex item and threw
+  it to the far left with the sentence pinned to the right.
+*/
+div.dock-note { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.dock-note { margin-top: 14px; }
 .dock-note p { font-size: 11.5px; color: var(--ink-3); }
+
+/*
+  A closing line inside a rail panel had no rule of its own — only `.panel.note
+  p` existed, and these panels do not carry .note — so it inherited `p { margin:
+  0 }` and collided with the bottom of the list above it, reading as a sentence
+  that had come loose.
+*/
+.panel > p { font-size: 12px; line-height: 1.55; color: var(--ink-3); margin-top: 12px; }
+.panel > .pipeline + p,
+.panel > .toollist + p { padding-top: 12px; border-top: 1px solid var(--line); }
 /* margin-left keeps the control at the right edge even when the note wraps it
    onto a line of its own. */
 .dock-note .linkish { font-size: 11.5px; color: var(--ink-3); white-space: nowrap; margin-left: auto; }
@@ -1293,7 +1310,15 @@ html[data-theme="dark"] {
   the moment the page moves it takes the heavy tier — still glass, now
   opaque enough that what passes under it is a wash rather than words.
 */
-.bar { background: var(--g-fill); border-bottom: 1px solid transparent; }
+/*
+  The heavy fill is the default and the light one is opted into only while the
+  page is still at the top. The other way round, a header that needs JavaScript
+  to become readable is a header that is unreadable whenever that script does
+  not run — which is exactly what happened when the class that sets it was left
+  behind in a port.
+*/
+.bar { background: var(--g-fill-bar); border-bottom: 1px solid transparent; }
+html.reveals .bar:not(.solid) { background: var(--g-fill); }
 /* Heavier than the general heavy tier: a navigation bar has a whole page
    travelling under it, and at 0.86 body copy was still legible through it. iOS
    takes its own bars close to opaque for the same reason — the colour behind

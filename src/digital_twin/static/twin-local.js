@@ -362,7 +362,14 @@
 
   async function fetchCorpus() {
     let last;
-    for (const url of CORPUS_URLS) {
+    // The static build sets __TWIN_OFFLINE__ before this file runs, so the mode
+    // is known and does not need to be discovered by failing. Probing in a fixed
+    // order guaranteed a 404 on every single page load in whichever of the two
+    // builds was not being served.
+    const urls = window.__TWIN_OFFLINE__ === true
+      ? CORPUS_URLS
+      : [...CORPUS_URLS].reverse();
+    for (const url of urls) {
       try {
         const response = await fetch(url);
         if (response.ok) return await response.json();

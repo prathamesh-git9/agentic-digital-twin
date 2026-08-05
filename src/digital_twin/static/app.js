@@ -926,16 +926,22 @@
   /* ---------- scroll progress ---------- */
 
   const progress = $("#progress");
-  if (progress) {
-    const paint = () => {
+  const bar = document.querySelector(".bar");
+  const paint = () => {
+    if (progress) {
       const max = document.documentElement.scrollHeight - window.innerHeight;
       const pct = max > 0 ? (window.scrollY / max) * 100 : 0;
       progress.style.width = `${pct}%`;
-    };
-    addEventListener("scroll", paint, { passive: true });
-    addEventListener("resize", paint);
-    paint();
-  }
+    }
+    // Light glass is right over the sky at the top of the page and wrong
+    // everywhere else: at that fill, body copy and cards passing under the bar
+    // stayed legible through it and collided with the nav labels. Past the
+    // first scroll it takes the heavy fill.
+    bar?.classList.toggle("solid", window.scrollY > 8);
+  };
+  addEventListener("scroll", paint, { passive: true });
+  addEventListener("resize", paint);
+  paint();
 
   /* ---------- copy an answer ---------- */
 
