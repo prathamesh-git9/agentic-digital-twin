@@ -341,13 +341,13 @@ class BM25Index:
                 if not frequency:
                     continue
                 idf = self._idf.get(term, 0.0)
-                normalised = frequency * (K1 + 1) / (
+                normalised = (
                     frequency
-                    + K1
-                    * (
-                        1
-                        - B
-                        + B * document.length / (self._average_length or 1.0)
+                    * (K1 + 1)
+                    / (
+                        frequency
+                        + K1
+                        * (1 - B + B * document.length / (self._average_length or 1.0))
                     )
                 )
                 total += weight * idf * normalised

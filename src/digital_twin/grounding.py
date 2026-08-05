@@ -317,6 +317,5 @@ class GroundingVerifier:
         if not claim_tokens:
             return False
         return (
-            len(claim_tokens & evidence_tokens) / len(claim_tokens)
-            >= SUPPORT_THRESHOLD
+            len(claim_tokens & evidence_tokens) / len(claim_tokens) >= SUPPORT_THRESHOLD
         )
