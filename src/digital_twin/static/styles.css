@@ -16,12 +16,12 @@
   --line-2: #ccddf2;
   --ink: #0a1826;
   --ink-2: #45607b;
-  --ink-3: #7d95b0;
-  --clay: #1f83e0;
+  --ink-3: #5b7391;
+  --clay: #1266c2;
   --clay-2: #1569bd;
   --clay-ink: #ffffff;
   --clay-soft: rgba(31, 131, 224, .1);
-  --ok: #17a06c;
+  --ok: #0e7a52;
   /* Clear day: pale blue overhead washing out to near-white at the ridgeline. */
   --sky-top: #d7e9fb;
   --sky-mid: #e9f3fd;
@@ -1692,3 +1692,32 @@ html[data-theme="dark"] {
   .tile, .suggestions button, .card, .person, #composer { transition: none; }
   .tile:hover, .suggestions button:hover, .card:hover, #composer:focus-within { transform: none; }
 }
+
+/* =====================================================================
+   MEASURED DEFECTS
+
+   Found by walking the rendered tree rather than by eye: every element
+   whose content is cut off by its own box, and every run of text whose
+   contrast against what is actually behind it falls under WCAG AA.
+   ===================================================================== */
+
+/*
+  Holding the topic row to one line clipped it instead of fitting it —
+  up to 248px of tag was being hidden, cutting labels mid-word, which is
+  worse than the uneven card heights it was meant to cure. The clamped
+  description already does most of that work; the tags wrap.
+*/
+.card .topics { flex-wrap: wrap; overflow: visible; }
+
+/*
+  Small links sat at 19-21px tall. Anything that is a tap target wants
+  24px of height before a finger is involved, and the extra comes from
+  padding so nothing moves.
+*/
+.rail-links a, .rail-links button, .foot-links a, .scroll-cue {
+  display: inline-flex; align-items: center; min-height: 24px;
+}
+
+/* An install command is the one string on the page a reader retypes by hand,
+   and at --ink-3 on the dark surface it measured 4.13:1, under AA. */
+html[data-theme="dark"] .mcp-install { color: var(--ink-2); }
