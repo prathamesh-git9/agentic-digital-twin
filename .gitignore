@@ -15,3 +15,5 @@ htmlcov/
 .coverage
 artifacts/runtime/
 .twin-linkedin-profile/
+# Agent scratch space, including checked-out worktrees under .claude/worktrees.
+.claude/
