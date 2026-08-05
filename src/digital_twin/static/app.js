@@ -398,9 +398,19 @@
       if (elapsed === 12) label.textContent = "Still working. Verifying every claim…";
     }, 1000);
 
+    /*
+      A chat request had no deadline. When the provider or the tool loop stalls,
+      the visitor was left with a spinner that never resolved and a send button
+      that stayed disabled, with no way back except reloading the page — which
+      reads exactly like a broken chat, because it is one. The server's own tool
+      wall-clock is well under this, so anything past it is genuinely stuck.
+    */
+    const controller = new AbortController();
+    const deadline = setTimeout(() => controller.abort(), 75_000);
     try {
       const r = await api(`/api/sessions/${state.sessionId}/chat`, {
         method: "POST", body: JSON.stringify({ message: text }),
+        signal: controller.signal,
       });
       pending.remove();
       turn("twin", r.answer, r.sources, r.trace, {
@@ -409,8 +419,12 @@
       showBudget(r);
     } catch (e) {
       pending.remove();
-      turn("twin", `Sorry, ${e.message}`);
+      turn("twin", e.name === "AbortError"
+        ? "That took too long and I stopped waiting for it. Ask again, or try a "
+          + "narrower question."
+        : `Sorry, ${e.message}`);
     } finally {
+      clearTimeout(deadline);
       clearInterval(ticker);
       state.pending = null;
       state.busy = false;
@@ -440,7 +454,27 @@
     sits on the page. The stack tiles read as buttons and did nothing; now the
     whole rail is a way into the conversation rather than a list of words.
   */
+  /*
+    In-page links land where the section was when the scroll started, and this
+    page keeps growing underneath one: repository cards arrive lazily, reveals
+    change heights as they fire, and a smooth scroll takes long enough for all
+    of it. The Work link in particular missed its own section every time. So the
+    jump is made, and then made again once the page has stopped moving.
+  */
   document.addEventListener("click", (e) => {
+    const link = e.target.closest('a[href^="#"]:not([href="#"])');
+    if (link) {
+      const target = document.querySelector(link.getAttribute("href"));
+      if (target) {
+        e.preventDefault();
+        target.scrollIntoView({ behavior: "smooth", block: "start" });
+        // Two corrections: one after the smooth scroll should have finished,
+        // one after anything it triggered has settled.
+        setTimeout(() => target.scrollIntoView({ behavior: "auto", block: "start" }), 620);
+        setTimeout(() => target.scrollIntoView({ behavior: "auto", block: "start" }), 1100);
+      }
+      return;
+    }
     const trigger = e.target.closest("[data-ask]");
     if (!trigger) return;
     e.preventDefault();
@@ -702,6 +736,9 @@
   function renderWorkCards(repos) {
     const host = $("#work-cards");
     if (!host) return;
+    // The reserved height was only there to stop the page moving while the
+    // cards were in flight; the cards themselves size the section now.
+    host.style.minHeight = "";
     if (!repos.length) { host.closest(".band")?.remove(); return; }
     host.innerHTML = repos.map((r) => `
       <article class="card">
@@ -720,6 +757,14 @@
   function armWorkCards() {
     const host = $("#work-cards");
     if (!host) return;
+    /*
+      The cards arrive after the section is already being scrolled to, and the
+      section grows by their full height as they land. A smooth scroll started
+      before that lands somewhere else entirely — which is why the Work link in
+      the header missed its own section. Holding the space the cards will occupy
+      means the page cannot move under the scroll.
+    */
+    host.style.minHeight = `${Math.ceil(10 / 3) * 214}px`;
     let started = false;
     const load = async () => {
       if (started) return;
