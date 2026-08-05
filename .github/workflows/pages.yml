@@ -1,0 +1,61 @@
+name: pages
+
+# The published twin is a static build: GitHub Pages cannot run FastAPI, so the
+# page ships its evidence corpus and answers from it in the browser. The daily
+# schedule exists because the repository cards are a build-time snapshot of the
+# GitHub API and would otherwise age.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "data/profile.yaml"
+      - "scripts/build_static.py"
+      - "src/digital_twin/static/**"
+      - "src/digital_twin/github.py"
+      - "src/digital_twin/profile.py"
+      - ".github/workflows/pages.yml"
+  schedule:
+    - cron: "17 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# A queued rebuild should replace a pending one, but never interrupt a publish
+# that is already in flight.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install -e .
+
+      - name: Build the static twin
+        env:
+          # Ten repositories cost twenty API calls, a third of the
+          # unauthenticated hourly allowance.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python scripts/build_static.py --out site
+
+      # gh-pages holds generated output only, so each build replaces it whole
+      # rather than accumulating a history nobody will read.
+      - name: Publish to gh-pages
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        working-directory: site
+        run: |
+          git init -q
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Publish ${GITHUB_SHA}"
+          git push -q --force \
+            "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" \
+            HEAD:gh-pages

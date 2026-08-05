@@ -64,6 +64,13 @@ class GitHubSearchHit(BaseModel):
 
 
 class GitHubService:
+    # Metadata for ten repositories costs twenty upstream calls, so a visitor
+    # must never wait for it twice. Inside FRESH_SECONDS the cache is served
+    # outright; up to STALE_SECONDS it is still served, with a refresh started
+    # behind the response.
+    FRESH_SECONDS = 300.0
+    STALE_SECONDS = 3_600.0
+
     def __init__(
         self,
         *,
@@ -73,6 +80,7 @@ class GitHubService:
     ) -> None:
         self.token, self.timeout, self.client = token, timeout, client
         self._cache: tuple[float, list[RepoMetadata]] | None = None
+        self._refreshing: asyncio.Task[list[RepoMetadata]] | None = None
 
     @property
     def headers(self) -> dict[str, str]:
@@ -85,15 +93,51 @@ class GitHubService:
             headers["Authorization"] = f"Bearer {self.token}"
         return headers
 
+    def cached_repositories(self) -> list[RepoMetadata] | None:
+        """Return warm metadata, or None rather than pay for a GitHub round trip."""
+        if self._cache is None:
+            return None
+        cached_at, repos = self._cache
+        if time.monotonic() - cached_at > self.STALE_SECONDS:
+            return None
+        return repos
+
     async def get_repositories(self, *, refresh: bool = False) -> list[RepoMetadata]:
-        if self._cache and not refresh and self._cache[0] > time.monotonic():
-            return self._cache[1]
+        if self._cache is not None and not refresh:
+            cached_at, repos = self._cache
+            age = time.monotonic() - cached_at
+            if age <= self.FRESH_SECONDS:
+                return repos
+            if age <= self.STALE_SECONDS:
+                self._start_background_refresh()
+                return repos
+        return await self._refresh()
+
+    def prime(self) -> None:
+        """Warm a cold cache off the request path so the next visitor pays nothing."""
+        if self.cached_repositories() is None:
+            self._start_background_refresh()
+
+    def _start_background_refresh(self) -> None:
+        if self._refreshing is not None and not self._refreshing.done():
+            return
+        try:
+            self._refreshing = asyncio.create_task(self._refresh())
+        except RuntimeError:  # no running loop; the next request refreshes inline
+            return
+        # Nothing awaits this task, so consume its outcome: a GitHub outage must
+        # not surface as an "exception was never retrieved" warning.
+        self._refreshing.add_done_callback(
+            lambda task: None if task.cancelled() else task.exception()
+        )
+
+    async def _refresh(self) -> list[RepoMetadata]:
         if self.client is not None:
             repos = await self._fetch_with(self.client)
         else:
             async with httpx.AsyncClient(follow_redirects=True) as client:
                 repos = await self._fetch_with(client)
-        self._cache = (time.monotonic() + 300, repos)
+        self._cache = (time.monotonic(), repos)
         return repos
 
     async def _fetch_with(self, client: httpx.AsyncClient) -> list[RepoMetadata]:

@@ -14,6 +14,7 @@ from typing import Any
 import uvicorn
 from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.staticfiles import StaticFiles
@@ -139,6 +140,38 @@ def _utc(value: datetime) -> datetime:
     return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
 
 
+def _mcp_manifest(profile_path: Path) -> dict[str, Any] | None:
+    """The MCP server manifest vendored beside the profile, when one is present.
+
+    `scripts/build_static.py` copies it out of the sibling mcp-servers checkout,
+    so a deployed container reads it from `data/` rather than needing that repo.
+    """
+    candidate = profile_path.parent / "mcp-manifest.json"
+    if not candidate.is_file():
+        return None
+    try:
+        loaded = json.loads(candidate.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    return loaded if isinstance(loaded, dict) else None
+
+
+class SelectiveGZipMiddleware(GZipMiddleware):
+    """Compress every response except the event stream.
+
+    Starlette's gzip responder carries one deflate stream across chunks and only
+    flushes when a block fills, so compressing SSE would hold events back until
+    enough bytes accumulated -- research progress would arrive in bursts, or not
+    at all on a quiet session.
+    """
+
+    async def __call__(self, scope: Any, receive: Any, send: Any) -> None:
+        if scope["type"] == "http" and scope["path"].endswith("/events"):
+            await self.app(scope, receive, send)
+            return
+        await super().__call__(scope, receive, send)
+
+
 def _answer_provider(settings: Settings) -> tuple[AnswerProvider, str]:
     if settings.provider == "openai-compatible" and settings.llm_api_key:
         return (
@@ -189,6 +222,7 @@ def create_app(
     database = Database(settings.database_url)
     database.create_schema()
     corpus = ProfileCorpus(settings.profile_path, show_phone=settings.show_phone)
+    mcp_manifest = _mcp_manifest(settings.profile_path)
     configured_provider, effective_provider = _answer_provider(settings)
     provider = answer_provider or configured_provider
     if answer_provider is not None:
@@ -354,6 +388,9 @@ def create_app(
         allow_methods=["GET", "POST", "DELETE"],
         allow_headers=["Content-Type", "Authorization"],
     )
+    # The stylesheet and script are ~67 KB of highly repetitive text; served raw
+    # they dominate first paint on a mobile connection.
+    app.add_middleware(SelectiveGZipMiddleware, minimum_size=700)
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
     app.state.settings = settings
@@ -393,13 +430,14 @@ def create_app(
         if request.url.path.startswith("/api/"):
             response.headers["Cache-Control"] = "no-store"
         elif request.url.path.startswith("/static/"):
-            # Static assets shipped with no Cache-Control at all, so browsers
-            # applied heuristic freshness and could serve a stylesheet from
-            # minutes ago against a page that had already moved on. The version
-            # stamp in index.html was a workaround for this and only worked when
-            # the HTML itself was fresh. no-cache still allows a 304 — it just
-            # requires the browser to ask first.
-            response.headers["Cache-Control"] = "no-cache"
+            # The shell bumps ?v= whenever an asset changes, so a stamped URL can
+            # never name stale bytes and is safe to keep forever. The photo and
+            # favicon carry no stamp and must stay replaceable.
+            response.headers["Cache-Control"] = (
+                "public, max-age=31536000, immutable"
+                if "v" in request.query_params
+                else "public, max-age=3600, must-revalidate"
+            )
         return response
 
     def client_hash(request: Request) -> str:
@@ -731,6 +769,31 @@ def create_app(
             "tools": tools.names if chat.agent and chat.agent.enabled else [],
         }
 
+    @app.get("/api/corpus")
+    async def corpus_snapshot() -> dict[str, Any]:
+        """The evidence corpus, in the shape the static build ships beside itself.
+
+        This is what the page's retrieval explorer indexes. It is the same
+        already-public CV text the twin cites, so exposing it adds no disclosure
+        the answers do not; it just lets a reader check the retrieval themselves.
+        """
+        return {
+            "person": {
+                "name": corpus.data["person"]["name"],
+                "email": corpus.email,
+                "location": corpus.data["person"]["location"],
+            },
+            "items": [
+                {"source": item.source, "text": item.text, "authority": item.authority}
+                for item in corpus.evidence
+            ],
+            "repositories": [
+                repo.model_dump(mode="json")
+                for repo in (github.cached_repositories() or [])
+            ],
+            "mcp": mcp_manifest,
+        }
+
     @app.get("/api/contact")
     async def contact() -> dict[str, str]:
         value = {"email": corpus.email, "location": corpus.data["person"]["location"]}
@@ -755,6 +818,30 @@ def create_app(
             greeting=GREETING,
             research=initial,
         )
+
+    @app.post("/api/bootstrap", status_code=201)
+    async def bootstrap(request: Request) -> dict[str, Any]:
+        """Everything the shell needs to become interactive, in one round trip.
+
+        The page used to await health, then contact, then GitHub, and only then
+        ask for a session -- four sequential trips during which the composer was
+        dead. Repository metadata rides along only when it is already warm,
+        because the work section is below the fold and must never delay chat.
+        """
+        session = await create_session(request)
+        repositories = github.cached_repositories()
+        if repositories is None:
+            github.prime()
+        return {
+            "session": session.model_dump(mode="json"),
+            "health": await health(),
+            "contact": await contact(),
+            "repositories": (
+                None
+                if repositories is None
+                else [repo.model_dump(mode="json") for repo in repositories]
+            ),
+        }
 
     @app.post(
         "/api/sessions/{session_id}/identity",

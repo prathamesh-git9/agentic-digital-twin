@@ -769,9 +769,8 @@ def _short(value: str, limit: int = 80) -> str:
 
 
 def _duration_ms(started: float) -> int:
-    # perf_counter, not monotonic: the Windows monotonic clock ticks about every
-    # 15ms, so a fast or short-timeout tool call measured as 0ms — and those
-    # durations are now shown to the visitor beside every step.
+    # perf_counter, not monotonic: on Windows monotonic ticks about every 15.6 ms,
+    # so a tool that timed out after 10 ms could report a duration of exactly zero.
     return max(0, round((time.perf_counter() - started) * 1_000))
 
 
