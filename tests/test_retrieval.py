@@ -18,7 +18,13 @@ import pytest
 import yaml
 
 from digital_twin.profile import ProfileCorpus, tokens
-from digital_twin.retrieval import ALIASES, BM25Index, expand_query, token_list
+from digital_twin.retrieval import (
+    ALIASES,
+    BM25Index,
+    conversational_query,
+    expand_query,
+    token_list,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 EVAL = yaml.safe_load((ROOT / "data" / "retrieval_eval.yaml").read_text("utf-8"))
@@ -216,3 +222,57 @@ def test_ranking_is_deterministic(corpus: ProfileCorpus) -> None:
 
 def test_limit_is_respected(corpus: ProfileCorpus) -> None:
     assert len(corpus.retrieve("engineer", limit=3)) <= 3
+
+
+# --- Follow-up questions ----------------------------------------------------
+
+
+def test_a_self_contained_question_is_left_alone() -> None:
+    history = [{"role": "user", "content": "Tell me about your Kafka work"}]
+
+    assert (
+        conversational_query("What databases have you worked with?", history)
+        == "What databases have you worked with?"
+    )
+
+
+def test_a_follow_up_carries_the_visitors_earlier_terms() -> None:
+    history = [{"role": "user", "content": "Tell me about your observability work"}]
+
+    expanded = conversational_query("What did you use there?", history)
+
+    assert "observability" in expanded
+    assert expanded.startswith("What did you use there?")
+
+
+def test_terms_are_carried_from_the_visitor_not_the_twin() -> None:
+    """One loose answer must not steer every later retrieval."""
+
+    history = [
+        {"role": "user", "content": "Tell me about your Kafka work"},
+        {"role": "assistant", "content": "I have worked on Kubernetes and Terraform."},
+    ]
+
+    expanded = conversational_query("And there?", history)
+
+    assert "kafka" in expanded
+    assert "kubernetes" not in expanded.lower()
+
+
+def test_a_follow_up_with_no_history_is_unchanged() -> None:
+    assert conversational_query("What about that?", []) == "What about that?"
+
+
+def test_follow_up_retrieves_what_the_bare_question_cannot(
+    corpus: ProfileCorpus,
+) -> None:
+    """The behaviour this exists for, measured on the real corpus."""
+
+    history = [{"role": "user", "content": "Tell me about your observability work"}]
+    question = "What did you use there?"
+
+    bare = corpus.retrieve(question)
+    carried = corpus.retrieve(conversational_query(question, history))
+
+    assert not any("Observability" in item.source for item in bare)
+    assert any("Observability" in item.source for item in carried)

@@ -16,6 +16,7 @@ from .grounding import (
 from .models import Database, Visit
 from .profile import EvidenceItem, ProfileCorpus, tokens
 from .providers import AnswerProvider, ScriptedProvider
+from .retrieval import conversational_query
 from .schemas import FitEvidence, JobFitResponse
 from .security import (
     approximate_tokens,
@@ -127,7 +128,13 @@ class ChatService:
                 [],
                 tool_remaining,
             )
-        evidence = self.corpus.retrieve(question)
+        messages = [
+            {"role": message.role, "content": message.content}
+            for message in self.database.recent_messages(visit.id)
+        ]
+        # A follow-up names nothing on its own, so retrieval carries forward the
+        # visitor's earlier terms. The model still sees the question as written.
+        evidence = self.corpus.retrieve(conversational_query(question, messages))
         if GENERIC_OVERVIEW.search(question):
             summaries = [
                 item for item in self.corpus.evidence if item.source == "CV › Summary"
@@ -148,10 +155,6 @@ class ChatService:
                 if item.source == "Policy › Grounding boundary"
             ]
 
-        messages = [
-            {"role": message.role, "content": message.content}
-            for message in self.database.recent_messages(visit.id)
-        ]
         confirmed = visit.confirmed_candidate
         context = self.assembler.assemble(
             evidence=evidence,

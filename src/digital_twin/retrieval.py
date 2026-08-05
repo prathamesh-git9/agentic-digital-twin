@@ -225,6 +225,79 @@ def expand_query(query: str) -> dict[str, float]:
     return weights
 
 
+# Words that point at something said earlier instead of naming it. A question
+# built from these has no retrievable content of its own.
+ANAPHORA = frozenset(
+    {
+        "that",
+        "there",
+        "those",
+        "them",
+        "they",
+        "these",
+        "this",
+        "then",
+        "its",
+        "same",
+        "one",
+        "ones",
+        "above",
+        "else",
+        "more",
+        "other",
+    }
+)
+
+# A question with at most this many content words names nothing on its own --
+# "why?", "how long?", "and?". The bar is deliberately low: stop words strip
+# most of a sentence, so "What databases have you worked with?" reduces to two
+# terms while being perfectly self-contained. Carrying context into a question
+# that did not need it dilutes a good query, so anaphora is the primary signal
+# and length is only the fallback for questions with almost nothing left.
+SELF_CONTAINED_TERMS = 1
+
+
+def conversational_query(
+    question: str,
+    history: list[dict[str, str]],
+    *,
+    max_carried_terms: int = 6,
+) -> str:
+    """Return the text to retrieve with, carrying context into follow-ups.
+
+    Retrieval saw only the current message, so the second half of every real
+    conversation searched on words that name nothing. "Tell me about your
+    back-end work" retrieves correctly; "what did you use there?" retrieves on
+    "use", and the twin answers a question nobody asked -- or refuses.
+
+    Terms are carried from the visitor's own earlier turns, not from the twin's
+    answers: an answer's vocabulary is what the model chose to say, and feeding
+    it back would let one loose reply steer every later retrieval. Expansion is
+    for retrieval only; the model still receives the question as written.
+    """
+
+    current = token_list(question)
+    leans_on_context = bool(set(current) & ANAPHORA)
+    if len(current) > SELF_CONTAINED_TERMS and not leans_on_context:
+        return question
+
+    seen = set(current)
+    carried: list[str] = []
+    for message in reversed(history):
+        if message.get("role") != "user":
+            continue
+        for term in token_list(message.get("content", "")):
+            if term in seen or term in ANAPHORA:
+                continue
+            seen.add(term)
+            carried.append(term)
+        if len(carried) >= max_carried_terms:
+            break
+    if not carried:
+        return question
+    return " ".join([question, *carried[:max_carried_terms]])
+
+
 @dataclass(frozen=True, slots=True)
 class _Document:
     index: int

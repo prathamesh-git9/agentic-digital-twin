@@ -277,7 +277,7 @@ OpenAPI documentation is at `/docs`.
 - [Chat flow screenshot](artifacts/chat-flow.png)
 - [Research/authority-gate screenshot](artifacts/research-flow.png)
 
-The test suite runs without network access or API keys (`177 passed`). It covers the context
+The test suite runs without network access or API keys (`182 passed`). It covers the context
 authority gate, rich field attribution/no invented profiles, robots/timeouts, email confidence
 and MX, ATS detection/ranking, safe referral/fanout copy, exact-body tokens, DNS refusal,
 global/once-only caps, LinkedIn approval/challenge/caps, mocked Pushover, injection/grounding,
@@ -314,6 +314,18 @@ still supports no Kubernetes claim, because there is nothing to find.
 **Read the 100% with the caveat it deserves.** The eval set and the alias map were written in the
 same sitting, so the set measures whether known vocabulary gaps stay closed, not how the ranker
 handles phrasing nobody anticipated. It is a regression gate, not evidence of general recall.
+
+### Follow-up questions
+
+Retrieval saw only the current message, so the second half of every real conversation searched on
+words that name nothing. "Tell me about your observability work" retrieves correctly; "what did
+you use there?" retrieves on *use*, and the twin answers a question nobody asked.
+
+A follow-up — one that leans on a demonstrative, or has almost no content words left after stop
+words — now carries forward terms from the visitor's **own** earlier turns. Not from the twin's
+answers: an answer's vocabulary is what the model chose to say, and feeding it back would let one
+loose reply steer every later retrieval. Expansion applies to retrieval only; the model still
+receives the question exactly as written.
 
 ## Claim verification
 
