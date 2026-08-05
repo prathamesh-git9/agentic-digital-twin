@@ -435,6 +435,23 @@
     if (e.target.tagName === "BUTTON") ask(e.target.textContent);
   });
 
+  /*
+    Anything carrying data-ask puts its own question to the twin, wherever it
+    sits on the page. The stack tiles read as buttons and did nothing; now the
+    whole rail is a way into the conversation rather than a list of words.
+  */
+  document.addEventListener("click", (e) => {
+    const trigger = e.target.closest("[data-ask]");
+    if (!trigger) return;
+    e.preventDefault();
+    const question = trigger.dataset.ask;
+    if (!question) return;
+    // The composer is the focal artefact: bring it into view so the answer is
+    // not delivered somewhere off-screen.
+    el.input.scrollIntoView({ behavior: "smooth", block: "center" });
+    ask(question);
+  });
+
   /* ---------- events ---------- */
 
   function openEvents() {

@@ -45,7 +45,7 @@
 
     <!-- Version stamp: /static is cached immutably when the URL carries ?v=, so
          bumping the stamp is how a changed asset reaches a returning browser. -->
-    <link rel="stylesheet" href="/static/styles.css?v=48">
+    <link rel="stylesheet" href="/static/styles.css?v=50">
   </head>
   <body>
     <a class="skip-link" href="#composer-input">Skip to chat</a>
@@ -205,16 +205,19 @@
 
       <aside class="rail rail-right">
         <section class="panel reveal">
-          <span class="panel-label">AI stack</span>
+          <span class="panel-label">Ask about any of these</span>
+          <!-- Buttons, not decoration. Each one looked clickable and did
+               nothing; each now puts its own question to the twin, which is
+               eight more ways into the conversation than the page had. -->
           <div class="tiles">
-            <span class="tile"><b>RAG</b><i>hybrid + RRF</i></span>
-            <span class="tile"><b>MCP</b><i>servers</i></span>
-            <span class="tile"><b>Tools</b><i>function calls</i></span>
-            <span class="tile"><b>Vectors</b><i>embeddings</i></span>
-            <span class="tile"><b>Evals</b><i>baselines</i></span>
-            <span class="tile"><b>Guardrails</b><i>injection</i></span>
-            <span class="tile"><b>Agents</b><i>durable</i></span>
-            <span class="tile"><b>Grounding</b><i>per claim</i></span>
+            <button type="button" class="tile" data-ask="How does his retrieval actually work?"><b>RAG</b><i>hybrid + RRF</i></button>
+            <button type="button" class="tile" data-ask="What is his experience with MCP?"><b>MCP</b><i>servers</i></button>
+            <button type="button" class="tile" data-ask="How does he handle tool orchestration and failures?"><b>Tools</b><i>function calls</i></button>
+            <button type="button" class="tile" data-ask="What has he built with embeddings and vector search?"><b>Vectors</b><i>embeddings</i></button>
+            <button type="button" class="tile" data-ask="How does he evaluate whether an agent is actually working?"><b>Evals</b><i>baselines</i></button>
+            <button type="button" class="tile" data-ask="How does he defend against prompt injection?"><b>Guardrails</b><i>injection</i></button>
+            <button type="button" class="tile" data-ask="What agent systems has he built, and how do they recover?"><b>Agents</b><i>durable</i></button>
+            <button type="button" class="tile" data-ask="How does he keep every claim grounded in a source?"><b>Grounding</b><i>per claim</i></button>
           </div>
         </section>
 
@@ -467,7 +470,7 @@
 
     <!-- Defines the retrieval engine app.js reads. Deferred scripts run in order,
          so this is guaranteed to be in place before the application boots. -->
-    <script src="/static/twin-local.js?v=48" defer></script>
-    <script src="/static/app.js?v=48" defer></script>
+    <script src="/static/twin-local.js?v=50" defer></script>
+    <script src="/static/app.js?v=50" defer></script>
   </body>
 </html>

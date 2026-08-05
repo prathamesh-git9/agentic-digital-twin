@@ -1605,3 +1605,90 @@ html[data-theme="dark"] .bands {
 .cards.bare .card { padding: 13px 17px; border-radius: 14px; }
 .cards.bare .card h3 { font-size: 14px; }
 .work-note { font-size: 13px; color: var(--ink-3); margin-top: 20px; max-width: 60ch; }
+
+/* =====================================================================
+   LIQUID GLASS — the material, not a colour
+
+   iOS 26 glass is four things at once, and leaving any one out is what
+   makes web imitations look like frosted plastic: a heavy blur with the
+   saturation lifted so colour bleeds through, a rim of light along the
+   top edge where the surface catches the sky, a specular sweep across
+   the face, and a body that responds when you touch it. The surfaces
+   below already had the first. They now have all four.
+   ===================================================================== */
+
+:root {
+  --lq-rim: inset 0 1px 0 rgba(255, 255, 255, .92), inset 0 0 0 .5px rgba(255, 255, 255, .45);
+  --lq-sweep: linear-gradient(148deg, rgba(255,255,255,.9) 0%, rgba(255,255,255,.35) 26%, rgba(255,255,255,0) 52%);
+  --lq-lift: 0 1px 2px rgba(20, 70, 140, .06), 0 12px 30px rgba(20, 70, 140, .13);
+  --lq-lift-hi: 0 2px 6px rgba(20, 70, 140, .10), 0 26px 56px rgba(20, 70, 140, .22);
+  --lq-spring: cubic-bezier(.2, .9, .25, 1.08);
+}
+html[data-theme="dark"] {
+  --lq-rim: inset 0 1px 0 rgba(180, 218, 255, .22), inset 0 0 0 .5px rgba(150, 195, 245, .14);
+  --lq-sweep: linear-gradient(148deg, rgba(190,225,255,.20) 0%, rgba(190,225,255,.07) 28%, rgba(190,225,255,0) 54%);
+  --lq-lift: 0 1px 2px rgba(0, 0, 0, .38), 0 14px 34px rgba(0, 0, 0, .46);
+  --lq-lift-hi: 0 3px 8px rgba(0, 0, 0, .45), 0 28px 62px rgba(0, 0, 0, .6);
+}
+
+/* The rim is what reads as an edge catching light. */
+.panel, .person, .visitor, .feed, .tile, .card, .skillcard, .cta,
+.suggestions button, .quickfacts span, #composer, .turn.you .text,
+.over-panel, .modal-card {
+  box-shadow: var(--lq-rim), var(--lq-lift);
+}
+
+/* The sweep sits above the fill and below the content, and follows the
+   corner radius rather than sitting in a rectangle behind it. */
+.panel::before, .person::before, .tile::before, .card::before,
+.skillcard::before, .cta::before, #composer::before, .modal-card::before {
+  content: ""; position: absolute; inset: 0; border-radius: inherit;
+  background: var(--lq-sweep); pointer-events: none; opacity: .85;
+}
+.tile, .card { position: relative; }
+.tile > *, .card > * { position: relative; z-index: 1; }
+
+/* ---- the stack tiles are buttons now, so they behave like buttons ---- */
+
+.tile {
+  appearance: none; font: inherit; text-align: left; cursor: pointer;
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 11px 12px; border-radius: 15px;
+  background: var(--g-fill-heavy);
+  backdrop-filter: var(--g-blur-soft); -webkit-backdrop-filter: var(--g-blur-soft);
+  border: 1px solid var(--g-edge);
+  transition: transform .22s var(--lq-spring), box-shadow .22s var(--ease),
+              background .22s var(--ease);
+}
+.tile b { font-size: 12.5px; font-weight: 650; letter-spacing: -.01em; color: var(--ink); }
+.tile i { font: 400 10.5px/1.35 var(--mono); font-style: normal; color: var(--ink-3); }
+.tile:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--lq-rim), var(--lq-lift-hi);
+  border-color: color-mix(in srgb, var(--clay) 45%, var(--g-edge));
+}
+.tile:hover b { color: var(--clay); }
+/* Glass compresses under a finger rather than just changing colour. */
+.tile:active { transform: translateY(0) scale(.975); box-shadow: var(--lq-rim), var(--lq-lift); }
+.tile:focus-visible { outline: 2px solid var(--clay); outline-offset: 2px; }
+
+/* The same response on every other glass control. */
+.suggestions button, .card, .person {
+  transition: transform .22s var(--lq-spring), box-shadow .22s var(--ease),
+              border-color .18s var(--ease), color .18s var(--ease);
+}
+.suggestions button:hover, .card:hover { transform: translateY(-2px); box-shadow: var(--lq-rim), var(--lq-lift-hi); }
+.suggestions button:active { transform: translateY(0) scale(.97); }
+
+/* The composer is the focal artefact: it carries the deepest glass on the
+   page and lifts when it takes focus. */
+#composer {
+  backdrop-filter: blur(36px) saturate(190%); -webkit-backdrop-filter: blur(36px) saturate(190%);
+  transition: box-shadow .25s var(--ease), border-color .2s var(--ease), transform .25s var(--lq-spring);
+}
+#composer:focus-within { transform: translateY(-1px); box-shadow: var(--lq-rim), var(--lq-lift-hi), 0 0 0 4px var(--clay-soft); }
+
+@media (prefers-reduced-motion: reduce) {
+  .tile, .suggestions button, .card, .person, #composer { transition: none; }
+  .tile:hover, .suggestions button:hover, .card:hover, #composer:focus-within { transform: none; }
+}
