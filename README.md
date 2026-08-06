@@ -44,7 +44,8 @@ authorised effect. Tests assert the boundary directly.
   `effect-browser`, `agent-redteam`, `answer-engine`, `agent-mesh`, `llm-gateway`,
   `promise-ledger`, `reachable`, and `trustdesk`.
 - Layered prompt-injection defence for visitor text, pasted job descriptions, repository
-  metadata, and poisoned search results.
+  metadata, and poisoned search results — where the load-bearing layer is grounding, not
+  pattern matching. See [What the injection filter is worth](#what-the-injection-filter-is-worth).
 - An authenticated owner dashboard, CRM/replay, outreach audit and variant counts, and CSV
   export. Raw IP addresses remain deliberately unavailable.
 - Per-IP/session sliding-window limits, a hard per-session token budget, maximum input sizes,
@@ -277,7 +278,7 @@ OpenAPI documentation is at `/docs`.
 - [Chat flow screenshot](artifacts/chat-flow.png)
 - [Research/authority-gate screenshot](artifacts/research-flow.png)
 
-The test suite runs without network access or API keys (`182 passed`). It covers the context
+The test suite runs without network access or API keys (`191 passed`). It covers the context
 authority gate, rich field attribution/no invented profiles, robots/timeouts, email confidence
 and MX, ATS detection/ranking, safe referral/fanout copy, exact-body tokens, DNS refusal,
 global/once-only caps, LinkedIn approval/challenge/caps, mocked Pushover, injection/grounding,
@@ -326,6 +327,34 @@ words — now carries forward terms from the visitor's **own** earlier turns. No
 answers: an answer's vocabulary is what the model chose to say, and feeding it back would let one
 loose reply steer every later retrieval. Expansion applies to retrieval only; the model still
 receives the question exactly as written.
+
+## What the injection filter is worth
+
+`contains_prompt_injection` is a regex filter over visitor text. Measuring it produced the
+most useful number in this repo, because it is the one that says *don't rely on me*:
+
+| Corpus | Caught |
+| --- | --- |
+| 18 phrasings the patterns were written against | 18 / 18 |
+| 10 phrasings written afterwards for the same intents | **0 / 10** |
+| 26 ordinary recruiter questions | 0 false positives |
+
+The 100% is meaningless — the patterns and that corpus were written together. The honest
+figure is the second row: reword the request and the filter sees nothing. That is not a gap
+to close by adding patterns; it is what keyword matching *is* against anyone who can
+rephrase, and no amount of regex fixes it.
+
+**So the filter is a courtesy, not a defence.** It earns its place by turning obvious
+attempts into an honest refusal rather than a silently emptied answer, and by costing
+nothing. The false-positive column is the one held strictly at zero, because refusing a
+real recruiter's question is worse than missing an injection.
+
+The layer that actually holds is grounding. An injection that sails past the filter still
+cannot put a fabricated employer on the page: a claim with no supporting evidence is
+dropped, and a name the evidence never mentions is dropped with it. Tests assert exactly
+that — every held-out injection evades the filter, and every fabrication it was fishing for
+(*"led a team of 20 at Amazon"*, *"shipped a payments platform at Stripe"*, *"holds a PhD
+from MIT"*) is still refused.
 
 ## Claim verification
 

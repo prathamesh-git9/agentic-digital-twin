@@ -10,18 +10,83 @@ from collections import defaultdict, deque
 from threading import Lock
 from urllib.parse import urlparse
 
+# A first filter, not the guarantee. Keyword matching cannot enumerate every
+# phrasing, and measurement against data/injection_eval.yaml says so plainly:
+# these patterns are tuned to catch the common families with no false positive
+# on ordinary recruiter questions, because flagging a legitimate question
+# stonewalls a real visitor. What actually stops a fabricated claim reaching
+# the page is the grounding verifier, which drops any claim its evidence does
+# not support and any name the evidence never mentions. Tests assert that
+# backstop holds for injections these patterns deliberately do not catch.
 INJECTION_PATTERNS = (
+    # Instruction override. "disregard a bad requirement" is ordinary speech, so
+    # the object has to be the conversation's own rules rather than any noun.
     re.compile(
-        r"ignore\s+(?:all\s+)?(?:previous|prior|above|system)\s+instructions?", re.I
+        r"(?:ignore|disregard|forget)\s+(?:all\s+|everything\s+)?"
+        r"(?:the\s+|your\s+|my\s+)?"
+        r"(?:previous|prior|earlier|above|system|initial|original)?\s*"
+        r"(?:instructions?|guidance|rules|prompts?|directives?|context)",
+        re.I,
     ),
-    re.compile(r"(?:reveal|print|show|repeat)\s+(?:the\s+)?system\s+prompt", re.I),
+    re.compile(
+        r"(?:ignore|disregard|forget)\s+(?:everything|all)\s+"
+        r"(?:above|before|earlier|you\s+were\s+told)",
+        re.I,
+    ),
+    re.compile(
+        r"instructions?\s+you\s+(?:were\s+given|received|got)\s+"
+        r"(?:earlier|before|previously|at\s+the\s+start)",
+        re.I,
+    ),
+    re.compile(r"new\s+instructions?\s+(?:follow|below|are)\b", re.I),
+    # System-prompt exfiltration, including the indirect phrasings.
+    re.compile(r"(?:reveal|print|show|repeat|output)\s+(?:the\s+)?system\s+prompt", re.I),
+    re.compile(
+        r"what\s+(?:were|was)\s+you\s+told\s+"
+        r"(?:at\s+the\s+start|before|earlier|initially)",
+        re.I,
+    ),
+    re.compile(
+        r"(?:repeat|print|show|reveal)\s+(?:the\s+)?(?:text\s+of\s+)?"
+        r"(?:your\s+)?(?:initial|original|first)\s+"
+        r"(?:configuration|instructions?|prompt|message)",
+        re.I,
+    ),
+    re.compile(r"print\s+everything\s+between", re.I),
     re.compile(r"(?:developer|system)\s*(?:message|prompt)\s*:", re.I),
+    # Rule and guardrail removal.
     re.compile(
-        r"(?:override|bypass|disregard)\s+(?:the\s+)?(?:rules|policy|guardrails)", re.I
+        r"(?:override|bypass|disregard|drop|remove)\s+(?:the\s+|your\s+)?"
+        r"(?:rules|policy|policies|guardrails|restrictions|safeguards)",
+        re.I,
     ),
-    re.compile(r"pretend\s+(?:that\s+)?(?:you|he)\s+(?:are|has|worked)", re.I),
-    re.compile(r"say\s+(?:that\s+)?(?:you|he)\s+(?:have|has|worked)", re.I),
+    re.compile(r"(?:with\s+)?no\s+(?:rules|restrictions|filters|limits)\b", re.I),
+    re.compile(r"\bunfiltered\b|\bunrestricted\b|\bjailbreak\b|\bDAN\b", re.I),
+    # Persona replacement. "you are now" and "from now on" are the two openers
+    # that carry almost every role-swap attempt.
+    re.compile(r"from\s+now\s+on,?\s+(?:respond|answer|act|behave|you)", re.I),
+    re.compile(r"you\s+are\s+now\s+(?:a|an|the)?\s*\w+", re.I),
+    re.compile(r"respond\s+only\s+as\b", re.I),
+    # Requests to fabricate biography. The verifier would drop these anyway;
+    # catching them here means the visitor gets an honest refusal instead of a
+    # silently emptied answer.
+    re.compile(
+        r"(?:pretend|act)\s+(?:as\s+(?:though|if)\s+|that\s+)?(?:you|he)\s+"
+        r"(?:are|is|has|have|holds|worked|led)",
+        re.I,
+    ),
+    re.compile(
+        r"(?:say|claim|state|assert|tell\s+them)\s+(?:that\s+)?(?:you|he)\s+"
+        r"(?:have|has|had|holds|worked|led|is|are)",
+        re.I,
+    ),
+    # Citation suppression: the grounding contract is the product.
     re.compile(r"do\s+not\s+cite|without\s+(?:a\s+)?source", re.I),
+    re.compile(
+        r"(?:drop|skip|omit|remove|ignore)\s+(?:the\s+)?"
+        r"(?:requirement\s+to\s+)?(?:reference|cite|citing|citation)",
+        re.I,
+    ),
     re.compile(r"<\/?(?:system|assistant|developer|tool)[^>]*>", re.I),
 )
 
