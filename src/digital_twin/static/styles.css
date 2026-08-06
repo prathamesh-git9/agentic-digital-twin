@@ -142,7 +142,7 @@ html[data-theme="light"] .grain { opacity: .16; }
 
 /* ---------- bar ---------- */
 
-.bar { position: sticky; top: 0; z-index: 40; display: flex; align-items: center; gap: 14px; padding: 14px clamp(16px, 5vw, 40px); backdrop-filter: blur(14px); }
+.bar { position: sticky; top: 0; z-index: 40; display: flex; align-items: center; gap: 14px; padding: 14px clamp(16px, 5vw, 40px); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
 .bar-left { display: flex; align-items: center; gap: 9px; text-decoration: none; color: inherit; }
 .face { border-radius: 50%; object-fit: cover; }
 .name { font-size: 14px; font-weight: 550; letter-spacing: -.01em; }
@@ -470,7 +470,7 @@ body.has-thread .dock::before {
 .jd-form textarea { width: 100%; min-height: 180px; padding: 15px; font: inherit; font-size: 14px; border: 1px solid var(--line-2); border-radius: var(--r-md); background: var(--raised); color: var(--ink); resize: vertical; }
 .sheet-actions, .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 12px; }
 
-.modal { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 20px; background: rgba(8, 8, 10, .62); backdrop-filter: blur(8px); animation: fade .2s var(--ease); }
+.modal { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 20px; background: rgba(8, 8, 10, .62); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); animation: fade .2s var(--ease); }
 .modal-card { width: min(420px, 100%); background: var(--paper); border: 1px solid var(--line-2); border-radius: var(--r-lg); padding: 30px 28px; animation: rise .3s var(--ease); }
 .modal-card h2 { font-size: 21px; }
 .modal-card p { color: var(--ink-2); font-size: 14.5px; margin: 10px 0 22px; }
@@ -659,7 +659,8 @@ body.has-thread .scene { opacity: .32; }
 .turn:hover .turn-actions, .turn-actions:focus-within { opacity: 1; }
 .turn-actions button {
   font: 400 11.5px/1 var(--mono); cursor: pointer; color: var(--ink-3);
-  background: var(--glass); backdrop-filter: var(--glass-blur);
+  background: var(--glass);
+  -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-edge); border-radius: var(--r-xs); padding: 6px 10px;
   transition: color .16s var(--ease), border-color .16s var(--ease);
 }
@@ -964,7 +965,7 @@ html[data-theme="dark"] .person {
 
 /* Cards in the lower bands pick up the same frosted treatment, now that they
    sit on a translucent ground rather than flat paper. */
-.bands { background: color-mix(in srgb, var(--paper) 88%, transparent); backdrop-filter: blur(2px); }
+.bands { background: color-mix(in srgb, var(--paper) 88%, transparent); -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); }
 .skillcard, .cta {
   background: var(--glass-strong);
   backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
@@ -1351,6 +1352,9 @@ html.reveals .bar:not(.solid) { background: var(--g-fill); }
     radial-gradient(58% 38% at 88% 84%, rgba(140, 195, 255, .17), transparent 64%),
     var(--paper);
   background-attachment: fixed;
+  /* Both spellings, because the reset has to reach Safari too: clearing
+     only the unprefixed property leaves the -webkit- blur applied there. */
+  -webkit-backdrop-filter: none;
   backdrop-filter: none;
 }
 html[data-theme="dark"] .bands {
