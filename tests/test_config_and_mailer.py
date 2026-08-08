@@ -2,10 +2,28 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import yaml
+
 from digital_twin.config import Settings
 from digital_twin.mailer import GmailSMTPSender
 
 ROOT = Path(__file__).parents[1]
+
+
+def test_render_blueprint_keeps_model_key_out_of_source() -> None:
+    blueprint = yaml.safe_load((ROOT / "render.yaml").read_text(encoding="utf-8"))
+    service = blueprint["services"][0]
+    variables = {row["key"]: row for row in service["envVars"]}
+
+    assert service["healthCheckPath"] == "/api/health"
+    assert service["startCommand"].endswith("--port $PORT")
+    assert variables["TWIN_PROVIDER"]["value"] == "openai-compatible"
+    assert variables["TWIN_LLM_BASE_URL"]["value"] == "https://api.openai.com/v1"
+    assert variables["TWIN_LLM_MODEL"]["value"] == "gpt-5.6-sol"
+    assert variables["TWIN_LLM_API_KEY"] == {
+        "key": "TWIN_LLM_API_KEY",
+        "sync": False,
+    }
 
 
 def test_owner_provisioned_environment_names_map_exactly(monkeypatch) -> None:
