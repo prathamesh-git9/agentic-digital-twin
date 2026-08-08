@@ -114,8 +114,6 @@ class OpenAICompatibleProvider:
     ) -> ProviderTurn:
         payload = {
             "model": self.model,
-            "temperature": 0.1,
-            "max_tokens": self.max_output_tokens,
             "response_format": {"type": "json_object"},
             "messages": [
                 {"role": "system", "content": request.context},
@@ -144,6 +142,20 @@ class OpenAICompatibleProvider:
                 *continuation,
             ],
         }
+        is_openai_gpt5 = (
+            self.base_url.casefold() == "https://api.openai.com/v1"
+            and self.model.casefold().startswith("gpt-5")
+        )
+        if is_openai_gpt5:
+            # GPT-5 tool calls in Chat Completions require reasoning_effort=none.
+            # max_completion_tokens is the current field for these models, while
+            # temperature is unsupported at the default reasoning settings.
+            payload["reasoning_effort"] = "none"
+            payload["max_completion_tokens"] = self.max_output_tokens
+        else:
+            # Preserve vendor-neutral compatibility for existing endpoints.
+            payload["temperature"] = 0.1
+            payload["max_tokens"] = self.max_output_tokens
         if allow_tools and tools:
             payload["tools"] = tools
             payload["tool_choice"] = "auto"

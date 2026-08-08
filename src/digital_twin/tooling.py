@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
+import re
 import time
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
@@ -385,7 +386,7 @@ class ToolRegistry:
                         "ATS boards."
                     ),
                     OpenRolesArgs,
-                    timeout,
+                    min(max(timeout, 15.0), self.settings.tool_wall_clock_seconds),
                     self._open_roles,
                     lambda value: f"Checking public roles at {_short(value.company)}...",
                     lambda value: {"company": _short(value.company, 120)},
@@ -573,7 +574,12 @@ class ToolRegistry:
 
     async def _open_roles(self, value: BaseModel) -> ToolResult:
         arguments = OpenRolesArgs.model_validate(value)
-        company = await self.research.research_company(arguments.company)
+        company, direct = await asyncio.gather(
+            self.research.research_company(arguments.company),
+            self.roles.discover_company(arguments.company),
+        )
+        if direct.status == "ok":
+            return self._role_result(arguments.company, direct)
         careers = company.dossier.careers_page
         if careers is None:
             return ToolResult(
@@ -598,10 +604,33 @@ class ToolRegistry:
         )
         if result.status != "ok":
             return ToolResult(status=result.status, summary=result.reason)
-        roles = result.roles[:10]
+        return self._role_result(arguments.company, result)
+
+    @staticmethod
+    def _role_result(company: str, result: Any) -> ToolResult:
+        engineering_title = re.compile(
+            r"\b(?:back.?end|software|platform|python|java|api|engineer(?:ing)?|"
+            r"developer|devops|site reliability|sre|machine learning|ml|"
+            r"artificial intelligence|ai engineer|data infrastructure|"
+            r"security engineer)\b",
+            re.I,
+        )
+        roles = [
+            role
+            for role in result.roles
+            if role.fit_score >= 25 and engineering_title.search(role.title)
+        ][:10]
+        if not roles:
+            return ToolResult(
+                status="empty",
+                summary=(
+                    "Public roles were found, but none had enough verified CV overlap "
+                    "to rank as a suitable lead."
+                ),
+            )
         sources = [
             ToolSource(
-                label=f"Public role > {arguments.company} > {role.title}",
+                label=f"Public role > {company} > {role.title}",
                 url=role.canonical_apply_url,
                 text=(
                     f"Open role: {role.title}. Team: {role.team or 'not reported'}. "

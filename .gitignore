@@ -4,6 +4,7 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 .venv/
+.vercel/
 .env
 *.db
 *.db-shm
@@ -14,6 +15,7 @@ site/
 htmlcov/
 .coverage
 artifacts/runtime/
+.agents/
 .twin-linkedin-profile/
 # Agent scratch space, including checked-out worktrees under .claude/worktrees.
 .claude/
