@@ -338,9 +338,7 @@ def test_public_web_cannot_become_authority_for_a_claim_about_prathamesh(
         session_id = client.post("/api/sessions").json()["session_id"]
         response = client.post(
             f"/api/sessions/{session_id}/chat",
-            json={
-                "message": "Search the web: how many awards does Prathamesh have?"
-            },
+            json={"message": "Search the web: how many awards does Prathamesh have?"},
         )
 
     body = response.json()

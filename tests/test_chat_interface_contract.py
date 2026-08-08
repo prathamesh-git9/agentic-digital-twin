@@ -4,11 +4,7 @@ import re
 from pathlib import Path
 
 APP = (
-    Path(__file__).resolve().parents[1]
-    / "src"
-    / "digital_twin"
-    / "static"
-    / "app.js"
+    Path(__file__).resolve().parents[1] / "src" / "digital_twin" / "static" / "app.js"
 ).read_text(encoding="utf-8")
 
 
