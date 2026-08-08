@@ -34,6 +34,18 @@ class IdentityResponse(BaseModel):
     chat_ready: bool = True
 
 
+class CompanyOpportunityRequest(BaseModel):
+    company: str = Field(min_length=1, max_length=160)
+
+    @field_validator("company")
+    @classmethod
+    def trim_company(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("company must not be blank")
+        return value
+
+
 class ConfirmCandidateRequest(BaseModel):
     candidate_id: str = Field(min_length=6, max_length=64)
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import re
 from typing import Literal
 from urllib.parse import parse_qs, urljoin, urlparse
@@ -355,6 +356,79 @@ class OpenRoleService:
             )
         return RoleDiscoveryResult(
             board=selected_board,
+            roles=matches[:20],
+            status="ok",
+            reason=f"Ranked {len(matches)} public open roles against supplied evidence.",
+        )
+
+    async def discover_company(
+        self,
+        company: str,
+        *,
+        preferred_location: str = "Dublin, Ireland",
+    ) -> RoleDiscoveryResult:
+        """Probe exact public ATS slugs when web search is unavailable.
+
+        The probes are read-only public job-board endpoints. They run together,
+        independently degrade on failure, and a result is attributable to the
+        returned canonical posting URL. Removing common legal suffixes keeps a
+        visitor's natural company input (for example, ``Acme Ltd``) useful.
+        """
+        stem = re.sub(
+            r"\b(?:limited|ltd|incorporated|inc|llc|plc|corp(?:oration)?|company|co)\b.*$",
+            "",
+            company,
+            flags=re.I,
+        ).strip()
+        slug = re.sub(r"[^a-z0-9]+", "-", stem.casefold()).strip("-")
+        if not slug:
+            return RoleDiscoveryResult(
+                status="empty", reason="No attributable open role was observed."
+            )
+        boards = [
+            ATSBoard(
+                kind="greenhouse",
+                token=slug,
+                source_url=f"https://job-boards.greenhouse.io/{slug}",
+            ),
+            ATSBoard(
+                kind="lever",
+                token=slug,
+                source_url=f"https://jobs.lever.co/{slug}",
+            ),
+            ATSBoard(
+                kind="ashby",
+                token=slug,
+                source_url=f"https://jobs.ashbyhq.com/{slug}",
+            ),
+            ATSBoard(
+                kind="workable",
+                token=slug,
+                source_url=f"https://apply.workable.com/{slug}/",
+            ),
+            ATSBoard(
+                kind="recruitee",
+                token=slug,
+                source_url=f"https://{slug}.recruitee.com/",
+            ),
+        ]
+
+        async def probe(board: ATSBoard) -> tuple[ATSBoard, list[_RawRole]]:
+            try:
+                return board, await self.client.fetch(board)
+            except Exception:  # noqa: BLE001 - each public ATS is optional
+                return board, []
+
+        observed = await asyncio.gather(*(probe(board) for board in boards))
+        board, raw_roles = max(observed, key=lambda item: len(item[1]))
+        if not raw_roles:
+            return RoleDiscoveryResult(
+                status="empty", reason="No attributable open role was observed."
+            )
+        matches = [self._rank(role, preferred_location) for role in raw_roles]
+        matches.sort(key=lambda role: (-role.fit_score, role.title.casefold()))
+        return RoleDiscoveryResult(
+            board=board,
             roles=matches[:20],
             status="ok",
             reason=f"Ranked {len(matches)} public open roles against supplied evidence.",

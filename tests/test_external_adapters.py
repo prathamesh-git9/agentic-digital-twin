@@ -180,6 +180,58 @@ async def test_github_search_covers_readmes_and_returns_permalinks_keylessly() -
     assert hits[0].permalink.endswith("/effect-broker/blob/HEAD/README.md")
 
 
+async def test_openai_gpt5_chat_payload_uses_supported_tool_calling_controls() -> None:
+    evidence = EvidenceItem("CV > Skills > Languages", LANGUAGE_CLAIM)
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        payload = json.loads(request.content)
+        assert payload["model"] == "gpt-5.6-sol"
+        assert payload["reasoning_effort"] == "none"
+        assert payload["max_completion_tokens"] == 700
+        assert "temperature" not in payload
+        assert "max_tokens" not in payload
+        return httpx.Response(
+            200,
+            json={
+                "choices": [
+                    {
+                        "message": {
+                            "content": json.dumps(
+                                {
+                                    "claims": [
+                                        {
+                                            "text": LANGUAGE_CLAIM,
+                                            "source": evidence.source,
+                                        }
+                                    ],
+                                    "refusal": False,
+                                }
+                            )
+                        }
+                    }
+                ]
+            },
+        )
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        provider = OpenAICompatibleProvider(
+            base_url="https://api.openai.com/v1",
+            api_key="test-key",
+            model="gpt-5.6-sol",
+            client=client,
+        )
+        draft = await provider.generate(
+            GenerationRequest(
+                question="Which languages?",
+                context="Grounded test context",
+                evidence=[evidence],
+                confirmed_candidate=None,
+            )
+        )
+
+    assert draft.refusal is False
+
+
 async def test_openai_compatible_adapter_is_vendor_neutral_and_still_verified() -> None:
     evidence = EvidenceItem(
         "CV › Skills › Languages",

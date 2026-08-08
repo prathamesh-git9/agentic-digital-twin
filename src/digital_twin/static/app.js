@@ -35,6 +35,7 @@
   const state = {
     sessionId: null, events: null, candidates: [], active: null,
     drafts: [], busy: false, unread: 0, contact: null,
+    company: "",
     // The answer in flight: the tool events arrive on the session's SSE stream
     // and have to reach the turn that is waiting for them.
     pending: null,
@@ -79,17 +80,29 @@
   // answer endpoints: there it is the whole backend, here it is only the engine
   // behind the retrieval explorer.
   const engine = window.__TWIN_LOCAL__ || null;
-  const offline = engine && window.__TWIN_OFFLINE__ === true;
+  const apiBase = String(window.__TWIN_API_BASE__ || "").replace(/\/$/, "");
+  const offline = engine && window.__TWIN_OFFLINE__ === true && !apiBase;
 
   async function api(path, options = {}) {
     if (offline) {
       const local = await engine.handle(path, options);
       if (local !== undefined) return local;
     }
-    const res = await fetch(path, {
-      headers: options.body ? { "Content-Type": "application/json" } : undefined,
-      ...options,
-    });
+    let res;
+    try {
+      res = await fetch(`${apiBase}${path}`, {
+        headers: options.body ? { "Content-Type": "application/json" } : undefined,
+        ...options,
+      });
+    } catch (error) {
+      // The local corpus is an honest, useful fallback when the hosted API is
+      // unreachable. It cannot scan companies, but the core twin keeps working.
+      if (engine) {
+        const local = await engine.handle(path, options);
+        if (local !== undefined) return local;
+      }
+      throw error;
+    }
     if (!res.ok) {
       const d = await res.json().catch(() => ({}));
       throw new Error(d.detail || `Request failed (${res.status})`);
@@ -489,7 +502,7 @@
   /* ---------- events ---------- */
 
   function openEvents() {
-    const src = new EventSource(`/api/sessions/${state.sessionId}/events`);
+    const src = new EventSource(`${apiBase}/api/sessions/${state.sessionId}/events`);
     state.events = src;
 
     src.addEventListener("research", (e) => {
@@ -544,6 +557,21 @@
       if (state.drafts.length) note("Outreach draft ready");
     });
 
+    src.addEventListener("roles.ready", (e) => {
+      const p = JSON.parse(e.data);
+      const result = Object.values(p.roles || {}).find((row) => row?.roles?.length);
+      if (!result) return;
+      showOpportunities({
+        company: state.company || "this company",
+        status: result.status,
+        summary: result.reason,
+        roles: result.roles,
+        public_sources_only: true,
+        automatic_application: false,
+      });
+      note(`Ranked ${result.roles.length} public role(s)`);
+    });
+
     src.addEventListener("outreach.action", (e) => {
       const p = JSON.parse(e.data);
       if (p.status === "sent") note("Email sent");
@@ -555,33 +583,101 @@
 
   /* ---------- onboarding ---------- */
 
+  function dismissOnboarding() {
+    el.onboarding.hidden = true;
+    // Moving focus is required because hidden controls otherwise keep keyboard
+    // focus, making the first post-onboarding Tab jump unpredictable.
+    el.input.focus({ preventScroll: true });
+  }
+
   el.identityForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     const name = el.visitorName.value.trim();
     const company = el.visitorCompany.value.trim();
-    el.onboarding.hidden = true;
-    if (!name) return;
-    try {
-      await api(`/api/sessions/${state.sessionId}/identity`, {
+    state.company = company;
+    dismissOnboarding();
+    const identity = name
+      ? api(`/api/sessions/${state.sessionId}/identity`, {
         method: "POST", body: JSON.stringify({ name, company: company || null }),
-      });
-    } catch (err) { toast(err.message); }
+      })
+      : api(`/api/sessions/${state.sessionId}/skip`, { method: "POST" });
+    const radar = company ? scanCompanyRoles(company) : Promise.resolve();
+    const settled = await Promise.allSettled([identity, radar]);
+    const failed = settled.find((item) => item.status === "rejected");
+    if (failed) toast(failed.reason?.message || "One optional lookup was unavailable.");
   });
 
   el.skipButton.addEventListener("click", async () => {
-    el.onboarding.hidden = true;
+    dismissOnboarding();
     try { await api(`/api/sessions/${state.sessionId}/skip`, { method: "POST" }); } catch {}
   });
 
   /* ---------- drawer ---------- */
 
+  let drawerReturnFocus = null;
+
   function openDrawer(title, html) {
+    if (el.drawer.hidden) drawerReturnFocus = document.activeElement;
     el.drawerTitle.textContent = title;
     el.drawerBody.innerHTML = html;
     el.drawer.hidden = false;
+    requestAnimationFrame(() => el.drawerClose.focus({ preventScroll: true }));
   }
-  el.drawerClose.addEventListener("click", () => (el.drawer.hidden = true));
-  el.drawer.addEventListener("click", (e) => { if (e.target === el.drawer) el.drawer.hidden = true; });
+  function closeDrawer() {
+    if (el.drawer.hidden) return;
+    el.drawer.hidden = true;
+    if (drawerReturnFocus?.isConnected) {
+      drawerReturnFocus.focus({ preventScroll: true });
+    }
+    drawerReturnFocus = null;
+  }
+
+  function roleMarkup(role) {
+    const evidence = (role.evidence || []).slice(0, 2);
+    const place = [role.team, role.location].filter(Boolean).join(" · ");
+    return `
+      <article class="opportunity">
+        <div class="opportunity-head">
+          <div><h3>${esc(role.title)}</h3>${place ? `<p>${esc(place)}</p>` : ""}</div>
+          <strong aria-label="Evidence fit ${esc(role.fit_score)} percent">${esc(role.fit_score)}%</strong>
+        </div>
+        ${evidence.length ? `<ul>${evidence.map((item) =>
+          `<li><span>${esc(item.signal)}</span>${esc(item.evidence)}</li>`).join("")}</ul>` : ""}
+        <div class="opportunity-foot">
+          <span>${esc(String(role.ats || "careers page").replaceAll("_", " "))}</span>
+          <a class="btn" href="${esc(role.canonical_apply_url)}" target="_blank" rel="noopener noreferrer">View original role ↗</a>
+        </div>
+      </article>`;
+  }
+
+  function showOpportunities(result) {
+    const roles = result.roles || [];
+    const company = result.company || state.company || "the company";
+    if (!roles.length) {
+      openDrawer("Opportunity radar", `
+        <p class="over-lede">${esc(result.summary || `No attributable public engineering roles were found at ${company}.`)}</p>
+        <p class="radar-note">Public sources only. No application was made.</p>`);
+      return;
+    }
+    openDrawer("Opportunity radar", `
+      <p class="over-lede">${esc(company)} · ${roles.length} public role${roles.length === 1 ? "" : "s"}, ranked against Prathamesh's verified CV evidence.</p>
+      <div class="opportunity-list">${roles.map(roleMarkup).join("")}</div>
+      <p class="radar-note">Fit scores are evidence coverage, not a hiring prediction. Public sources only; no application was made.</p>`);
+  }
+
+  async function scanCompanyRoles(company) {
+    openDrawer("Opportunity radar", `
+      <div class="radar-loading" role="status"><i></i><div><strong>Scanning ${esc(company)}</strong><p>Finding the public careers page, detecting its ATS and ranking relevant roles…</p></div></div>`);
+    const result = await api(`/api/sessions/${state.sessionId}/opportunities`, {
+      method: "POST", body: JSON.stringify({ company }),
+    });
+    showOpportunities(result);
+    return result;
+  }
+  el.drawerClose.addEventListener("click", closeDrawer);
+  el.drawer.addEventListener("click", (e) => {
+    if (e.target === el.drawer || e.target.dataset.close !== undefined) closeDrawer();
+  });
 
   // Optional: in the current layout Work is a section link, not a drawer
   // trigger, so this button may not exist.
@@ -704,7 +800,7 @@
   document.addEventListener("keydown", (e) => {
     if (e.key !== "Escape") return;
     contactSheet.hidden = true;
-    el.drawer.hidden = true;
+    closeDrawer();
     el.feed.hidden = true;
   });
 

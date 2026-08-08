@@ -42,6 +42,7 @@ jobs:
           # Ten repositories cost twenty API calls, a third of the
           # unauthenticated hourly allowance.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TWIN_PUBLIC_API_URL: ${{ vars.TWIN_PUBLIC_API_URL }}
         run: python scripts/build_static.py --out site
 
       # gh-pages holds generated output only, so each build replaces it whole

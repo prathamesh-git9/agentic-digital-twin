@@ -76,6 +76,7 @@ from .schemas import (
     BounceRequest,
     ChatRequest,
     ChatResponse,
+    CompanyOpportunityRequest,
     ConfirmCandidateRequest,
     ConfirmCandidateResponse,
     CRMStageRequest,
@@ -103,7 +104,7 @@ from .security import (
 )
 from .services import ChatService, JobFitAnalyzer
 from .supplemental import GitHubOrganizationSource, HackerNewsAlgoliaSource, RSSAtomReader
-from .tooling import ToolRegistry
+from .tooling import ToolCall, ToolRegistry
 
 STATIC_DIR = Path(__file__).parent / "static"
 GREETING = (
@@ -1004,6 +1005,58 @@ def create_app(
                 for candidate_id, result in role_results.get(session_id, {}).items()
             }
         }
+
+    @app.post("/api/sessions/{session_id}/opportunities")
+    async def company_opportunities(
+        session_id: str,
+        payload: CompanyOpportunityRequest,
+        request: Request,
+    ) -> dict[str, Any]:
+        """Rank attributable public roles without researching the visitor.
+
+        Company-only onboarding must remain useful and private: this calls the
+        bounded open_roles tool directly, never turns the visitor's company into
+        evidence about Prathamesh, and never applies to a role.
+        """
+        visit = require_visit(session_id)
+        enforce_rate(request, session_id)
+        company = sanitize_external_text(payload.company, max_length=160).strip()
+        if not company:
+            raise HTTPException(status_code=422, detail="Enter a company name")
+        database.update_visit(session_id, visitor_company=company)
+        result, duration_ms = await tools.execute(
+            session_id,
+            ToolCall(
+                id=f"opportunities-{session_id[:12]}",
+                name="open_roles",
+                arguments={"company": company},
+            ),
+            available_seconds=settings.tool_wall_clock_seconds,
+        )
+        response = {
+            "company": company,
+            "status": result.status,
+            "summary": result.summary,
+            "roles": result.data.get("roles", []),
+            "sources": [row.model_dump(mode="json") for row in result.sources],
+            "duration_ms": duration_ms,
+            "public_sources_only": True,
+            "automatic_application": False,
+        }
+        await events.publish(
+            session_id,
+            {"type": "opportunities.ready", **response},
+            retain=False,
+        )
+        notify_later(
+            "opportunities_scanned",
+            {
+                "visitor_name": visit.visitor_name,
+                "company": company,
+                "role_count": len(response["roles"]),
+            },
+        )
+        return response
 
     @app.get("/api/sessions/{session_id}/outreach")
     async def session_outreach(session_id: str) -> dict[str, Any]:

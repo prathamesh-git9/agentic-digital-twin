@@ -23,6 +23,7 @@ import sys
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
@@ -164,6 +165,23 @@ def _llms_txt(corpus: ProfileCorpus, data: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def _public_api_base() -> str:
+    raw = os.environ.get("TWIN_PUBLIC_API_URL", "").strip().rstrip("/")
+    if not raw:
+        return ""
+    parsed = urlparse(raw)
+    if (
+        parsed.scheme != "https"
+        or not parsed.netloc
+        or parsed.username
+        or parsed.password
+        or parsed.query
+        or parsed.fragment
+    ):
+        raise SystemExit("TWIN_PUBLIC_API_URL must be a clean HTTPS origin")
+    return raw
+
+
 def _rewrite_shell(html: str) -> str:
     """Point the shell at sibling files and boot the offline engine before the app.
 
@@ -172,11 +190,17 @@ def _rewrite_shell(html: str) -> str:
     """
     html = html.replace('href="/static/', 'href="./').replace('src="/static/', 'src="./')
     html = html.replace('<a class="bar-left" href="/">', '<a class="bar-left" href="./">')
-    # Both builds load twin-local.js; only this one lets it answer endpoints.
+    # The GitHub Pages shell can use a secure API deployed from this repository.
+    # Without one it keeps the zero-dependency local retrieval engine as a full
+    # fallback, so a provider outage never turns the portfolio into a dead page.
+    api_base = _public_api_base()
+    boot_config = (
+        f"window.__TWIN_API_BASE__ = {json.dumps(api_base)}; "
+        f"window.__TWIN_OFFLINE__ = {'false' if api_base else 'true'};"
+    )
     replaced = html.replace(
         '<script src="./twin-local.js',
-        "<script>window.__TWIN_OFFLINE__ = true;</script>\n"
-        '    <script src="./twin-local.js',
+        f'<script>{boot_config}</script>\n    <script src="./twin-local.js',
         1,
     )
     if replaced == html:

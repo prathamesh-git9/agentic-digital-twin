@@ -81,6 +81,44 @@ async def test_greenhouse_roles_are_real_urls_and_ranked_against_profile_evidenc
     assert any(item.signal == "skills" for item in result.roles[0].evidence)
 
 
+async def test_direct_company_probe_survives_missing_search_results() -> None:
+    payload = {
+        "jobs": [
+            {
+                "id": 4242,
+                "title": "Backend Python Engineer",
+                "location": {"name": "Dublin, Ireland"},
+                "absolute_url": "https://boards.greenhouse.io/acme/jobs/4242",
+                "content": "Build Python REST APIs with Docker and SQL.",
+                "departments": [{"name": "Platform"}],
+            }
+        ]
+    }
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        if (
+            request.url.host == "boards-api.greenhouse.io"
+            and "/acme/" in request.url.path
+        ):
+            return httpx.Response(200, content=json.dumps(payload), request=request)
+        return httpx.Response(404, request=request)
+
+    client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    try:
+        service = OpenRoleService(
+            ProfileCorpus(ROOT / "data" / "profile.yaml"),
+            client=PublicATSClient(client=client),
+        )
+        result = await service.discover_company("Acme Ltd")
+    finally:
+        await client.aclose()
+
+    assert result.status == "ok"
+    assert result.board is not None
+    assert result.board.kind == "greenhouse"
+    assert [role.title for role in result.roles] == ["Backend Python Engineer"]
+
+
 async def test_careers_page_fallback_omits_non_job_links() -> None:
     async def not_found(request: httpx.Request) -> httpx.Response:
         return httpx.Response(404, request=request)
