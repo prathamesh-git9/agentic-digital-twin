@@ -35,7 +35,7 @@
   const state = {
     sessionId: null, events: null, candidates: [], active: null,
     drafts: [], busy: false, unread: 0, contact: null,
-    company: "",
+    company: "", transport: "remote",
     // The answer in flight: the tool events arrive on the session's SSE stream
     // and have to reach the turn that is waiting for them.
     pending: null,
@@ -82,19 +82,34 @@
   const engine = window.__TWIN_LOCAL__ || null;
   const apiBase = String(window.__TWIN_API_BASE__ || "").replace(/\/$/, "");
   const offline = engine && window.__TWIN_OFFLINE__ === true && !apiBase;
+  state.transport = offline ? "local" : "remote";
+
+  async function remoteApi(path, options = {}) {
+    const res = await fetch(`${apiBase}${path}`, {
+      headers: options.body ? { "Content-Type": "application/json" } : undefined,
+      ...options,
+    });
+    if (!res.ok) {
+      const detail = await res.json().catch(() => ({}));
+      const error = new Error(detail.detail || `Request failed (${res.status})`);
+      error.httpStatus = res.status;
+      throw error;
+    }
+    return res.status === 204 ? null : res.json();
+  }
 
   async function api(path, options = {}) {
-    if (offline) {
+    if (state.transport === "local") {
       const local = await engine.handle(path, options);
       if (local !== undefined) return local;
+      throw new Error("Live research tools are still connecting. Try again shortly.");
     }
-    let res;
     try {
-      res = await fetch(`${apiBase}${path}`, {
-        headers: options.body ? { "Content-Type": "application/json" } : undefined,
-        ...options,
-      });
+      return await remoteApi(path, options);
     } catch (error) {
+      // A typed API rejection (validation, rate limit, budget) is authoritative;
+      // the local fallback must not turn it into an unlimited successful request.
+      if (error.httpStatus) throw error;
       // The local corpus is an honest, useful fallback when the hosted API is
       // unreachable. It cannot scan companies, but the core twin keeps working.
       if (engine) {
@@ -103,11 +118,6 @@
       }
       throw error;
     }
-    if (!res.ok) {
-      const d = await res.json().catch(() => ({}));
-      throw new Error(d.detail || `Request failed (${res.status})`);
-    }
-    return res.status === 204 ? null : res.json();
   }
 
   /* ---------- activity feed ---------- */
@@ -374,7 +384,10 @@
     // "end" threw the page down past the conversation into the sections below,
     // so the answer landed above the fold and the chat looked like it had done
     // nothing at all.
-    div.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    div.scrollIntoView({
+      behavior: "smooth",
+      block: matchMedia("(max-width: 700px)").matches ? "start" : "nearest",
+    });
     return div;
   }
 
@@ -382,6 +395,8 @@
     if (!text.trim() || state.busy || !state.sessionId) return;
     state.busy = true;
     el.send.disabled = true;
+    el.composer.setAttribute("aria-busy", "true");
+    el.starters.inert = true;
     if (el.intro) el.intro.hidden = true;
     turn("you", text);
     el.input.value = "";
@@ -392,7 +407,7 @@
     const slot = pending.querySelector(".text");
     slot.innerHTML =
       '<span class="waiting"><span class="typing"><i></i><i></i><i></i></span>' +
-      '<span class="waiting-label">Retrieving evidence from his CV and repositories…</span>' +
+      '<span class="waiting-label">Finding the strongest evidence…</span>' +
       '<span class="waiting-clock">0s</span></span>' +
       '<ol class="steps live"></ol>';
     const startedAt = Date.now();
@@ -407,8 +422,9 @@
       // Once real tool events are arriving they say what is happening; the timed
       // copy is only the fallback for the retrieval-only path.
       if (state.pending?.tooled) return;
-      if (elapsed === 4) label.textContent = "Drafting a grounded answer…";
-      if (elapsed === 12) label.textContent = "Still working. Verifying every claim…";
+      if (elapsed === 3) label.textContent = "Drafting a grounded answer…";
+      if (elapsed === 8) label.textContent = "Verifying every claim…";
+      if (elapsed === 18) label.textContent = "The live model is taking longer than usual…";
     }, 1000);
 
     /*
@@ -419,7 +435,7 @@
       wall-clock is well under this, so anything past it is genuinely stuck.
     */
     const controller = new AbortController();
-    const deadline = setTimeout(() => controller.abort(), 75_000);
+    const deadline = setTimeout(() => controller.abort(), 32_000);
     try {
       const r = await api(`/api/sessions/${state.sessionId}/chat`, {
         method: "POST", body: JSON.stringify({ message: text }),
@@ -442,6 +458,8 @@
       state.pending = null;
       state.busy = false;
       el.send.disabled = false;
+      el.composer.removeAttribute("aria-busy");
+      el.starters.inert = false;
       // preventScroll matters: refocusing the composer otherwise drags the
       // viewport down to it, past the answer that just arrived.
       el.input.focus({ preventScroll: true });
@@ -1160,6 +1178,55 @@
 
   /* ---------- boot ---------- */
 
+  const BOOT_SOFT_DEADLINE_MS = 2400;
+
+  const wait = (milliseconds) => new Promise((resolve) => {
+    setTimeout(resolve, milliseconds);
+  });
+
+  async function bootstrapSession() {
+    if (offline || !apiBase || !engine) {
+      return {
+        start: await api("/api/bootstrap", { method: "POST", body: "{}" }),
+        mode: state.transport,
+      };
+    }
+
+    // A sleeping free service must not turn the entire first screen into a
+    // spinner. After a short grace period, boot the evidence-only local twin
+    // while the live model continues warming in the background.
+    const remote = remoteApi("/api/bootstrap", { method: "POST", body: "{}" });
+    const first = await Promise.race([
+      remote.then(
+        (start) => ({ kind: "remote", start }),
+        (error) => ({ kind: "error", error }),
+      ),
+      wait(BOOT_SOFT_DEADLINE_MS).then(() => ({ kind: "slow" })),
+    ]);
+    if (first.kind === "remote") {
+      state.transport = "remote";
+      return { start: first.start, mode: "remote" };
+    }
+
+    const start = await engine.handle(
+      "/api/bootstrap", { method: "POST", body: "{}" },
+    );
+    state.transport = "local";
+    return {
+      start,
+      mode: "local",
+      deferredRemote: first.kind === "slow" ? remote : null,
+    };
+  }
+
+  function showModel(start) {
+    const model = start.health?.model;
+    if (!model) return;
+    el.modelNote.textContent = model;
+    const railModel = $("#rail-model");
+    if (railModel) railModel.textContent = model;
+  }
+
   (async function boot() {
     // Nothing here needs the network, so it must not wait behind it.
     stagger(".timeline .reveal", 80);
@@ -1167,20 +1234,17 @@
     armRetrieval();
 
     let start;
+    let boot;
     try {
-      start = await api("/api/bootstrap", { method: "POST", body: "{}" });
+      boot = await bootstrapSession();
+      start = boot.start;
     } catch (e) {
       turn("twin", `Couldn't start a session: ${e.message}`);
       el.contactLink?.remove();
       return;
     }
 
-    const model = start.health?.model;
-    if (model) {
-      el.modelNote.textContent = model;
-      const railModel = $("#rail-model");
-      if (railModel) railModel.textContent = model;
-    }
+    showModel(start);
 
     state.contact = start.contact || null;
     // Optional: contact now lives in the slide-over, so the inline link may not
@@ -1194,7 +1258,7 @@
     state.sessionId = start.session.session_id;
     // No greeting turn: the opening line above the input already says what the
     // twin is and what it can be asked, and repeating it reads as a bug.
-    if (!offline) {
+    if (boot.mode === "remote") {
       openEvents();
       el.onboarding.hidden = false;
       el.visitorName.focus();
@@ -1209,5 +1273,19 @@
     // GitHub warm; otherwise held until the section is nearly in view.
     if (start.repositories) renderWorkCards(start.repositories);
     else armWorkCards();
+
+    if (boot.deferredRemote) {
+      boot.deferredRemote.then((remoteStart) => {
+        if (!remoteStart?.session?.session_id) return;
+        state.transport = "remote";
+        state.sessionId = remoteStart.session.session_id;
+        state.contact = remoteStart.contact || state.contact;
+        showModel(remoteStart);
+        openEvents();
+        toast("Live AI connected.");
+      }).catch(() => {
+        // The local evidence engine remains a complete grounded chat fallback.
+      });
+    }
   })();
 })();

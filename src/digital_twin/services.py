@@ -42,6 +42,15 @@ GITHUB_QUERY = re.compile(
     r"reachable|trustdesk)\b",
     re.I,
 )
+TOOL_AUGMENT_QUERY = re.compile(
+    r"\b(?:github|repositor(?:y|ies)|repo|commit|pull request|source code|"
+    r"web|website|search|research|latest|recent|news|company|careers?|"
+    r"jobs?|roles?|openings?|vacanc(?:y|ies)|ats)\b"
+    r"|\b(?:effect-broker|agent-runtime|effect-browser|agent-redteam|"
+    r"answer-engine|agent-mesh|llm-gateway|promise-ledger|reachable|"
+    r"trustdesk)\b",
+    re.I,
+)
 CONTRACTUAL_QUERY = re.compile(
     r"\b(?:salary|compensation|pay|offer|accept|contract|start date|joining date|"
     r"notice period|negotiate)\b",
@@ -79,6 +88,21 @@ class ChatService:
         )
         self.assembler = ContextAssembler()
         self.verifier = GroundingVerifier()
+
+    def uses_agent_tools(self, question: str) -> bool:
+        """Return whether this question can benefit from live external tools.
+
+        Most recruiter questions are already answerable from the indexed CV. Sending
+        every tool schema for those questions increases prompt size and model latency
+        without adding evidence. Live repository, company, web and role questions
+        still take the bounded agent path; both paths pass through the same verifier.
+        """
+
+        return bool(
+            self.agent is not None
+            and self.agent.enabled
+            and TOOL_AUGMENT_QUERY.search(question)
+        )
 
     async def answer(
         self,
@@ -168,7 +192,7 @@ class ChatService:
         request = GenerationRequest(question, context, evidence, confirmed)
         trace: list[ToolTrace] = []
         extra_token_usage = 0
-        if self.agent is not None and self.agent.enabled:
+        if self.uses_agent_tools(question):
             outcome = await self.agent.run(
                 session_id=visit.id,
                 request=request,

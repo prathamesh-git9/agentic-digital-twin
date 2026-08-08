@@ -1256,18 +1256,18 @@ div.dock-note { display: flex; align-items: baseline; justify-content: space-bet
 :root {
   --g-blur: blur(30px) saturate(180%);
   --g-blur-soft: blur(18px) saturate(150%);
-  --g-fill: rgba(255, 255, 255, .58);
-  --g-fill-heavy: rgba(255, 255, 255, .86);
-  --g-fill-bar: rgba(255, 255, 255, .93);
-  --g-edge: rgba(255, 255, 255, .8);
+  --g-fill: rgba(246, 251, 255, .42);
+  --g-fill-heavy: rgba(246, 251, 255, .68);
+  --g-fill-bar: rgba(246, 251, 255, .78);
+  --g-edge: rgba(255, 255, 255, .68);
   --g-spec: linear-gradient(152deg, rgba(255, 255, 255, .85), rgba(255, 255, 255, .12) 40%, transparent 66%);
   --g-shadow: 0 1px 2px rgba(20, 70, 140, .05), 0 10px 28px rgba(20, 70, 140, .10);
   --g-shadow-lift: 0 2px 5px rgba(20, 70, 140, .07), 0 20px 46px rgba(20, 70, 140, .16);
 }
 html[data-theme="dark"] {
-  --g-fill: rgba(22, 40, 62, .55);
-  --g-fill-heavy: rgba(11, 22, 36, .88);
-  --g-fill-bar: rgba(8, 16, 27, .94);
+  --g-fill: rgba(22, 40, 62, .46);
+  --g-fill-heavy: rgba(11, 22, 36, .72);
+  --g-fill-bar: rgba(8, 16, 27, .82);
   --g-edge: rgba(150, 195, 245, .18);
   --g-spec: linear-gradient(152deg, rgba(180, 215, 255, .16), rgba(180, 215, 255, .03) 42%, transparent 68%);
   --g-shadow: 0 1px 2px rgba(0, 0, 0, .34), 0 12px 32px rgba(0, 0, 0, .42);
@@ -1715,6 +1715,69 @@ html[data-theme="dark"] {
 @media (prefers-reduced-motion: reduce) {
   .tile, .suggestions button, .card, .person, #composer { transition: none; }
   .tile:hover, .suggestions button:hover, .card:hover, #composer:focus-within { transform: none; }
+}
+
+/* =====================================================================
+   CHAT SURFACE CONTRACT
+
+   The conversation is the product. Its controls use one liquid-glass recipe,
+   and phones keep the dock in normal flow so no answer can ever be painted
+   underneath the composer or erased by a white veil.
+   ===================================================================== */
+
+#composer,
+.turn.you .text,
+.modal-card {
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, .28), rgba(255, 255, 255, .04) 58%),
+    var(--g-fill-heavy);
+}
+
+.modal {
+  background: rgba(14, 30, 48, .28);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+}
+
+.modal-card input,
+.jd-form textarea,
+.retrieval-form input {
+  background: color-mix(in srgb, var(--g-fill-heavy) 84%, transparent);
+  backdrop-filter: var(--g-blur-soft);
+  -webkit-backdrop-filter: var(--g-blur-soft);
+  border-color: var(--g-edge);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .55);
+}
+
+.send {
+  background: linear-gradient(155deg, #2f8df0, #0b5fc4 72%);
+  border-radius: 14px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .34), 0 8px 20px rgba(18, 102, 194, .24);
+}
+.send:hover { background: linear-gradient(155deg, #3998fa, #0964ce 72%); }
+
+.waiting { flex-wrap: wrap; }
+.waiting-label { color: var(--ink-2); }
+#composer[aria-busy="true"] { border-color: color-mix(in srgb, var(--clay) 58%, var(--g-edge)); }
+
+@media (max-width: 700px) {
+  /* Sticky bottom glass is attractive only until it covers the answer. In a
+     narrow viewport the composer follows the thread in flow, so every line is
+     readable and the next action remains immediately after the response. */
+  body.has-thread .dock {
+    position: relative;
+    bottom: auto;
+    margin-top: 22px;
+    padding: 0 0 12px;
+  }
+  body.has-thread .dock::before,
+  .thread:not(:empty) ~ .dock::before {
+    display: none;
+  }
+  .thread { padding-bottom: 0; }
+  .turn { scroll-margin-top: calc(var(--bar-h) + 14px); scroll-margin-bottom: 20px; }
+  #composer { border-radius: 22px; }
+  .modal-card { padding: 26px 22px; border-radius: 28px; }
 }
 
 /* =====================================================================

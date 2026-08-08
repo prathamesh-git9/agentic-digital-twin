@@ -19,7 +19,8 @@ def test_render_blueprint_keeps_model_key_out_of_source() -> None:
     assert service["startCommand"].endswith("--port $PORT")
     assert variables["TWIN_PROVIDER"]["value"] == "openai-compatible"
     assert variables["TWIN_LLM_BASE_URL"]["value"] == "https://api.openai.com/v1"
-    assert variables["TWIN_LLM_MODEL"]["value"] == "gpt-5.6-sol"
+    assert variables["TWIN_LLM_MODEL"]["value"] == "gpt-5.6-luna"
+    assert variables["TWIN_MAX_OUTPUT_TOKENS"]["value"] == "500"
     assert variables["TWIN_TOOL_TIMEOUT_SECONDS"]["value"] == "25"
     assert variables["TWIN_LLM_API_KEY"] == {
         "key": "TWIN_LLM_API_KEY",

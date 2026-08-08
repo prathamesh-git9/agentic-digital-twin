@@ -1363,9 +1363,7 @@ def create_app(
             approximate_tokens(item.content) for item in history
         )
         provider_turns = (
-            settings.tool_max_iterations + 1
-            if chat.agent is not None and chat.agent.enabled
-            else 1
+            settings.tool_max_iterations + 1 if chat.uses_agent_tools(message) else 1
         )
         estimated += settings.max_output_tokens * provider_turns
         if visit.token_usage + estimated > settings.token_budget_per_session:
