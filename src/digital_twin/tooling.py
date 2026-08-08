@@ -574,12 +574,22 @@ class ToolRegistry:
 
     async def _open_roles(self, value: BaseModel) -> ToolResult:
         arguments = OpenRolesArgs.model_validate(value)
-        company, direct = await asyncio.gather(
-            self.research.research_company(arguments.company),
-            self.roles.discover_company(arguments.company),
+        # Start web research as a fallback, but do not make a successful exact
+        # public ATS probe wait for it. Production search can be much slower
+        # than Greenhouse/Lever/Ashby and previously consumed the whole tool
+        # deadline even after real roles had already arrived.
+        company_task = asyncio.create_task(
+            self.research.research_company(arguments.company)
         )
-        if direct.status == "ok":
-            return self._role_result(arguments.company, direct)
+        try:
+            direct = await self.roles.discover_company(arguments.company)
+            if direct.status == "ok":
+                return self._role_result(arguments.company, direct)
+            company = await company_task
+        finally:
+            if not company_task.done():
+                company_task.cancel()
+            await asyncio.gather(company_task, return_exceptions=True)
         careers = company.dossier.careers_page
         if careers is None:
             return ToolResult(

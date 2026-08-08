@@ -27,7 +27,7 @@ services:
       - key: TWIN_SEARCH_PROVIDER
         value: duckduckgo
       - key: TWIN_TOOL_TIMEOUT_SECONDS
-        value: "15"
+        value: "25"
       - key: TWIN_TOOL_WALL_CLOCK_SECONDS
         value: "25"
       - key: TWIN_MAX_SESSIONS_PER_IP_HOUR
