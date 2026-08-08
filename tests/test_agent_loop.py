@@ -59,10 +59,12 @@ class ToolThenAnswerProvider:
         self.final = final or cv_answer()
         self.always_tool = always_tool
         self.calls = 0
+        self.generate_calls = 0
         self.continuations: list[list[dict[str, Any]]] = []
         self.tool_sets: list[list[dict[str, Any]]] = []
 
     async def generate(self, request: GenerationRequest) -> DraftAnswer:
+        self.generate_calls += 1
         return self.final
 
     async def generate_turn(
@@ -96,8 +98,33 @@ def cv_answer() -> DraftAnswer:
 def ask_languages(client: TestClient, session_id: str) -> httpx.Response:
     return client.post(
         f"/api/sessions/{session_id}/chat",
-        json={"message": "Which programming languages does he use?"},
+        json={
+            "message": (
+                "Search the web for Acme and compare it with the programming "
+                "languages he uses."
+            )
+        },
     )
+
+
+def test_simple_profile_question_uses_the_fast_path_without_tool_schemas(
+    app_factory: Callable[..., FastAPI],
+) -> None:
+    provider = ToolThenAnswerProvider()
+    with TestClient(app_factory(answer_provider=provider)) as client:
+        session_id = client.post("/api/sessions").json()["session_id"]
+        response = client.post(
+            f"/api/sessions/{session_id}/chat",
+            json={"message": "Which programming languages does he use?"},
+        )
+
+    body = response.json()
+    assert response.status_code == 200
+    assert provider.generate_calls == 1
+    assert provider.calls == 0
+    assert provider.tool_sets == []
+    assert body["trace"] == []
+    assert body["grounded"] is True
 
 
 def test_loop_stops_at_iteration_ceiling_then_forces_a_final_draft(
@@ -245,7 +272,7 @@ def test_unsupported_tool_claim_never_reaches_the_visitor(
         session_id = client.post("/api/sessions").json()["session_id"]
         response = client.post(
             f"/api/sessions/{session_id}/chat",
-            json={"message": "How many customers does Acme have?"},
+            json={"message": "Search the web: how many customers does Acme have?"},
         )
 
     body = response.json()
@@ -275,7 +302,7 @@ def test_supported_external_tool_fact_is_accepted_with_its_real_source(
         session_id = client.post("/api/sessions").json()["session_id"]
         response = client.post(
             f"/api/sessions/{session_id}/chat",
-            json={"message": "What does Acme say about its platform?"},
+            json={"message": "Search the web: what does Acme say about its platform?"},
         )
 
     body = response.json()
@@ -311,7 +338,7 @@ def test_public_web_cannot_become_authority_for_a_claim_about_prathamesh(
         session_id = client.post("/api/sessions").json()["session_id"]
         response = client.post(
             f"/api/sessions/{session_id}/chat",
-            json={"message": "How many awards does Prathamesh have?"},
+            json={"message": "Search the web: how many awards does Prathamesh have?"},
         )
 
     body = response.json()

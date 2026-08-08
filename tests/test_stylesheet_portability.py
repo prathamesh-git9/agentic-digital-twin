@@ -53,3 +53,14 @@ def test_the_check_can_actually_find_a_declaration() -> None:
     """Guard the guard: a broken regex would make the test above pass vacuously."""
 
     assert len(_declarations("backdrop-filter")) >= 20
+
+
+def test_heavy_glass_does_not_regress_into_an_opaque_white_box() -> None:
+    values = re.findall(r"--g-fill-heavy:\s*rgba\([^)]*,\s*([0-9.]+)\)", CSS)
+    assert values
+    assert float(values[0]) <= 0.7
+
+
+def test_mobile_chat_dock_stays_in_flow_and_has_no_veil() -> None:
+    assert "body.has-thread .dock {\n    position: relative;" in CSS
+    assert ".thread:not(:empty) ~ .dock::before {\n    display: none;" in CSS
