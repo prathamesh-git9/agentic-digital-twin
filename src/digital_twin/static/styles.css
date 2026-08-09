@@ -1992,3 +1992,215 @@ html[data-theme="dark"] .infra-component {
 @media (prefers-reduced-motion: reduce) {
   .infra-link, .infra-component { animation: none; }
 }
+
+/* =====================================================================
+   UI REPAIR CONTRACT
+
+   Decorative architecture must live in layout, never over it. This final
+   layer replaces the removed free-floating nodes with a contained agent
+   roster, keeps the infrastructure motif quiet below the fold, and gives
+   every glass surface the same material recipe.
+   ===================================================================== */
+
+.agent-showcase {
+  display: flex; align-items: center; gap: 14px; min-width: 0;
+  margin-bottom: clamp(18px, 2.6vh, 28px); padding: 9px 10px 9px 14px;
+  border: 1px solid rgba(255, 255, 255, .78); border-radius: 22px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, .62), rgba(255, 255, 255, .12) 48%, transparent),
+    var(--g-fill);
+  -webkit-backdrop-filter: blur(24px) saturate(1.65);
+  backdrop-filter: blur(24px) saturate(1.65);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .92),
+    inset 0 -1px 0 rgba(78, 137, 198, .1),
+    0 18px 45px -30px rgba(19, 70, 132, .5);
+}
+html[data-theme="dark"] .agent-showcase {
+  border-color: var(--g-edge);
+  background:
+    linear-gradient(135deg, rgba(136, 194, 245, .13), transparent 52%),
+    var(--g-fill-heavy);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08), 0 22px 48px -28px rgba(0, 0, 0, .75);
+}
+.agent-showcase-copy { flex: 0 0 116px; display: flex; flex-direction: column; gap: 4px; padding-left: 2px; }
+.agent-showcase-copy > span {
+  display: flex; align-items: center; gap: 7px; color: var(--ink-3);
+  font: 500 8.5px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase;
+}
+.agent-showcase-copy > span i {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--ok);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--ok) 13%, transparent);
+}
+.agent-showcase-copy strong { font-size: 12px; line-height: 1.3; letter-spacing: -.01em; }
+
+.agent-roster { flex: 1; min-width: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
+.agent-pill {
+  position: relative; min-width: 0; display: flex; align-items: center; gap: 8px;
+  padding: 7px 8px; overflow: hidden; border: 1px solid var(--infra-edge); border-radius: 15px;
+  background: color-mix(in srgb, var(--g-fill-heavy) 72%, transparent);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .52);
+}
+.agent-pill::after {
+  content: ""; position: absolute; right: 7px; top: 7px; width: 4px; height: 4px;
+  border-radius: 50%; background: var(--ok); opacity: .75;
+}
+.agent-pill > span:last-child { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.agent-pill > span:last-child > b {
+  overflow: hidden; color: var(--ink); font: 600 10px/1.15 var(--mono);
+  text-overflow: ellipsis; white-space: nowrap;
+}
+.agent-pill small {
+  overflow: hidden; color: var(--ink-3); font: 400 8.5px/1.2 var(--mono);
+  text-overflow: ellipsis; white-space: nowrap;
+}
+.agent-avatar {
+  position: relative; flex: 0 0 36px; width: 36px; height: 36px; display: grid; place-items: center;
+  border: 1px solid color-mix(in srgb, currentColor 26%, transparent); border-radius: 12px;
+  animation: agent-hover 4.2s var(--ease) infinite;
+}
+
+/* Original bot glyphs: recognisable tool colours, without copying vendor marks. */
+.claude-bot { color: #9b4d12; background: linear-gradient(145deg, #ffc273, #ed7c29); }
+.bot-antenna {
+  position: absolute; left: 17px; top: -5px; width: 2px; height: 8px;
+  border-radius: 2px; background: currentColor; transform-origin: 50% 100%; animation: antenna-wave 2.8s ease-in-out infinite;
+}
+.bot-antenna::before {
+  content: ""; position: absolute; left: -2px; top: -2px; width: 6px; height: 6px;
+  border-radius: 50%; background: #fff4e1; box-shadow: 0 0 0 4px rgba(255, 244, 225, .18);
+}
+.bot-face {
+  width: 23px; height: 17px; display: flex; align-items: center; justify-content: space-evenly;
+  border: 2px solid currentColor; border-radius: 7px; background: rgba(255, 248, 235, .38);
+}
+.bot-face b { width: 3px; height: 5px; border-radius: 3px; background: currentColor; animation: bot-blink 4.8s infinite; }
+
+.codex-bot {
+  color: #55dda3;
+  background: radial-gradient(circle at 50% 48%, #142d2a 0 44%, #091b1a 45% 100%);
+}
+.codex-bot::before {
+  content: ""; position: absolute; inset: 3px; border-radius: 10px;
+  background: conic-gradient(from 45deg, transparent 0 18%, currentColor 18% 29%, transparent 29% 57%, currentColor 57% 68%, transparent 68%);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 0);
+  mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 0);
+  animation: codex-orbit 8s linear infinite;
+}
+.codex-bot i { position: relative; z-index: 1; font: 600 10px/1 var(--mono); font-style: normal; letter-spacing: -.08em; }
+
+.mcp-bot { color: var(--infra-blue); background: linear-gradient(145deg, rgba(107, 187, 255, .26), rgba(107, 187, 255, .07)); }
+.mcp-bot svg { width: 31px; height: 31px; overflow: visible; fill: none; stroke: currentColor; stroke-width: 1.7; }
+.mcp-bot circle { fill: var(--paper); transform-box: fill-box; transform-origin: center; animation: mcp-signal 3.2s ease-in-out infinite; }
+.mcp-bot circle:nth-of-type(2) { animation-delay: -.9s; }
+.mcp-bot circle:nth-of-type(3) { animation-delay: -1.8s; }
+
+@keyframes agent-hover { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
+@keyframes antenna-wave { 0%, 70%, 100% { transform: rotate(0); } 80% { transform: rotate(-16deg); } 90% { transform: rotate(13deg); } }
+@keyframes bot-blink { 0%, 44%, 50%, 100% { transform: scaleY(1); } 47% { transform: scaleY(.15); } }
+@keyframes codex-orbit { to { transform: rotate(360deg); } }
+@keyframes mcp-signal { 0%, 100% { transform: scale(.82); opacity: .55; } 45% { transform: scale(1.08); opacity: 1; } }
+
+/* The old attr() badge was positioned against the whole section, which put it
+   after the content on phones. The badge now lives beside its own heading. */
+.band[data-system]::after, .band[data-system] .band-head::after { display: none; }
+.system-chip {
+  display: inline-flex; align-items: center; gap: 7px; margin-left: 12px;
+  padding: 6px 9px; border: 1px solid var(--infra-edge); border-radius: 999px;
+  background: color-mix(in srgb, var(--g-fill-heavy) 78%, transparent); color: var(--ink-3);
+  font: 500 8px/1 var(--mono); letter-spacing: .09em; text-transform: uppercase;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .55);
+  vertical-align: middle;
+}
+.system-chip::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--infra-orange); }
+.cta > .system-chip { margin: 0 0 14px; }
+
+/* One quiet circuit grid carries the cloud/server language through the site;
+   it is intentionally larger and lower-contrast than the previous graph paper. */
+.bands {
+  background-color: color-mix(in srgb, var(--paper) 94%, transparent);
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--infra-line-soft) 34%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--infra-line-soft) 34%, transparent) 1px, transparent 1px),
+    radial-gradient(circle at 88% 8%, color-mix(in srgb, var(--clay-soft) 24%, transparent), transparent 24%);
+  background-size: 58px 58px, 58px 58px, 100% 100%;
+}
+
+/* A single iOS-like material recipe. The composer stays nearly opaque because
+   answer text must never show through the input and look like a white-box bug. */
+:is(.panel, .skillcard, .card, .retrieval, .mcp, .faq, .edu, .cta) {
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, .4), transparent 46%),
+    var(--g-fill);
+  border-color: var(--g-edge);
+  -webkit-backdrop-filter: blur(22px) saturate(1.45);
+  backdrop-filter: blur(22px) saturate(1.45);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .72), var(--g-shadow);
+}
+html[data-theme="dark"] :is(.panel, .skillcard, .card, .retrieval, .mcp, .faq, .edu, .cta) {
+  background: linear-gradient(145deg, rgba(123, 186, 244, .09), transparent 48%), var(--g-fill);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .07), var(--g-shadow);
+}
+#composer {
+  min-width: 0; max-width: 100%;
+  background: color-mix(in srgb, var(--paper) 96%, var(--sky-top) 4%);
+  border-color: color-mix(in srgb, var(--line-2) 80%, white 20%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .85), 0 20px 52px -28px rgba(24, 54, 92, .5);
+}
+html[data-theme="dark"] #composer {
+  background: color-mix(in srgb, var(--paper) 93%, var(--sky-top) 7%);
+  border-color: var(--line-2);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06), 0 22px 52px -28px rgba(0, 0, 0, .8);
+}
+.dock, .suggestions { min-width: 0; max-width: 100%; }
+body.has-thread .suggestions, body.has-thread .dock-note { display: none; }
+
+@media (max-width: 700px) {
+  .agent-showcase { display: block; margin-bottom: 20px; padding: 8px; border-radius: 18px; }
+  .agent-showcase-copy { display: none; }
+  .agent-roster { gap: 6px; }
+  .agent-pill { justify-content: center; gap: 6px; padding: 6px; border-radius: 13px; }
+  .agent-avatar { flex-basis: 30px; width: 30px; height: 30px; border-radius: 10px; }
+  .bot-antenna { left: 14px; }
+  .bot-face { width: 19px; height: 14px; border-radius: 6px; }
+  .agent-pill small, .agent-pill::after { display: none; }
+  .agent-pill > span:last-child > b { font-size: 8.5px; }
+  .mcp-bot svg { width: 27px; height: 27px; }
+
+  .suggestions {
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px;
+    margin: 10px 0 0; padding: 0; overflow: visible;
+  }
+  .suggestions button {
+    min-width: 0; min-height: 46px; padding: 7px 9px; white-space: normal;
+    font-size: 10.5px; line-height: 1.25; text-align: left;
+  }
+  .band { padding-top: 56px; }
+  .system-chip { margin-left: 8px; padding: 5px 8px; font-size: 7.5px; }
+  .bands { background-size: 52px 52px, 52px 52px, 100% 100%; }
+
+  /* A bottom-sticky element placed after a long answer cannot become visible
+     until its normal position enters the viewport. During a conversation the
+     phone composer is therefore fixed, compact and always reachable. */
+  body.has-thread .dock {
+    position: fixed; z-index: 36; inset-inline: 12px;
+    bottom: 0; margin: 0; padding: 12px 0 max(12px, env(safe-area-inset-bottom));
+  }
+  body.has-thread .dock::before {
+    inset-inline: -12px; top: -48px; bottom: -10px;
+    background: linear-gradient(to top, var(--paper) 54%, color-mix(in srgb, var(--paper) 88%, transparent) 78%, transparent);
+  }
+  body.has-thread .thread { padding-bottom: 118px; }
+}
+
+@media (max-width: 380px) {
+  .agent-pill { flex-direction: column; gap: 3px; }
+  .agent-pill > span:last-child > b { font-size: 8px; }
+  .system-chip { margin: 8px 0 0; }
+  .band-head h2 { margin-top: 12px; }
+  .suggestions button:nth-child(n + 3) { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .agent-avatar, .bot-antenna, .bot-face b, .codex-bot::before, .mcp-bot circle { animation: none; }
+}
