@@ -45,7 +45,7 @@
 
     <!-- Version stamp: /static is cached immutably when the URL carries ?v=, so
          bumping the stamp is how a changed asset reaches a returning browser. -->
-    <link rel="stylesheet" href="/static/styles.css?v=66">
+    <link rel="stylesheet" href="/static/styles.css?v=67">
   </head>
   <body>
     <a class="skip-link" href="#composer-input">Skip to chat</a>
@@ -61,69 +61,14 @@
         <g class="cloud-bank cloud-bank-d"><ellipse cx="1160" cy="160" rx="74" ry="54"/><ellipse cx="1240" cy="142" rx="92" ry="74"/><ellipse cx="1330" cy="172" rx="105" ry="60"/><rect x="1082" y="170" width="360" height="90" rx="45"/></g>
         <g class="cloud-bank cloud-bank-e"><ellipse cx="70" cy="190" rx="84" ry="65"/><ellipse cx="162" cy="162" rx="108" ry="88"/><ellipse cx="270" cy="202" rx="118" ry="66"/><rect x="-30" y="198" width="420" height="105" rx="52"/></g>
       </svg>
-      <!-- Illustrative AWS-style reference topology. It is deliberately behind
-           the content: a visual cloud-computing language, not a hosting claim. -->
+      <!-- Official AWS Cloud marks only. They stay in the quiet side gutters
+           and make no claim about where this site is hosted. -->
       <div class="cloud-fabric" aria-hidden="true">
-        <svg class="cloud-backbone" viewBox="0 0 1440 760" preserveAspectRatio="none">
-          <defs>
-            <marker id="cloud-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
-              <path d="M0 0 8 4 0 8Z"/>
-            </marker>
-          </defs>
-          <rect class="cloud-region-fill" x="38" y="76" width="1364" height="594" rx="68"/>
-          <rect class="cloud-region-line" x="38" y="76" width="1364" height="594" rx="68"/>
-          <rect class="cloud-plane-line cloud-plane-edge" x="72" y="150" width="276" height="448" rx="38"/>
-          <rect class="cloud-plane-line cloud-plane-compute" x="368" y="150" width="704" height="448" rx="38"/>
-          <rect class="cloud-plane-line cloud-plane-data" x="1092" y="150" width="276" height="448" rx="38"/>
-          <path class="cloud-route r-request" marker-end="url(#cloud-arrow)" d="M74 286 C205 286 246 264 348 292 S510 362 658 350 S891 286 1068 306 S1250 336 1364 324"/>
-          <path class="cloud-route r-events" marker-end="url(#cloud-arrow)" d="M106 430 C254 430 330 392 454 414 S650 486 790 458 S1022 388 1190 420 S1290 438 1360 430"/>
-          <path class="cloud-route r-data" marker-end="url(#cloud-arrow)" d="M262 548 C408 548 486 522 612 536 S816 604 962 560 S1180 510 1352 542"/>
-          <path class="cloud-route r-observe" marker-end="url(#cloud-arrow)" d="M438 198 C584 222 686 204 812 224 S1030 270 1198 224 S1312 194 1360 206"/>
-          <!-- One local pulse keeps the diagram alive without repainting a
-               full-screen SVG along three motion paths on every frame. -->
-          <circle class="cloud-packet p-request" cx="658" cy="350" r="5"/>
-        </svg>
-
-        <!-- Current AWS Architecture Icons (31 July 2026). The solid outer
-             boundary is AWS Cloud, teal is Region and purple is the VPC. -->
-        <div class="aws-reference">
-          <span class="aws-reference-title">
-            <img src="/static/aws/aws-cloud.svg" alt=""><span><b>AWS Cloud</b><small>reference architecture · illustrative</small></span>
-          </span>
-          <span class="aws-reference-region">
-            <img src="/static/aws/region.svg" alt=""><span><b>eu-west-1</b><small>Region</small></span>
-          </span>
-          <div class="aws-reference-flow">
-            <span class="aws-ref-node aws-node-cloudfront"><img src="/static/aws/cloudfront.svg" alt=""><b>CloudFront</b></span>
-            <i class="aws-ref-arrow aws-arrow-cloudfront"></i>
-            <span class="aws-ref-node aws-node-waf"><img src="/static/aws/waf.svg" alt=""><b>AWS WAF</b></span>
-            <i class="aws-ref-arrow aws-arrow-waf"></i>
-            <span class="aws-ref-node aws-node-api"><img src="/static/aws/api-gateway.svg" alt=""><b>API Gateway</b></span>
-            <i class="aws-ref-arrow aws-arrow-api"></i>
-            <div class="aws-ref-vpc">
-              <span class="aws-ref-vpc-title"><img src="/static/aws/vpc.svg" alt=""><b>VPC · agent runtime</b></span>
-              <span class="aws-ref-node aws-node-lambda"><img src="/static/aws/lambda.svg" alt=""><b>Lambda</b></span>
-              <i class="aws-ref-arrow"></i>
-              <span class="aws-ref-node aws-node-agent"><img src="/static/aws/bedrock-agentcore.svg" alt=""><b>AgentCore</b></span>
-              <i class="aws-ref-arrow aws-arrow-sqs"></i>
-              <span class="aws-ref-node aws-node-sqs"><img src="/static/aws/sqs.svg" alt=""><b>SQS</b></span>
-              <i class="aws-ref-arrow aws-arrow-data"></i>
-              <span class="aws-ref-node aws-node-data"><span class="aws-ref-pair"><img src="/static/aws/s3.svg" alt=""><img src="/static/aws/rds.svg" alt=""></span><b>Evidence</b></span>
-            </div>
-            <i class="aws-ref-arrow aws-arrow-observe"></i>
-            <span class="aws-ref-node aws-node-cloudwatch"><img src="/static/aws/cloudwatch.svg" alt=""><b>CloudWatch</b></span>
-          </div>
+        <div class="aws-logo-clouds">
+          <img class="aws-logo-cloud aws-logo-cloud-a" src="/static/aws/aws-cloud.svg" alt="">
+          <img class="aws-logo-cloud aws-logo-cloud-b" src="/static/aws/aws-cloud.svg" alt="">
+          <img class="aws-logo-cloud aws-logo-cloud-c" src="/static/aws/aws-cloud.svg" alt="">
         </div>
-
-        <span class="cloud-service cloud-service-edge"><i><img src="/static/aws/cloudfront.svg" alt=""></i><b>Edge</b></span>
-        <span class="cloud-service cloud-service-api"><i><img src="/static/aws/api-gateway.svg" alt=""></i><b>API</b></span>
-        <span class="cloud-service cloud-service-compute"><i><img src="/static/aws/ec2.svg" alt=""></i><b>EC2</b></span>
-        <span class="cloud-service cloud-service-lambda"><i><img src="/static/aws/lambda.svg" alt=""></i><b>Lambda</b></span>
-        <span class="cloud-service cloud-service-queue"><i><img src="/static/aws/sqs.svg" alt=""></i><b>SQS</b></span>
-        <span class="cloud-service cloud-service-storage"><i><img src="/static/aws/s3.svg" alt=""></i><b>S3</b></span>
-        <span class="cloud-service cloud-service-database"><i><img src="/static/aws/rds.svg" alt=""></i><b>RDS</b></span>
-        <span class="cloud-service cloud-service-logs"><i><img src="/static/aws/cloudwatch.svg" alt=""></i><b>Logs</b></span>
-        <span class="cloud-service cloud-service-cache"><i><img src="/static/aws/elasticache.svg" alt=""></i><b>Cache</b></span>
       </div>
       <div class="haze"></div>
       <div class="grain"></div>
