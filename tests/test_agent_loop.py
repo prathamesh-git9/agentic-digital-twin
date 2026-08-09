@@ -201,6 +201,7 @@ def test_tool_timeout_is_typed_and_chat_still_answers(
     assert body["trace"][0]["duration_ms"] >= 1
     assert body["grounded"] is True
     assert LANGUAGE_CLAIM.rstrip(".") in body["answer"]
+    assert body["agent_run"]["steps"][2]["status"] == "blocked"
 
 
 def test_instructions_inside_tool_output_are_neutralised_before_model_reentry(

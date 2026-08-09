@@ -268,12 +268,18 @@ class ChatService:
             trace = outcome.trace
             extra_token_usage = outcome.extra_token_usage
             model_turns = outcome.model_turns
+            usable_calls = sum(item.status in {"ok", "empty"} for item in trace)
             await _publish_phase(
                 publish,
                 key="tools",
-                status="completed" if trace else "skipped",
+                status=(
+                    "completed" if usable_calls else "blocked" if trace else "skipped"
+                ),
                 detail=(
-                    f"Executed {len(trace)} screened public tool call(s)."
+                    f"{usable_calls} of {len(trace)} screened tool call(s) "
+                    "completed safely."
+                    if usable_calls
+                    else "External calls failed or were blocked; using profile evidence."
                     if trace
                     else "Retrieved evidence was sufficient; no external call was needed."
                 ),
@@ -403,7 +409,7 @@ def _agent_run(
         steps=final_steps(
             plan,
             evidence_count=evidence_count,
-            tool_calls=len(trace),
+            tool_statuses=[item.status for item in trace],
             grounded=answer.grounded,
         ),
         tools_considered=list(plan.allowed_tools),

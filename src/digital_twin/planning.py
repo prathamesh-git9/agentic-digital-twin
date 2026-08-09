@@ -184,7 +184,7 @@ def final_steps(
     plan: AgentPlan,
     *,
     evidence_count: int,
-    tool_calls: int,
+    tool_statuses: list[str],
     grounded: bool,
 ) -> list[AgentStep]:
     steps = plan.steps()
@@ -202,9 +202,19 @@ def final_steps(
         retrieve.detail = f"Selected {evidence_count} relevant evidence chunk(s)."
 
     if plan.uses_tools:
-        if tool_calls:
+        usable_calls = sum(status in {"ok", "empty"} for status in tool_statuses)
+        if usable_calls:
             tools.status = "completed"
-            tools.detail = f"Executed {tool_calls} screened public tool call(s)."
+            tools.detail = (
+                f"{usable_calls} of {len(tool_statuses)} screened tool call(s) "
+                "completed safely."
+            )
+        elif tool_statuses:
+            tools.status = "blocked"
+            tools.detail = (
+                "External calls failed or were blocked; verification continued "
+                "with profile evidence only."
+            )
         else:
             tools.status = "skipped"
             tools.detail = "The model found the retrieved evidence sufficient."
