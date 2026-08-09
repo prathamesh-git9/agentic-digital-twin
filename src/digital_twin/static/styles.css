@@ -2096,19 +2096,21 @@ body.has-thread .suggestions, body.has-thread .dock-note { display: none; }
    viewport loses space, so architecture can never sit on top of the chat.
    ===================================================================== */
 
-.bar { padding-left: clamp(58px, 5vw, 72px); }
+.bar { padding-left: clamp(16px, 5vw, 40px); }
 .bar-left .face { display: none; }
-.clawd-corner {
-  position: absolute; z-index: 2; left: clamp(10px, 1.25vw, 18px); top: 9px;
-  width: 44px; height: 40px; display: grid; place-items: center;
+.clawd-float {
+  position: absolute; z-index: 7; left: 12px; top: -26px;
+  width: 58px; height: 32px; display: grid; place-items: center;
   filter: drop-shadow(0 7px 7px rgba(96, 48, 30, .18));
   pointer-events: none; isolation: isolate;
+  animation: clawd-track 10s cubic-bezier(.45, 0, .55, 1) infinite;
 }
-/* Claude Code's own mascot is a 9 × 3 terminal-glyph sprite. These paths are
-   the glyph quadrants expanded into pixels, so font rendering cannot change
-   the silhouette. */
-.clawd-corner svg {
-  width: 44px; height: 20px; overflow: visible;
+/* Claude Code's own mascot is a terminal-glyph sprite. Terminal cells are
+   roughly twice as tall as they are wide, so the SVG intentionally fills this
+   box instead of preserving square-coordinate aspect. That keeps Clawd's
+   original chunky silhouette instead of flattening it into a thin strip. */
+.clawd-float svg {
+  width: 58px; height: 32px; overflow: visible;
   transform: translateY(1px); transform-origin: center;
   animation: clawd-hop 5.6s steps(1, end) infinite;
 }
@@ -2125,6 +2127,27 @@ body.has-thread .suggestions, body.has-thread .dock-note { display: none; }
 @keyframes clawd-look-left { 0%, 68%, 80%, 100% { opacity: 0; } 69%, 79% { opacity: 1; } }
 @keyframes clawd-arms-up { 0%, 79%, 92%, 100% { opacity: 0; } 80%, 91% { opacity: 1; } }
 @keyframes clawd-hop { 0%, 79%, 100% { transform: translateY(1px); } 80%, 91% { transform: translateY(-1px); } }
+@keyframes clawd-track {
+  0%, 8%, 100% { left: 12px; }
+  44%, 56% { left: calc(100% - 70px); }
+  48%, 52% { transform: translateY(-3px); }
+}
+
+/* A compact desktop stage: roughly seven percent smaller than the former
+   three-column deck, while keeping mobile touch targets unchanged. */
+@media (min-width: 1280px) {
+  .deck {
+    grid-template-columns: 230px minmax(0, 720px) 230px;
+    gap: 20px; max-width: 1260px; padding-inline: 20px;
+  }
+  .ask-hero h1 { font-size: clamp(44px, 6.1vw, 98px); }
+  .hero-lead { font-size: clamp(18px, 1.35vw, 24px); }
+  .hero-sub { font-size: clamp(14px, .92vw, 16px); }
+  .panel { padding: 14px; }
+  #composer { padding: 12px 12px 12px 19px; }
+  #composer textarea { font-size: clamp(16.5px, 1vw, 18.5px); }
+  .send { width: 38px; height: 38px; }
+}
 
 .cloudscape {
   position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible;
@@ -2234,9 +2257,9 @@ html[data-theme="dark"] .cloud-service i { background: rgba(22, 48, 74, .6); box
 }
 
 @media (max-width: 520px) {
-  .bar { padding-left: 56px; }
-  .clawd-corner { left: 9px; top: 10px; width: 39px; height: 36px; }
-  .clawd-corner svg { width: 39px; height: 18px; }
+  .bar { padding-left: 16px; }
+  .clawd-float { top: -21px; width: 44px; height: 25px; }
+  .clawd-float svg { width: 44px; height: 25px; }
   .cloudscape { transform: scale(1.04); transform-origin: 55% 35%; }
   .cloud-bank { stroke-width: .75; }
   .cloud-fabric { opacity: .42; }
@@ -2244,7 +2267,7 @@ html[data-theme="dark"] .cloud-service i { background: rgba(22, 48, 74, .6); box
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .clawd-corner svg, .clawd-pose, .cloud-bank, .cloud-route, .cloud-packet, .cloud-service { animation: none; }
+  .clawd-float, .clawd-float svg, .clawd-pose, .cloud-bank, .cloud-route, .cloud-packet, .cloud-service { animation: none; }
   .clawd-default { opacity: 1; }
   .clawd-look-right, .clawd-look-left, .clawd-arms-up { opacity: 0; }
   .cloud-packet { display: none; }

@@ -45,7 +45,7 @@
 
     <!-- Version stamp: /static is cached immutably when the URL carries ?v=, so
          bumping the stamp is how a changed asset reaches a returning browser. -->
-    <link rel="stylesheet" href="/static/styles.css?v=61">
+    <link rel="stylesheet" href="/static/styles.css?v=62">
   </head>
   <body>
     <a class="skip-link" href="#composer-input">Skip to chat</a>
@@ -107,16 +107,6 @@
     </div>
 
     <header class="bar">
-      <span class="clawd-corner" role="img" aria-label="Clawd, the animated Claude Code mascot">
-        <!-- Exact block geometry and four poses from the installed Claude Code
-             mascot, expanded into crisp vector pixels instead of redrawn. -->
-        <svg viewBox="0 0 18 5" shape-rendering="crispEdges" aria-hidden="true">
-          <g class="clawd-pose clawd-default"><path class="clawd-eye-pixels" d="M5 1h1v1H5zM12 1h1v1h-1z"/><path class="clawd-pixels" d="M3 0h12v1H3zM3 1h2v1H3zM6 1h6v1H6zM13 1h2v1h-2zM1 2h16v1H1zM3 3h12v1H3zM4 4h1v1H4zM6 4h1v1H6zM11 4h1v1h-1zM13 4h1v1h-1z"/></g>
-          <g class="clawd-pose clawd-look-right"><path class="clawd-eye-pixels" d="M5 0h1v1H5zM13 0h1v1h-1z"/><path class="clawd-pixels" d="M3 0h2v1H3zM6 0h7v1H6zM14 0h1v1h-1zM3 1h12v1H3zM1 2h16v1H1zM3 3h12v1H3zM4 4h1v1H4zM6 4h1v1H6zM11 4h1v1h-1zM13 4h1v1h-1z"/></g>
-          <g class="clawd-pose clawd-look-left"><path class="clawd-eye-pixels" d="M4 0h1v1H4zM12 0h1v1h-1z"/><path class="clawd-pixels" d="M3 0h1v1H3zM5 0h7v1H5zM13 0h2v1h-2zM3 1h12v1H3zM1 2h16v1H1zM3 3h12v1H3zM4 4h1v1H4zM6 4h1v1H6zM11 4h1v1h-1zM13 4h1v1h-1z"/></g>
-          <g class="clawd-pose clawd-arms-up"><path class="clawd-eye-pixels" d="M5 1h1v1H5zM12 1h1v1h-1z"/><path class="clawd-pixels" d="M3 0h12v1H3zM1 1h4v1H1zM6 1h6v1H6zM13 1h4v1h-4zM2 2h14v1H2zM3 3h12v1H3zM4 4h1v1H4zM6 4h1v1H6zM11 4h1v1h-1zM13 4h1v1h-1z"/></g>
-        </svg>
-      </span>
       <a class="bar-left" href="/">
         <!-- 112px WebP: the page renders this at 26 and 56 CSS pixels, so the
              full-resolution JPEG (ten times the bytes) is kept only for the
@@ -210,6 +200,16 @@
         </section>
 
         <div class="dock reveal d2">
+          <span class="clawd-float" role="img" aria-label="Clawd, the animated Claude Code mascot">
+            <!-- Exact block geometry and four poses from the installed Claude Code
+                 mascot, expanded into crisp vector pixels instead of redrawn. -->
+            <svg viewBox="0 0 18 5" preserveAspectRatio="none" shape-rendering="crispEdges" aria-hidden="true">
+              <g class="clawd-pose clawd-default"><path class="clawd-eye-pixels" d="M5 1h1v1H5zM12 1h1v1h-1z"/><path class="clawd-pixels" d="M3 0h12v1H3zM3 1h2v1H3zM6 1h6v1H6zM13 1h2v1h-2zM1 2h16v1H1zM3 3h12v1H3zM4 4h1v1H4zM6 4h1v1H6zM11 4h1v1h-1zM13 4h1v1h-1z"/></g>
+              <g class="clawd-pose clawd-look-right"><path class="clawd-eye-pixels" d="M5 0h1v1H5zM13 0h1v1h-1z"/><path class="clawd-pixels" d="M3 0h2v1H3zM6 0h7v1H6zM14 0h1v1h-1zM3 1h12v1H3zM1 2h16v1H1zM3 3h12v1H3zM4 4h1v1H4zM6 4h1v1H6zM11 4h1v1h-1zM13 4h1v1h-1z"/></g>
+              <g class="clawd-pose clawd-look-left"><path class="clawd-eye-pixels" d="M4 0h1v1H4zM12 0h1v1h-1z"/><path class="clawd-pixels" d="M3 0h1v1H3zM5 0h7v1H5zM13 0h2v1h-2zM3 1h12v1H3zM1 2h16v1H1zM3 3h12v1H3zM4 4h1v1H4zM6 4h1v1H6zM11 4h1v1h-1zM13 4h1v1h-1z"/></g>
+              <g class="clawd-pose clawd-arms-up"><path class="clawd-eye-pixels" d="M5 1h1v1H5zM12 1h1v1h-1z"/><path class="clawd-pixels" d="M3 0h12v1H3zM1 1h4v1H1zM6 1h6v1H6zM13 1h4v1h-4zM2 2h14v1H2zM3 3h12v1H3zM4 4h1v1H4zM6 4h1v1H6zM11 4h1v1h-1zM13 4h1v1h-1z"/></g>
+            </svg>
+          </span>
           <form id="composer">
             <label class="sr-only" for="composer-input">Message</label>
             <!-- Short on purpose: the long form wrapped to a second line inside a
