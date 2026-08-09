@@ -2099,100 +2099,105 @@ body.has-thread .suggestions, body.has-thread .dock-note { display: none; }
 .bar { padding-left: clamp(58px, 5vw, 72px); }
 .bar-left .face { display: none; }
 .clawd-corner {
-  position: absolute; z-index: 2; left: clamp(9px, 1.25vw, 18px); top: 7px;
-  width: 43px; height: 43px; display: grid; place-items: center;
-  filter: drop-shadow(0 7px 8px rgba(111, 55, 22, .19));
+  position: absolute; z-index: 2; left: clamp(10px, 1.25vw, 18px); top: 9px;
+  width: 44px; height: 40px; display: grid; place-items: center;
+  filter: drop-shadow(0 7px 7px rgba(96, 48, 30, .18));
   pointer-events: none; isolation: isolate;
 }
-.clawd-corner svg { width: 43px; height: 36px; overflow: visible; animation: clawd-bob 2.8s steps(2, end) infinite; }
-.clawd-body, .clawd-claw, .clawd-leg { fill: #e87936; stroke: #9b431f; stroke-width: 1.2; stroke-linejoin: miter; }
-.clawd-top { fill: #f39a5d; }
-.clawd-eye, .clawd-mouth { fill: #311a13; }
-.clawd-brow { transform-box: fill-box; transform-origin: center; animation: clawd-blink 4.6s steps(1, end) infinite; }
-.clawd-claw { transform-box: fill-box; }
-.clawd-claw-left { transform-origin: right center; animation: clawd-wave-left 2.8s steps(3, end) infinite; }
-.clawd-claw-right { transform-origin: left center; animation: clawd-wave-right 3.4s steps(3, end) infinite; }
-.clawd-leg { transform-box: fill-box; transform-origin: center top; }
-.clawd-leg-left { animation: clawd-step 1.4s steps(2, end) infinite; }
-.clawd-leg-right { animation: clawd-step 1.4s steps(2, end) -.7s infinite; }
-.clawd-shadow { fill: rgba(65, 39, 28, .18); transform-box: fill-box; transform-origin: center; animation: clawd-shadow 2.8s steps(2, end) infinite; }
-.clawd-spark {
-  position: absolute; width: 3px; height: 3px; background: #ff9d3f;
-  box-shadow: 0 0 0 2px color-mix(in srgb, #ff9d3f 18%, transparent);
-  opacity: 0; animation: clawd-spark 3s steps(3, end) infinite;
+/* Claude Code's own mascot is a 9 × 3 terminal-glyph sprite. These paths are
+   the glyph quadrants expanded into pixels, so font rendering cannot change
+   the silhouette. */
+.clawd-corner svg {
+  width: 44px; height: 20px; overflow: visible;
+  transform: translateY(1px); transform-origin: center;
+  animation: clawd-hop 5.6s steps(1, end) infinite;
 }
-.clawd-spark.s1 { right: -1px; top: 4px; }
-.clawd-spark.s2 { right: -6px; top: 13px; animation-delay: .35s; }
-.clawd-spark.s3 { right: 2px; top: -1px; animation-delay: .7s; }
+.clawd-pose { opacity: 0; }
+.clawd-pixels { fill: #d97757; }
+.clawd-eye-pixels { fill: #000; }
+.clawd-default { opacity: 1; animation: clawd-default 5.6s steps(1, end) infinite; }
+.clawd-look-right { animation: clawd-look-right 5.6s steps(1, end) infinite; }
+.clawd-look-left { animation: clawd-look-left 5.6s steps(1, end) infinite; }
+.clawd-arms-up { animation: clawd-arms-up 5.6s steps(1, end) infinite; }
 
-@keyframes clawd-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
-@keyframes clawd-wave-left { 0%, 62%, 100% { transform: rotate(0); } 70%, 86% { transform: rotate(16deg); } 78%, 94% { transform: rotate(-10deg); } }
-@keyframes clawd-wave-right { 0%, 68%, 100% { transform: rotate(0); } 78% { transform: rotate(-13deg); } 88% { transform: rotate(8deg); } }
-@keyframes clawd-step { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
-@keyframes clawd-blink { 0%, 46%, 50%, 100% { transform: scaleY(1); } 48% { transform: scaleY(.15); } }
-@keyframes clawd-shadow { 0%, 100% { transform: scaleX(1); opacity: .8; } 50% { transform: scaleX(.82); opacity: .5; } }
-@keyframes clawd-spark { 0%, 58% { opacity: 0; transform: translate(0, 4px) scale(.7); } 68% { opacity: 1; } 86%, 100% { opacity: 0; transform: translate(3px, -5px) scale(1); } }
+@keyframes clawd-default { 0%, 58%, 92%, 100% { opacity: 1; } 59%, 91% { opacity: 0; } }
+@keyframes clawd-look-right { 0%, 58%, 69%, 100% { opacity: 0; } 59%, 68% { opacity: 1; } }
+@keyframes clawd-look-left { 0%, 68%, 80%, 100% { opacity: 0; } 69%, 79% { opacity: 1; } }
+@keyframes clawd-arms-up { 0%, 79%, 92%, 100% { opacity: 0; } 80%, 91% { opacity: 1; } }
+@keyframes clawd-hop { 0%, 79%, 100% { transform: translateY(1px); } 80%, 91% { transform: translateY(-1px); } }
 
 .cloudscape {
   position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible;
-  filter: drop-shadow(0 18px 28px rgba(72, 125, 181, .09));
+  filter: drop-shadow(0 18px 28px rgba(72, 125, 181, .07));
 }
 .cloud-bank {
-  fill: color-mix(in srgb, white 72%, var(--sky-low));
-  stroke: rgba(91, 151, 210, .13); stroke-width: 1.1;
+  fill: color-mix(in srgb, var(--sky-low) 34%, transparent);
+  stroke: rgba(55, 127, 196, .28); stroke-width: 1.25;
   transform-box: fill-box; transform-origin: center;
   animation: cloud-breathe 16s ease-in-out infinite;
 }
-.cloud-bank-b { opacity: .76; animation-delay: -7s; animation-duration: 21s; }
-.cloud-bank-c { opacity: .86; animation-delay: -11s; animation-duration: 18s; }
-.cloud-bank-d, .cloud-bank-e { opacity: .7; animation-duration: 24s; }
+.cloud-bank-a { opacity: .5; }
+.cloud-bank-b { opacity: .38; animation-delay: -7s; animation-duration: 21s; }
+.cloud-bank-c { opacity: .46; animation-delay: -11s; animation-duration: 18s; }
+.cloud-bank-d, .cloud-bank-e { opacity: .42; animation-duration: 24s; }
 .cloud-bank-e { animation-delay: -15s; }
 html[data-theme="dark"] .cloud-bank {
-  fill: rgba(63, 105, 151, .16); stroke: rgba(111, 177, 239, .12);
+  fill: rgba(63, 105, 151, .11); stroke: rgba(111, 177, 239, .2);
 }
 @keyframes cloud-breathe { 0%, 100% { transform: translate3d(0, 0, 0); } 50% { transform: translate3d(10px, -5px, 0); } }
 
-.cloud-fabric { position: absolute; inset: 64px 0 0; opacity: .46; }
-.cloud-backbone { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
-.cloud-region-line, .cloud-zone-line, .cloud-route {
+.cloud-fabric { position: absolute; inset: 64px 0 0; opacity: .76; }
+.cloud-fabric::after {
+  content: ""; position: absolute; z-index: 1; left: 17%; right: 17%; top: 8%; height: 66%;
+  background: radial-gradient(ellipse at center, color-mix(in srgb, var(--sky-mid) 58%, transparent) 0 48%, transparent 78%);
+}
+.cloud-backbone { position: absolute; z-index: 0; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.cloud-region-fill { fill: rgba(229, 243, 255, .12); }
+.cloud-region-line, .cloud-plane-line, .cloud-route {
   fill: none; vector-effect: non-scaling-stroke; stroke-linecap: round;
 }
-.cloud-region-line { stroke: rgba(241, 139, 37, .38); stroke-width: 1.25; stroke-dasharray: 8 10; }
-.cloud-zone-line { stroke: rgba(45, 127, 204, .26); stroke-width: 1; stroke-dasharray: 3 9; }
-.cloud-route { stroke: rgba(35, 112, 188, .35); stroke-width: 1.25; stroke-dasharray: 3 10; animation: cloud-route 24s linear infinite; }
-.cloud-route.r-data { animation-duration: 31s; animation-direction: reverse; }
-.cloud-route.r-events { animation-duration: 28s; }
+.cloud-region-line { stroke: rgba(220, 117, 38, .58); stroke-width: 1.3; stroke-dasharray: 9 10; }
+.cloud-plane-line { fill: rgba(238, 248, 255, .08); stroke: rgba(36, 114, 190, .34); stroke-width: 1; stroke-dasharray: 3 8; }
+.cloud-plane-compute { fill: rgba(223, 240, 255, .09); }
+.cloud-route { stroke: rgba(28, 103, 177, .52); stroke-width: 1.35; stroke-dasharray: 3 9; animation: cloud-route 24s linear infinite; }
+.cloud-route.r-data { stroke: rgba(40, 137, 91, .48); animation-duration: 31s; animation-direction: reverse; }
+.cloud-route.r-events { stroke: rgba(150, 69, 177, .47); animation-duration: 28s; }
+.cloud-route.r-observe { stroke: rgba(209, 112, 30, .44); animation-duration: 34s; animation-direction: reverse; }
+#cloud-arrow path { fill: rgba(35, 112, 188, .7); }
+.cloud-route-label { fill: var(--infra-blue); font: 500 8px/1 var(--mono); letter-spacing: .09em; text-transform: uppercase; opacity: .66; }
 .cloud-packet { fill: #ff9d2e; opacity: .9; filter: drop-shadow(0 0 5px rgba(255, 157, 46, .7)); animation: packet-pulse 2.2s ease-in-out infinite; }
 .cloud-packet.p-data { animation-delay: -.7s; }
 .cloud-packet.p-events { animation-delay: -1.4s; }
 .cloud-fabric-label {
-  position: absolute; color: var(--infra-blue); font: 500 8px/1 var(--mono);
+  position: absolute; z-index: 2; color: var(--infra-blue); font: 500 8px/1 var(--mono);
   letter-spacing: .12em; text-transform: uppercase;
 }
-.cloud-label-region { left: 5.4%; top: 7.5%; color: #d87817; }
-.cloud-label-a { left: 8.7%; top: 15%; }
-.cloud-label-b { right: 9.1%; top: 15%; }
+.cloud-label-region { left: 4.4%; top: 4.1%; color: #bd5f16; font-weight: 650; }
+.cloud-label-edge { left: 7.2%; top: 6.6%; }
+.cloud-label-compute { left: 28%; top: 6.6%; }
+.cloud-label-data { right: 7.1%; top: 6.6%; }
 
 .cloud-service {
-  position: absolute; width: 54px; display: grid; justify-items: center; gap: 5px;
+  position: absolute; z-index: 2; width: 54px; display: grid; justify-items: center; gap: 5px;
   color: var(--infra-blue); font: 600 8px/1 var(--mono); letter-spacing: .07em;
   text-transform: uppercase; animation: cloud-node-float 8s ease-in-out infinite;
 }
 .cloud-service i {
   width: 34px; height: 34px; display: grid; place-items: center;
   border: 1px solid rgba(50, 133, 210, .32); border-radius: 11px;
-  background: rgba(244, 250, 255, .56); box-shadow: inset 0 1px 0 rgba(255,255,255,.8), 0 8px 18px rgba(32, 96, 158, .11);
+  background: rgba(236, 247, 255, .78); box-shadow: inset 0 1px 0 rgba(255,255,255,.9), 0 8px 18px rgba(32, 96, 158, .14);
 }
 html[data-theme="dark"] .cloud-service i { background: rgba(22, 48, 74, .6); box-shadow: inset 0 1px 0 rgba(255,255,255,.08); }
 .cloud-service svg { width: 23px; height: 23px; fill: none; stroke: currentColor; stroke-width: 1.35; stroke-linecap: round; stroke-linejoin: round; }
-.cloud-service-api { left: 1.4%; top: 23%; animation-delay: -2s; }
-.cloud-service-compute { right: 1.5%; top: 21%; animation-delay: -5s; }
-.cloud-service-lambda { right: 9.5%; top: 40%; animation-delay: -1s; color: #d87817; }
-.cloud-service-queue { left: 9.5%; top: 42%; animation-delay: -6s; color: #b84fbd; }
-.cloud-service-storage { left: 2.6%; top: 61%; animation-delay: -3s; color: #3b9f55; }
-.cloud-service-database { right: 2.5%; top: 60%; animation-delay: -7s; color: #326bc0; }
-.cloud-service-logs { right: 12%; top: 76%; animation-delay: -4s; color: #b24cc5; }
-.cloud-service-cache { left: 12%; top: 75%; animation-delay: -8s; color: #d34848; }
+.cloud-service-edge { left: 1.6%; top: 25%; animation-delay: -4s; }
+.cloud-service-api { left: 19%; top: 22%; animation-delay: -2s; }
+.cloud-service-compute { right: 20.2%; top: 21%; animation-delay: -5s; }
+.cloud-service-lambda { right: 11%; top: 39%; animation-delay: -1s; color: #c86516; }
+.cloud-service-queue { left: 16.5%; top: 49%; animation-delay: -6s; color: #9d3bad; }
+.cloud-service-storage { left: 2.7%; top: 67%; animation-delay: -3s; color: #268a44; }
+.cloud-service-database { right: 2.8%; top: 65%; animation-delay: -7s; color: #245bac; }
+.cloud-service-logs { right: 15.5%; top: 75%; animation-delay: -4s; color: #9d3bad; }
+.cloud-service-cache { left: 12%; top: 74%; animation-delay: -8s; color: #bf3535; }
 
 @keyframes cloud-route { to { stroke-dashoffset: -156; } }
 @keyframes packet-pulse { 0%, 100% { opacity: .35; transform: scale(.7); } 50% { opacity: 1; transform: scale(1.15); } }
@@ -2210,7 +2215,7 @@ html[data-theme="dark"] .cloud-service i { background: rgba(22, 48, 74, .6); box
 }
 
 @media (max-width: 1180px) {
-  .cloud-fabric { opacity: .22; }
+  .cloud-fabric { opacity: .58; }
   .cloud-fabric-label, .cloud-service b { display: none; }
   .cloud-service { width: 32px; }
   .cloud-service i { width: 28px; height: 28px; border-radius: 9px; }
@@ -2218,23 +2223,29 @@ html[data-theme="dark"] .cloud-service i { background: rgba(22, 48, 74, .6); box
 }
 
 @media (max-width: 900px) {
-  .cloud-fabric { top: 54px; opacity: .22; }
-  .cloud-region-line, .cloud-zone-line, .cloud-service { display: none; }
-  .cloud-route { stroke-width: .8; opacity: .55; }
-  .cloud-bank-d, .cloud-bank-e { opacity: .45; }
+  .cloud-fabric { top: 54px; opacity: .48; }
+  .cloud-plane-line, .cloud-route-label, .cloud-service { display: none; }
+  .cloud-service-api, .cloud-service-lambda, .cloud-service-database { display: grid; }
+  .cloud-service-api { left: 3%; right: auto; top: 69%; }
+  .cloud-service-lambda { left: calc(50% - 16px); right: auto; top: 75%; }
+  .cloud-service-database { left: auto; right: 3%; top: 69%; }
+  .cloud-route { stroke-width: 1; opacity: .72; }
+  .cloud-bank-d, .cloud-bank-e { opacity: .3; }
 }
 
 @media (max-width: 520px) {
   .bar { padding-left: 56px; }
-  .clawd-corner { left: 9px; top: 9px; width: 38px; height: 38px; }
-  .clawd-corner svg { width: 38px; height: 32px; }
-  .cloudscape { transform: scale(1.18); transform-origin: 55% 35%; }
+  .clawd-corner { left: 9px; top: 10px; width: 39px; height: 36px; }
+  .clawd-corner svg { width: 39px; height: 18px; }
+  .cloudscape { transform: scale(1.04); transform-origin: 55% 35%; }
   .cloud-bank { stroke-width: .75; }
-  .cloud-fabric { opacity: .15; }
+  .cloud-fabric { opacity: .42; }
   .bands { background-size: 520px 376px, 58px 58px, 58px 58px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .clawd-corner svg, .clawd-claw, .clawd-leg, .clawd-brow, .clawd-shadow,
-  .clawd-spark, .cloud-bank, .cloud-route, .cloud-packet, .cloud-service { animation: none; }
+  .clawd-corner svg, .clawd-pose, .cloud-bank, .cloud-route, .cloud-packet, .cloud-service { animation: none; }
+  .clawd-default { opacity: 1; }
+  .clawd-look-right, .clawd-look-left, .clawd-arms-up { opacity: 0; }
+  .cloud-packet { display: none; }
 }

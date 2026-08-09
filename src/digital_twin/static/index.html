@@ -45,7 +45,7 @@
 
     <!-- Version stamp: /static is cached immutably when the URL carries ?v=, so
          bumping the stamp is how a changed asset reaches a returning browser. -->
-    <link rel="stylesheet" href="/static/styles.css?v=59">
+    <link rel="stylesheet" href="/static/styles.css?v=61">
   </head>
   <body>
     <a class="skip-link" href="#composer-input">Skip to chat</a>
@@ -61,24 +61,38 @@
         <g class="cloud-bank cloud-bank-d"><ellipse cx="1160" cy="160" rx="74" ry="54"/><ellipse cx="1240" cy="142" rx="92" ry="74"/><ellipse cx="1330" cy="172" rx="105" ry="60"/><rect x="1082" y="170" width="360" height="90" rx="45"/></g>
         <g class="cloud-bank cloud-bank-e"><ellipse cx="70" cy="190" rx="84" ry="65"/><ellipse cx="162" cy="162" rx="108" ry="88"/><ellipse cx="270" cy="202" rx="118" ry="66"/><rect x="-30" y="198" width="420" height="105" rx="52"/></g>
       </svg>
-      <!-- AWS-style reference topology. It is deliberately behind the content:
-           a visual cloud-computing language, not a hosting claim. -->
+      <!-- Illustrative AWS-style reference topology. It is deliberately behind
+           the content: a visual cloud-computing language, not a hosting claim. -->
       <div class="cloud-fabric" aria-hidden="true">
         <svg class="cloud-backbone" viewBox="0 0 1440 760" preserveAspectRatio="none">
-          <rect class="cloud-region-line" x="54" y="106" width="1332" height="540" rx="86"/>
-          <rect class="cloud-zone-line" x="106" y="162" width="575" height="410" rx="52"/>
-          <rect class="cloud-zone-line" x="758" y="162" width="575" height="410" rx="52"/>
-          <path class="cloud-route r-api" d="M74 260 C 220 260 246 220 386 220 S 592 350 720 350 S 930 220 1070 220 S 1245 275 1370 275"/>
-          <path class="cloud-route r-data" d="M74 478 C 220 478 280 528 430 528 S 620 430 720 430 S 915 522 1085 522 S 1260 470 1370 470"/>
-          <path class="cloud-route r-events" d="M205 350 C 360 350 465 390 590 390 H 846 C 972 390 1072 350 1230 350"/>
-          <circle class="cloud-packet p-api" cx="386" cy="220" r="5"/>
-          <circle class="cloud-packet p-data" cx="1085" cy="522" r="5"/>
-          <circle class="cloud-packet p-events" cx="846" cy="390" r="5"/>
+          <defs>
+            <marker id="cloud-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+              <path d="M0 0 8 4 0 8Z"/>
+            </marker>
+          </defs>
+          <rect class="cloud-region-fill" x="38" y="76" width="1364" height="594" rx="68"/>
+          <rect class="cloud-region-line" x="38" y="76" width="1364" height="594" rx="68"/>
+          <rect class="cloud-plane-line cloud-plane-edge" x="72" y="150" width="276" height="448" rx="38"/>
+          <rect class="cloud-plane-line cloud-plane-compute" x="368" y="150" width="704" height="448" rx="38"/>
+          <rect class="cloud-plane-line cloud-plane-data" x="1092" y="150" width="276" height="448" rx="38"/>
+          <path class="cloud-route r-request" marker-end="url(#cloud-arrow)" d="M74 286 C205 286 246 264 348 292 S510 362 658 350 S891 286 1068 306 S1250 336 1364 324"/>
+          <path class="cloud-route r-events" marker-end="url(#cloud-arrow)" d="M106 430 C254 430 330 392 454 414 S650 486 790 458 S1022 388 1190 420 S1290 438 1360 430"/>
+          <path class="cloud-route r-data" marker-end="url(#cloud-arrow)" d="M262 548 C408 548 486 522 612 536 S816 604 962 560 S1180 510 1352 542"/>
+          <path class="cloud-route r-observe" marker-end="url(#cloud-arrow)" d="M438 198 C584 222 686 204 812 224 S1030 270 1198 224 S1312 194 1360 206"/>
+          <text class="cloud-route-label" x="378" y="278">request / response</text>
+          <text class="cloud-route-label" x="784" y="445">events</text>
+          <text class="cloud-route-label" x="846" y="580">evidence + state</text>
+          <text class="cloud-route-label" x="1028" y="236">telemetry</text>
+          <circle class="cloud-packet p-request" r="5"><animateMotion dur="8s" repeatCount="indefinite" path="M74 286 C205 286 246 264 348 292 S510 362 658 350 S891 286 1068 306 S1250 336 1364 324"/></circle>
+          <circle class="cloud-packet p-events" r="5"><animateMotion dur="11s" begin="-4s" repeatCount="indefinite" path="M106 430 C254 430 330 392 454 414 S650 486 790 458 S1022 388 1190 420 S1290 438 1360 430"/></circle>
+          <circle class="cloud-packet p-data" r="5"><animateMotion dur="13s" begin="-7s" repeatCount="indefinite" path="M262 548 C408 548 486 522 612 536 S816 604 962 560 S1180 510 1352 542"/></circle>
         </svg>
-        <span class="cloud-fabric-label cloud-label-region">AWS architecture lab</span>
-        <span class="cloud-fabric-label cloud-label-a">availability zone a</span>
-        <span class="cloud-fabric-label cloud-label-b">availability zone b</span>
+        <span class="cloud-fabric-label cloud-label-region">AWS cloud reference · illustrative</span>
+        <span class="cloud-fabric-label cloud-label-edge">edge + ingress</span>
+        <span class="cloud-fabric-label cloud-label-compute">compute + agent runtime</span>
+        <span class="cloud-fabric-label cloud-label-data">data + observability</span>
 
+        <span class="cloud-service cloud-service-edge"><i><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M4 12h16M12 4c3 3 3 13 0 16M12 4c-3 3-3 13 0 16"/></svg></i><b>Edge</b></span>
         <span class="cloud-service cloud-service-api"><i><svg viewBox="0 0 24 24"><path d="M5 7h14M5 12h14M5 17h14M8 5v14M16 5v14"/></svg></i><b>API</b></span>
         <span class="cloud-service cloud-service-compute"><i><svg viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2"/><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/></svg></i><b>EC2</b></span>
         <span class="cloud-service cloud-service-lambda"><i><svg viewBox="0 0 24 24"><path d="M6 4h5l7 16h-5l-2-5-3 5H3l6-10"/></svg></i><b>Lambda</b></span>
@@ -93,18 +107,15 @@
     </div>
 
     <header class="bar">
-      <span class="clawd-corner" role="img" aria-label="Animated Claude Code mascot">
-        <svg viewBox="0 0 64 52" shape-rendering="crispEdges" aria-hidden="true">
-          <g class="clawd-shadow"><rect x="17" y="46" width="30" height="3" rx="1"/></g>
-          <g class="clawd-leg clawd-leg-left"><path d="M20 37h9v10h-6v-5h-3z"/></g>
-          <g class="clawd-leg clawd-leg-right"><path d="M35 37h9v5h-3v5h-6z"/></g>
-          <g class="clawd-claw clawd-claw-left"><path d="M4 17h10v6h5v11h-8v-5H5v-5H1v-7h5v5h3v-4H4z"/></g>
-          <g class="clawd-claw clawd-claw-right"><path d="M60 17H50v6h-5v11h8v-5h6v-5h4v-7h-5v5h-3v-4h5z"/></g>
-          <g class="clawd-body"><path d="M14 10h8V5h20v5h8v29H14z"/><path class="clawd-top" d="M22 2h20v5H22z"/></g>
-          <g class="clawd-eye"><path d="M21 20h5v5h-5zM38 20h5v5h-5z"/><path class="clawd-brow" d="M19 16h9v3h-9zM36 16h9v3h-9z"/></g>
-          <path class="clawd-mouth" d="M25 31h14v3H25z"/>
+      <span class="clawd-corner" role="img" aria-label="Clawd, the animated Claude Code mascot">
+        <!-- Exact block geometry and four poses from the installed Claude Code
+             mascot, expanded into crisp vector pixels instead of redrawn. -->
+        <svg viewBox="0 0 18 5" shape-rendering="crispEdges" aria-hidden="true">
+          <g class="clawd-pose clawd-default"><path class="clawd-eye-pixels" d="M5 1h1v1H5zM12 1h1v1h-1z"/><path class="clawd-pixels" d="M3 0h12v1H3zM3 1h2v1H3zM6 1h6v1H6zM13 1h2v1h-2zM1 2h16v1H1zM3 3h12v1H3zM4 4h1v1H4zM6 4h1v1H6zM11 4h1v1h-1zM13 4h1v1h-1z"/></g>
+          <g class="clawd-pose clawd-look-right"><path class="clawd-eye-pixels" d="M5 0h1v1H5zM13 0h1v1h-1z"/><path class="clawd-pixels" d="M3 0h2v1H3zM6 0h7v1H6zM14 0h1v1h-1zM3 1h12v1H3zM1 2h16v1H1zM3 3h12v1H3zM4 4h1v1H4zM6 4h1v1H6zM11 4h1v1h-1zM13 4h1v1h-1z"/></g>
+          <g class="clawd-pose clawd-look-left"><path class="clawd-eye-pixels" d="M4 0h1v1H4zM12 0h1v1h-1z"/><path class="clawd-pixels" d="M3 0h1v1H3zM5 0h7v1H5zM13 0h2v1h-2zM3 1h12v1H3zM1 2h16v1H1zM3 3h12v1H3zM4 4h1v1H4zM6 4h1v1H6zM11 4h1v1h-1zM13 4h1v1h-1z"/></g>
+          <g class="clawd-pose clawd-arms-up"><path class="clawd-eye-pixels" d="M5 1h1v1H5zM12 1h1v1h-1z"/><path class="clawd-pixels" d="M3 0h12v1H3zM1 1h4v1H1zM6 1h6v1H6zM13 1h4v1h-4zM2 2h14v1H2zM3 3h12v1H3zM4 4h1v1H4zM6 4h1v1H6zM11 4h1v1h-1zM13 4h1v1h-1z"/></g>
         </svg>
-        <i class="clawd-spark s1"></i><i class="clawd-spark s2"></i><i class="clawd-spark s3"></i>
       </span>
       <a class="bar-left" href="/">
         <!-- 112px WebP: the page renders this at 26 and 56 CSS pixels, so the

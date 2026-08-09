@@ -46,11 +46,17 @@ def test_owner_linkedin_profile_is_canonical_everywhere() -> None:
 
 def test_clawd_and_cloud_architecture_are_contained_and_lightweight() -> None:
     assert 'class="clawd-corner"' in HTML
-    assert 'aria-label="Animated Claude Code mascot"' in HTML
+    assert 'aria-label="Clawd, the animated Claude Code mascot"' in HTML
+    for pose in ("clawd-default", "clawd-look-right", "clawd-look-left", "clawd-arms-up"):
+        assert pose in HTML
+    assert 'viewBox="0 0 18 5"' in HTML
     assert 'class="agent-showcase' not in HTML
     assert 'class="cloud-fabric"' in HTML
-    for service in ("API", "EC2", "Lambda", "SQS", "S3", "RDS", "Logs", "Cache"):
+    for service in ("Edge", "API", "EC2", "Lambda", "SQS", "S3", "RDS", "Logs", "Cache"):
         assert f"<b>{service}</b>" in HTML
+    assert "AWS cloud reference · illustrative" in HTML
+    assert "request / response" in HTML
+    assert "evidence + state" in HTML
     assert 'class="infra-sky"' not in HTML
     assert 'class="infra-component' not in HTML
     assert HTML.count("data-system=") == 7
@@ -58,7 +64,8 @@ def test_clawd_and_cloud_architecture_are_contained_and_lightweight() -> None:
     assert 'class="runtime-map"' in HTML
     assert 'class="foot-runtime"' in HTML
     assert ".clawd-corner" in CSS
-    assert "@keyframes clawd-wave-left" in CSS
+    assert "fill: #d97757" in CSS
+    assert "@keyframes clawd-look-left" in CSS
     assert ".cloud-region-line" in CSS
     assert "@keyframes cloud-route" in CSS
     assert ".band[data-system]::after" in CSS
