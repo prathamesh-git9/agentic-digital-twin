@@ -67,39 +67,14 @@ def test_clawd_and_cloud_architecture_are_contained_and_lightweight() -> None:
     assert 'preserveAspectRatio="none"' in HTML
     assert 'class="agent-showcase' not in HTML
     assert 'class="cloud-fabric"' in HTML
-    for service in ("Edge", "API", "EC2", "Lambda", "SQS", "S3", "RDS", "Logs", "Cache"):
-        assert f"<b>{service}</b>" in HTML
-    assert 'class="aws-reference"' in HTML
-    assert 'class="aws-ref-vpc"' in HTML
-    assert HTML.count('class="aws-ref-node ') == 8
-    for label in (
-        "AWS Cloud",
-        "eu-west-1",
-        "CloudFront",
-        "AWS WAF",
-        "API Gateway",
-        "Lambda",
-        "AgentCore",
-        "SQS",
-        "Evidence",
-        "CloudWatch",
-    ):
-        assert label in HTML
-    for asset in (
-        "aws-cloud.svg",
-        "region.svg",
-        "vpc.svg",
-        "cloudfront.svg",
-        "waf.svg",
-        "api-gateway.svg",
-        "lambda.svg",
-        "bedrock-agentcore.svg",
-        "sqs.svg",
-        "s3.svg",
-        "rds.svg",
-        "cloudwatch.svg",
-    ):
-        assert (STATIC / "aws" / asset).is_file()
+    assert 'class="aws-logo-clouds"' in HTML
+    assert HTML.count('class="aws-logo-cloud ') == 3
+    assert HTML.count("/static/aws/aws-cloud.svg") == 3
+    assert (STATIC / "aws" / "aws-cloud.svg").is_file()
+    assert 'class="aws-reference"' not in HTML
+    assert 'class="aws-ref-' not in HTML
+    assert 'class="cloud-service' not in HTML
+    assert 'class="cloud-backbone"' not in HTML
     assert "request / response" not in HTML
     assert "evidence + state" not in HTML
     assert 'class="infra-sky"' not in HTML
@@ -114,16 +89,17 @@ def test_clawd_and_cloud_architecture_are_contained_and_lightweight() -> None:
     assert "@keyframes clawd-track" in CSS
     assert "translate3d(var(--clawd-travel)" in CSS
     assert "grid-template-columns: 230px minmax(0, 720px) 230px" in CSS
-    assert ".cloud-region-line" in CSS
     assert HTML.count("<animateMotion") == 0
-    assert HTML.count('class="cloud-packet') == 1
+    assert HTML.count('class="cloud-packet') == 0
     assert "animation: cloud-route" not in CSS
     assert "animation: cloud-node-float" not in CSS
-    assert ".cloud-service b { display: none; }" in CSS
+    assert ".aws-logo-clouds" in CSS
+    assert ".aws-logo-cloud {" in CSS
     assert ".dock { margin-top: 32px; }" in CSS
-    assert ".aws-reference {" in CSS
-    assert ".aws-ref-vpc {" in CSS
-    assert ".cloud-service img {" in CSS
+    assert ".aws-reference {" not in CSS
+    assert ".aws-ref-vpc {" not in CSS
+    assert ".cloud-service" not in CSS
+    assert ".cloud-backbone" not in CSS
     assert ".aws-zone" not in CSS
     assert 'class="aws-zone' not in HTML
     assert ".band > .band-head { grid-column: 1; position: sticky;" in CSS
