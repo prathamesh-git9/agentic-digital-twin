@@ -2154,16 +2154,6 @@ body.has-thread .suggestions, body.has-thread .dock-note { display: none; }
   .send { width: 38px; height: 38px; }
 }
 
-.cloud-art {
-  position: absolute; inset: 64px 0 auto; width: 100%; height: min(78%, 760px);
-  object-fit: cover; object-position: center top; opacity: .74;
-  -webkit-mask-image: linear-gradient(to bottom, #000 0 72%, transparent 100%);
-  mask-image: linear-gradient(to bottom, #000 0 72%, transparent 100%);
-}
-html[data-theme="dark"] .cloud-art {
-  opacity: .25; filter: saturate(.7) brightness(.58) contrast(1.08);
-}
-
 /* Continue the cloud language after the first screen without returning to a
    noisy blueprint grid. The SVG pattern is a cloud outline plus server racks. */
 .bands {
@@ -2173,18 +2163,6 @@ html[data-theme="dark"] .cloud-art {
     linear-gradient(color-mix(in srgb, var(--infra-line-soft) 20%, transparent) 1px, transparent 1px),
     linear-gradient(90deg, color-mix(in srgb, var(--infra-line-soft) 20%, transparent) 1px, transparent 1px);
   background-size: 720px 520px, 72px 72px, 72px 72px;
-}
-
-@media (max-width: 900px) {
-  .cloud-art { top: 54px; height: 72%; opacity: .6; }
-}
-
-@media (max-width: 700px) {
-  .cloud-art {
-    top: 54px; height: 68%; object-position: left top; opacity: .46;
-    -webkit-mask-image: linear-gradient(to bottom, #000 0 76%, transparent 100%);
-    mask-image: linear-gradient(to bottom, #000 0 76%, transparent 100%);
-  }
 }
 
 @media (max-width: 520px) {
