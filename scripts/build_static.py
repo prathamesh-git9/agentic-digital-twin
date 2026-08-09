@@ -40,7 +40,6 @@ COPY = (
     "favicon.svg",
     "widget.js",
     "avatar.webp",
-    "cloud-infrastructure.webp",
 )
 COPY_DIRS: tuple[str, ...] = ()
 

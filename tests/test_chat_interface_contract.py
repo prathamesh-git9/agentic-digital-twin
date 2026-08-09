@@ -21,10 +21,10 @@ def test_boot_has_a_fast_local_fallback_while_live_ai_warms() -> None:
     assert 'toast("Live AI connected.")' in APP
 
 
-def test_static_build_copies_generated_cloud_asset_without_unused_aws_icons() -> None:
+def test_static_build_excludes_unused_cloud_art_and_aws_icons() -> None:
     assert "COPY_DIRS: tuple[str, ...] = ()" in BUILD_STATIC
     assert "shutil.copytree(source, out / name, dirs_exist_ok=True)" in BUILD_STATIC
-    assert '"cloud-infrastructure.webp"' in BUILD_STATIC
+    assert '"cloud-infrastructure.webp"' not in BUILD_STATIC
 
 
 def test_local_fallback_does_not_bypass_api_rate_or_budget_rejections() -> None:
@@ -66,10 +66,9 @@ def test_clawd_and_cloud_architecture_are_contained_and_lightweight() -> None:
         assert pose in HTML
     assert 'viewBox="0 0 18 5"' in HTML
     assert 'class="agent-showcase' not in HTML
-    assert 'class="cloud-art"' in HTML
-    assert HTML.count("/static/cloud-infrastructure.webp") == 1
-    assert (STATIC / "cloud-infrastructure.webp").is_file()
-    assert (STATIC / "cloud-infrastructure.webp").stat().st_size < 100_000
+    assert 'class="cloud-art"' not in HTML
+    assert "/static/cloud-infrastructure.webp" not in HTML
+    assert not (STATIC / "cloud-infrastructure.webp").exists()
     assert 'class="aws-logo-clouds"' not in HTML
     assert 'class="aws-logo-cloud ' not in HTML
     assert "/static/aws/aws-cloud.svg" not in HTML
@@ -95,8 +94,7 @@ def test_clawd_and_cloud_architecture_are_contained_and_lightweight() -> None:
     assert HTML.count('class="cloud-packet') == 0
     assert "animation: cloud-route" not in CSS
     assert "animation: cloud-node-float" not in CSS
-    assert ".cloud-art {" in CSS
-    assert "object-fit: cover" in CSS
+    assert ".cloud-art" not in CSS
     assert ".aws-logo-clouds" not in CSS
     assert ".aws-logo-cloud {" not in CSS
     assert ".dock { margin-top: 32px; }" in CSS
