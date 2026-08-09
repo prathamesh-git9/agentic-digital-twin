@@ -22,9 +22,9 @@ from pathlib import Path
 import pytest
 import yaml
 
-from digital_twin.grounding import DraftAnswer, DraftClaim, GroundingVerifier
-from digital_twin.profile import ProfileCorpus
-from digital_twin.security import contains_prompt_injection
+from agentic_digital_twin.grounding import DraftAnswer, DraftClaim, GroundingVerifier
+from agentic_digital_twin.profile import ProfileCorpus
+from agentic_digital_twin.security import contains_prompt_injection
 
 ROOT = Path(__file__).resolve().parents[1]
 EVAL = yaml.safe_load((ROOT / "data" / "injection_eval.yaml").read_text("utf-8"))

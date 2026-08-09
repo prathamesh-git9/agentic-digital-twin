@@ -5,11 +5,11 @@ import json
 import httpx
 import pytest
 
-from digital_twin.github import REPOSITORIES, GitHubService
-from digital_twin.grounding import GenerationRequest, GroundingVerifier
-from digital_twin.profile import EvidenceItem
-from digital_twin.providers import OpenAICompatibleProvider
-from digital_twin.research import DuckDuckGoSearchProvider
+from agentic_digital_twin.github import REPOSITORIES, GitHubService
+from agentic_digital_twin.grounding import GenerationRequest, GroundingVerifier
+from agentic_digital_twin.profile import EvidenceItem
+from agentic_digital_twin.providers import OpenAICompatibleProvider
+from agentic_digital_twin.research import DuckDuckGoSearchProvider
 
 LANGUAGE_CLAIM = "Java, Python, SQL, Bash, JavaScript."
 

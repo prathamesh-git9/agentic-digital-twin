@@ -3,13 +3,13 @@ from __future__ import annotations
 import random
 from pathlib import Path
 
-from digital_twin.config import Settings
-from digital_twin.linkedin import (
+from agentic_digital_twin.config import Settings
+from agentic_digital_twin.linkedin import (
     LinkedInAutomationService,
     LinkedInChallenge,
 )
-from digital_twin.models import Database
-from digital_twin.outreach import ApprovalTokenService
+from agentic_digital_twin.models import Database
+from agentic_digital_twin.outreach import ApprovalTokenService
 
 ROOT = Path(__file__).parents[1]
 

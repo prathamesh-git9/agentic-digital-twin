@@ -17,8 +17,8 @@ from pathlib import Path
 import pytest
 import yaml
 
-from digital_twin.profile import ProfileCorpus, tokens
-from digital_twin.retrieval import (
+from agentic_digital_twin.profile import ProfileCorpus, tokens
+from agentic_digital_twin.retrieval import (
     ALIASES,
     BM25Index,
     conversational_query,

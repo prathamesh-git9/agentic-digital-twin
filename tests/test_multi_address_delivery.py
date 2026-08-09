@@ -6,9 +6,9 @@ from collections.abc import Callable
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from digital_twin.email_harvesting import EmailHarvestResult
-from digital_twin.research import RawSearchResult
-from digital_twin.research_sources import AttributedFact
+from agentic_digital_twin.email_harvesting import EmailHarvestResult
+from agentic_digital_twin.research import RawSearchResult
+from agentic_digital_twin.research_sources import AttributedFact
 
 
 class OneCandidateProvider:

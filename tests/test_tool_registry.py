@@ -4,14 +4,14 @@ from collections.abc import Callable
 
 from fastapi import FastAPI
 
-from digital_twin.research import RawSearchResult, ResearchEngine
-from digital_twin.research_sources import (
+from agentic_digital_twin.research import RawSearchResult, ResearchEngine
+from agentic_digital_twin.research_sources import (
     PublicDocument,
     RobotsPolicy,
     ScraplingPageFetcher,
     SourceReport,
 )
-from digital_twin.tooling import ToolCall
+from agentic_digital_twin.tooling import ToolCall
 
 
 class QueryProvider:

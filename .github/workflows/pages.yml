@@ -10,9 +10,9 @@ on:
     paths:
       - "data/profile.yaml"
       - "scripts/build_static.py"
-      - "src/digital_twin/static/**"
-      - "src/digital_twin/github.py"
-      - "src/digital_twin/profile.py"
+      - "src/agentic_digital_twin/static/**"
+      - "src/agentic_digital_twin/github.py"
+      - "src/agentic_digital_twin/profile.py"
       - ".github/workflows/pages.yml"
   schedule:
     - cron: "17 6 * * *"

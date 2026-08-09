@@ -1,17 +1,17 @@
 services:
   - type: web
-    name: prathamesh-digital-twin-api
+    name: prathamesh-agentic-digital-twin-api
     runtime: python
     plan: free
     autoDeploy: true
     buildCommand: pip install -e .
-    startCommand: uvicorn digital_twin.main:app --host 0.0.0.0 --port $PORT
+    startCommand: uvicorn agentic_digital_twin.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /api/health
     envVars:
       - key: TWIN_ENVIRONMENT
         value: production
       - key: TWIN_DATABASE_URL
-        value: sqlite:////tmp/digital-twin.db
+        value: sqlite:////tmp/agentic-digital-twin.db
       - key: TWIN_PUBLIC_BASE_URL
         value: https://prathamesh-digital-twin-api.onrender.com
       - key: TWIN_PROVIDER

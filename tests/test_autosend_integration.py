@@ -6,7 +6,7 @@ from collections.abc import Callable
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from digital_twin.research import RawSearchResult
+from agentic_digital_twin.research import RawSearchResult
 
 
 class TwoCandidateProvider:

@@ -10,11 +10,11 @@ import httpx
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from digital_twin.grounding import DraftAnswer, DraftClaim, GenerationRequest
-from digital_twin.profile import EvidenceItem
-from digital_twin.providers import OpenAICompatibleProvider, ProviderTurn
-from digital_twin.research import RawSearchResult
-from digital_twin.tooling import ToolCall
+from agentic_digital_twin.grounding import DraftAnswer, DraftClaim, GenerationRequest
+from agentic_digital_twin.profile import EvidenceItem
+from agentic_digital_twin.providers import OpenAICompatibleProvider, ProviderTurn
+from agentic_digital_twin.research import RawSearchResult
+from agentic_digital_twin.tooling import ToolCall
 
 LANGUAGE_SOURCE = "CV › Skills › Languages"
 LANGUAGE_CLAIM = "Java, Python, SQL, Bash, JavaScript."

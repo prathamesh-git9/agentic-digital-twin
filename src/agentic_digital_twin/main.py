@@ -1874,7 +1874,9 @@ def create_app(
             iter([stream.getvalue()]),
             media_type="text/csv",
             headers={
-                "Content-Disposition": "attachment; filename=digital-twin-visits.csv"
+                "Content-Disposition": (
+                    "attachment; filename=agentic-digital-twin-visits.csv"
+                )
             },
         )
 
@@ -1886,7 +1888,7 @@ app = create_app()
 
 def run() -> None:
     uvicorn.run(
-        "digital_twin.main:app",
+        "agentic_digital_twin.main:app",
         host="0.0.0.0",  # noqa: S104 - container entrypoint must listen externally
         port=8000,
         reload=False,

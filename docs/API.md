@@ -517,8 +517,8 @@ Real SMTP is restricted to `smtp.gmail.com:587` with STARTTLS. The manual connec
 negotiates TLS and authenticates but has no send operation:
 
 ```bash
-digital-twin-smtp-check
-# or: python -m digital_twin.smtp_check
+agentic-digital-twin-smtp-check
+# or: python -m agentic_digital_twin.smtp_check
 ```
 
 It prints only status/host/port and a safe diagnostic; it never prints the password or account

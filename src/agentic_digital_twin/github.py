@@ -87,7 +87,7 @@ class GitHubService:
         headers = {
             "Accept": "application/vnd.github+json",
             "X-GitHub-Api-Version": "2022-11-28",
-            "User-Agent": "prathamesh-digital-twin",
+            "User-Agent": "prathamesh-agentic-digital-twin",
         }
         if self.token:
             headers["Authorization"] = f"Bearer {self.token}"

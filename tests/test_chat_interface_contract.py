@@ -4,16 +4,20 @@ import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-STATIC = ROOT / "src" / "digital_twin" / "static"
+STATIC = ROOT / "src" / "agentic_digital_twin" / "static"
 APP = (STATIC / "app.js").read_text(encoding="utf-8")
 HTML = (STATIC / "index.html").read_text(encoding="utf-8")
 CSS = (STATIC / "styles.css").read_text(encoding="utf-8")
-CONFIG = (ROOT / "src" / "digital_twin" / "config.py").read_text(encoding="utf-8")
+CONFIG = (ROOT / "src" / "agentic_digital_twin" / "config.py").read_text(encoding="utf-8")
 PROFILE = (ROOT / "data" / "profile.yaml").read_text(encoding="utf-8")
-GROUNDING = (ROOT / "src" / "digital_twin" / "grounding.py").read_text(encoding="utf-8")
-MAIN = (ROOT / "src" / "digital_twin" / "main.py").read_text(encoding="utf-8")
+GROUNDING = (ROOT / "src" / "agentic_digital_twin" / "grounding.py").read_text(
+    encoding="utf-8"
+)
+MAIN = (ROOT / "src" / "agentic_digital_twin" / "main.py").read_text(encoding="utf-8")
 WIDGET = (STATIC / "widget.js").read_text(encoding="utf-8")
 BUILD_STATIC = (ROOT / "scripts" / "build_static.py").read_text(encoding="utf-8")
+README = (ROOT / "README.md").read_text(encoding="utf-8")
+PACKAGE = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
 
 
 def test_boot_has_a_fast_local_fallback_while_live_ai_warms() -> None:
@@ -56,10 +60,18 @@ def test_premium_depth_system_shapes_every_portfolio_section() -> None:
 
 
 def test_agentic_digital_twin_brand_and_frameworks_are_consistent() -> None:
-    public_copy = "\n".join((HTML, APP, WIDGET, GROUNDING, MAIN, CONFIG))
-    assert "Agentic digital twin" in HTML
+    public_copy = "\n".join((HTML, APP, WIDGET, GROUNDING, MAIN, CONFIG, README, PACKAGE))
+    assert "Agentic Digital Twin" in HTML
     assert "Ask his agentic digital twin anything." in HTML
+    assert "ASK AGENTIC DIGITAL TWIN" in WIDGET
+    assert "agentic digital twin" in README
+    assert "agentic digital twin" in PACKAGE
+    assert 'name = "prathamesh-agentic-digital-twin"' in PACKAGE
+    assert "github.io/agentic-digital-twin/" in HTML
+    assert "github.io/digital-twin/" not in HTML
+    assert not (ROOT / "src" / "digital_twin").exists()
     assert "AI digital twin" not in public_copy
+    assert "recruiter-facing AI twin" not in public_copy
     assert "Ask his digital twin" not in public_copy
     assert "Prathamesh Kalamkar's digital twin" not in public_copy
     assert "app.js?v=60" in HTML

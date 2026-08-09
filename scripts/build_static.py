@@ -28,11 +28,11 @@ from urllib.parse import urlparse
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 
-from digital_twin.github import OWNER, REPOSITORIES, GitHubService  # noqa: E402
-from digital_twin.profile import ProfileCorpus  # noqa: E402
+from agentic_digital_twin.github import OWNER, REPOSITORIES, GitHubService  # noqa: E402
+from agentic_digital_twin.profile import ProfileCorpus  # noqa: E402
 
-STATIC = ROOT / "src" / "digital_twin" / "static"
-SITE_URL = "https://prathamesh-git9.github.io/digital-twin"
+STATIC = ROOT / "src" / "agentic_digital_twin" / "static"
+SITE_URL = "https://prathamesh-git9.github.io/agentic-digital-twin"
 COPY = (
     "styles.css",
     "app.js",

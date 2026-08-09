@@ -66,5 +66,5 @@ in-memory comparison of configured sensitive values against the complete Git his
 env-ignore=verified credential-history-scan=clean sensitive-values-checked=4
 ```
 
-The concurrent frontend-owned files under `src/digital_twin/static/` were not staged or edited
+The concurrent frontend-owned files under `src/agentic_digital_twin/static/` were not staged or edited
 as part of this backend work.

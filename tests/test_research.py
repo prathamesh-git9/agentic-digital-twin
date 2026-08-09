@@ -8,7 +8,7 @@ from collections.abc import Callable
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from digital_twin.research import (
+from agentic_digital_twin.research import (
     RawSearchResult,
     ResearchEngine,
     score_candidate,

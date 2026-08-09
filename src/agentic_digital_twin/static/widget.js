@@ -38,7 +38,7 @@
   button.type = "button";
   button.setAttribute("aria-expanded", "false");
   button.setAttribute("aria-label", "Open Prathamesh's agentic digital twin");
-  button.textContent = script.dataset.label || "ASK AGENTIC TWIN  ↗";
+  button.textContent = script.dataset.label || "ASK AGENTIC DIGITAL TWIN  ↗";
   Object.assign(button.style, {
     float: position,
     minHeight: "52px",
@@ -56,7 +56,9 @@
     const open = frame.style.display !== "none";
     frame.style.display = open ? "none" : "block";
     button.setAttribute("aria-expanded", String(!open));
-    button.textContent = open ? (script.dataset.label || "ASK AGENTIC TWIN  ↗") : "CLOSE AGENTIC TWIN  ×";
+    button.textContent = open
+      ? (script.dataset.label || "ASK AGENTIC DIGITAL TWIN  ↗")
+      : "CLOSE AGENTIC DIGITAL TWIN  ×";
   });
   root.append(frame, button);
   document.body.append(root);

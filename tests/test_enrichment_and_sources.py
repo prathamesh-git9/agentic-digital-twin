@@ -4,8 +4,8 @@ import asyncio
 
 import pytest
 
-from digital_twin.research import RawSearchResult, ResearchEngine
-from digital_twin.research_sources import (
+from agentic_digital_twin.research import RawSearchResult, ResearchEngine
+from agentic_digital_twin.research_sources import (
     PublicDocument,
     RobotsPolicy,
     ScraplingPageFetcher,

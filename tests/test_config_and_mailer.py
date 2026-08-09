@@ -4,8 +4,8 @@ from pathlib import Path
 
 import yaml
 
-from digital_twin.config import Settings
-from digital_twin.mailer import GmailSMTPSender
+from agentic_digital_twin.config import Settings
+from agentic_digital_twin.mailer import GmailSMTPSender
 
 ROOT = Path(__file__).parents[1]
 
@@ -102,7 +102,7 @@ async def test_gmail_sender_uses_587_starttls_and_self_test_never_sends(
     monkeypatch,
 ) -> None:
     FakeSMTP.instances.clear()
-    monkeypatch.setattr("digital_twin.mailer.smtplib.SMTP", FakeSMTP)
+    monkeypatch.setattr("agentic_digital_twin.mailer.smtplib.SMTP", FakeSMTP)
     settings = Settings(
         _env_file=None,
         environment="test",

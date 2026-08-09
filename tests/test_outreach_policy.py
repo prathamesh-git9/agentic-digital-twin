@@ -2,18 +2,18 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from digital_twin.config import Settings
-from digital_twin.deliverability import DeliverabilityPreflight
-from digital_twin.models import Database
-from digital_twin.outreach import (
+from agentic_digital_twin.config import Settings
+from agentic_digital_twin.deliverability import DeliverabilityPreflight
+from agentic_digital_twin.models import Database
+from agentic_digital_twin.outreach import (
     ApprovalTokenService,
     OutreachComposer,
     OutreachService,
     decide_send,
 )
-from digital_twin.profile import ProfileCorpus
-from digital_twin.research import Candidate, CandidateEmail
-from digital_twin.roles import RoleMatch
+from agentic_digital_twin.profile import ProfileCorpus
+from agentic_digital_twin.research import Candidate, CandidateEmail
+from agentic_digital_twin.roles import RoleMatch
 
 ROOT = Path(__file__).parents[1]
 

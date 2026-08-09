@@ -5,8 +5,8 @@ from pathlib import Path
 
 import httpx
 
-from digital_twin.profile import ProfileCorpus
-from digital_twin.roles import OpenRoleService, PublicATSClient, detect_ats
+from agentic_digital_twin.profile import ProfileCorpus
+from agentic_digital_twin.roles import OpenRoleService, PublicATSClient, detect_ats
 
 ROOT = Path(__file__).parents[1]
 

@@ -19,13 +19,13 @@ from pathlib import Path
 import pytest
 import yaml
 
-from digital_twin.grounding import (
+from agentic_digital_twin.grounding import (
     SUPPORT_THRESHOLD,
     DraftAnswer,
     DraftClaim,
     GroundingVerifier,
 )
-from digital_twin.profile import EvidenceItem
+from agentic_digital_twin.profile import EvidenceItem
 
 ROOT = Path(__file__).resolve().parents[1]
 EVAL = yaml.safe_load((ROOT / "data" / "grounding_eval.yaml").read_text("utf-8"))

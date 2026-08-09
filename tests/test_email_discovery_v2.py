@@ -6,13 +6,13 @@ import httpx
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from digital_twin.email_discovery import (
+from agentic_digital_twin.email_discovery import (
     EmailDiscoveryService,
     generate_email_permutations,
     select_send_targets,
 )
-from digital_twin.email_harvesting import EmailHarvestResult, PublicEmailHarvester
-from digital_twin.research import (
+from agentic_digital_twin.email_harvesting import EmailHarvestResult, PublicEmailHarvester
+from agentic_digital_twin.research import (
     Candidate,
     CandidateDossier,
     CandidateEmail,
@@ -22,7 +22,7 @@ from digital_twin.research import (
     RawSearchResult,
     ResearchEngine,
 )
-from digital_twin.research_sources import (
+from agentic_digital_twin.research_sources import (
     AttributedFact,
     PublicDocument,
     extract_public_document,

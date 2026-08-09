@@ -4,7 +4,7 @@ import json
 
 import httpx
 
-from digital_twin.supplemental import (
+from agentic_digital_twin.supplemental import (
     GitHubOrganizationSource,
     HackerNewsAlgoliaSource,
     RSSAtomReader,

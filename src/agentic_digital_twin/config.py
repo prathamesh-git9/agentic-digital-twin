@@ -20,7 +20,7 @@ class Settings(BaseSettings):
 
     app_name: str = "Prathamesh · Agentic Digital Twin"
     environment: Literal["development", "test", "production"] = "development"
-    database_url: str = "sqlite:///./digital-twin.db"
+    database_url: str = "sqlite:///./agentic-digital-twin.db"
     profile_path: Path = Path("data/profile.yaml")
     public_base_url: str = "http://localhost:8000"
 

@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import json
 
-from digital_twin.grounding import ContextAssembler
-from digital_twin.profile import EvidenceItem
+from agentic_digital_twin.grounding import ContextAssembler
+from agentic_digital_twin.profile import EvidenceItem
 
 
 def test_unconfirmed_research_is_structurally_absent_from_context() -> None:

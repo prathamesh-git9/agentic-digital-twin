@@ -5,8 +5,8 @@ from collections.abc import Callable
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from digital_twin.grounding import DraftAnswer, DraftClaim, GroundingVerifier
-from digital_twin.profile import EvidenceItem
+from agentic_digital_twin.grounding import DraftAnswer, DraftClaim, GroundingVerifier
+from agentic_digital_twin.profile import EvidenceItem
 
 
 def test_optional_name_skip_preserves_full_chat(

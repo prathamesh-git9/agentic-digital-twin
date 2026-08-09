@@ -1,14 +1,14 @@
 from __future__ import annotations
 
-from digital_twin.deliverability import DeliverabilityPreflight
-from digital_twin.email_discovery import EmailDiscoveryService
-from digital_twin.research import (
+from agentic_digital_twin.deliverability import DeliverabilityPreflight
+from agentic_digital_twin.email_discovery import EmailDiscoveryService
+from agentic_digital_twin.research import (
     Candidate,
     CandidateDossier,
     CompanyDossier,
     PersonDossier,
 )
-from digital_twin.research_sources import AttributedFact
+from agentic_digital_twin.research_sources import AttributedFact
 
 
 class MXRecords:

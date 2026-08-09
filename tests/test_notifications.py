@@ -5,8 +5,8 @@ from urllib.parse import parse_qs
 
 import httpx
 
-from digital_twin.config import Settings
-from digital_twin.engagement import NotificationService
+from agentic_digital_twin.config import Settings
+from agentic_digital_twin.engagement import NotificationService
 
 ROOT = Path(__file__).parents[1]
 

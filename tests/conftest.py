@@ -8,9 +8,9 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from digital_twin.config import Settings
-from digital_twin.main import create_app
-from digital_twin.research import RawSearchResult
+from agentic_digital_twin.config import Settings
+from agentic_digital_twin.main import create_app
+from agentic_digital_twin.research import RawSearchResult
 
 ROOT = Path(__file__).parents[1]
 

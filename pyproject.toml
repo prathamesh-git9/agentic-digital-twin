@@ -3,9 +3,9 @@ requires = ["hatchling>=1.27"]
 build-backend = "hatchling.build"
 
 [project]
-name = "prathamesh-digital-twin"
+name = "prathamesh-agentic-digital-twin"
 version = "0.1.0"
-description = "A recruiter-facing, source-grounded AI twin with an authority-gated research context"
+description = "A recruiter-facing, source-grounded agentic digital twin with bounded planning, tool use, and claim verification"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { file = "LICENSE" }
@@ -37,11 +37,11 @@ linkedin = [
 ]
 
 [project.scripts]
-digital-twin = "digital_twin.main:run"
-digital-twin-smtp-check = "digital_twin.smtp_check:main"
+agentic-digital-twin = "agentic_digital_twin.main:run"
+agentic-digital-twin-smtp-check = "agentic_digital_twin.smtp_check:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/digital_twin"]
+packages = ["src/agentic_digital_twin"]
 
 [tool.pytest.ini_options]
 addopts = "-ra --disable-socket --allow-hosts=127.0.0.1,localhost"

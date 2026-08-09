@@ -19,7 +19,11 @@ import re
 from pathlib import Path
 
 STYLESHEET = (
-    Path(__file__).resolve().parents[1] / "src" / "digital_twin" / "static" / "styles.css"
+    Path(__file__).resolve().parents[1]
+    / "src"
+    / "agentic_digital_twin"
+    / "static"
+    / "styles.css"
 )
 CSS = STYLESHEET.read_text(encoding="utf-8")
 LINES = CSS.split("\n")

@@ -7,4 +7,4 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
-from digital_twin.main import app  # noqa: E402, F401
+from agentic_digital_twin.main import app  # noqa: E402, F401

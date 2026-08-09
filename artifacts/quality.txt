@@ -10,7 +10,7 @@ ruff format --check .
 ruff check .
 All checks passed!
 
-docker build -t digital-twin:local .
+docker build -t agentic-digital-twin:local .
 Exit code: 0
 
 Container identity

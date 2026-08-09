@@ -2,8 +2,9 @@
 
 > Research can propose chat context. Only the visitor can grant that context authority.
 
-This is Prathamesh Kalamkar's recruiter-facing AI twin: a polished chat experience that
-answers from his CV and live metadata for ten allow-listed GitHub repositories. Its central
+This is Prathamesh Kalamkar's recruiter-facing **agentic digital twin**: a bounded agent that
+turns a hiring goal into a plan, chooses relevant public tools, retrieves evidence from his CV
+and ten allow-listed GitHub repositories, and verifies every claim before answering. Its central
 engineering decision is an **authority gate**, not a clever prompt. A background search can
 find possible visitor profiles, but the context assembler has no code path that can include a
 candidate until the visitor explicitly confirms it. Outreach is a separate, auditable effect
@@ -14,7 +15,7 @@ That is the same correctness pattern explored in
 [`agent-runtime`](https://github.com/prathamesh-git9/agent-runtime): a proposal is not an
 authorised effect. Tests assert the boundary directly.
 
-![The standalone twin interface](artifacts/chat-flow.png)
+![Prathamesh.ai agentic digital twin interface](artifacts/agentic-digital-twin-linkedin.png)
 
 ## What carries weight
 
@@ -98,7 +99,7 @@ python -m venv .venv
 # Windows: .venv\Scripts\activate
 # macOS/Linux: source .venv/bin/activate
 pip install -e ".[dev]"
-uvicorn digital_twin.main:app --reload
+uvicorn agentic_digital_twin.main:app --reload
 ```
 
 Open <http://localhost:8000>. The default `scripted` provider needs no network, model key, or
@@ -225,7 +226,7 @@ Real delivery additionally requires `TWIN_AUTOSEND=true` and Gmail credentials f
 `smtp.gmail.com:587` with STARTTLS. Test connectivity without sending a message:
 
 ```bash
-digital-twin-smtp-check
+agentic-digital-twin-smtp-check
 ```
 
 Pushover notifications are background-only and rate-limited. With
@@ -256,7 +257,7 @@ See [`.env.example`](.env.example) for the full set. Notable controls are:
 | `TWIN_TOKEN_BUDGET_PER_SESSION` | `12000` | Hard hostile-session spend cap |
 | `TWIN_REQUESTS_PER_MINUTE` | `30` | Per-IP/session sliding limit |
 | `TWIN_SHOW_PHONE` | `false` | Phone publication privacy gate |
-| `TWIN_DATABASE_URL` | `sqlite:///./digital-twin.db` | SQLAlchemy 2 database URL |
+| `TWIN_DATABASE_URL` | `sqlite:///./agentic-digital-twin.db` | SQLAlchemy 2 database URL |
 | `TWIN_HASH_SECRET` | development placeholder | HMAC key for non-reversible IP hashes |
 | `TWIN_AUTOSEND` | `false` | Enables real Gmail delivery after every policy/safety check |
 | `TWIN_FANOUT_UNSELECTED` | `false` | Enables the owner’s count-based unattended candidate flow |
@@ -279,7 +280,7 @@ OpenAPI documentation is at `/docs`.
 
 - [End-to-end transcript](artifacts/e2e-transcript.md)
 - [Machine-readable verification report](artifacts/e2e-report.json)
-- [Chat flow screenshot](artifacts/chat-flow.png)
+- [Agentic digital twin interface](artifacts/agentic-digital-twin-linkedin.png)
 - [Research/authority-gate screenshot](artifacts/research-flow.png)
 
 The test suite runs without network access or API keys (`191 passed`). It covers the context
@@ -404,8 +405,8 @@ ordinary prose.
 The multi-stage Dockerfile builds a compact image and runs as an unprivileged user:
 
 ```bash
-docker build -t digital-twin .
-docker run --rm -p 8000:8000 --env-file .env digital-twin
+docker build -t agentic-digital-twin .
+docker run --rm -p 8000:8000 --env-file .env agentic-digital-twin
 ```
 
 GitHub Actions tests Python 3.11, 3.12, and 3.13 with network explicitly blocked inside pytest.

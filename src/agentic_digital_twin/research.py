@@ -231,7 +231,7 @@ class DuckDuckGoSearchProvider:
         return await self.search_query(query, limit)
 
     async def search_query(self, query: str, limit: int) -> list[RawSearchResult]:
-        headers = {"User-Agent": "digital-twin/0.1 (+public-source-discovery)"}
+        headers = {"User-Agent": "agentic-digital-twin/0.1 (+public-source-discovery)"}
         if self.client is not None:
             response = await self.client.post(
                 self.endpoint, data={"q": query}, headers=headers, timeout=self.timeout
