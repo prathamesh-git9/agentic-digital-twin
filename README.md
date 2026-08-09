@@ -1,4 +1,4 @@
-# digital-twin
+# Prathamesh.ai — Agentic Digital Twin
 
 > Research can propose chat context. Only the visitor can grant that context authority.
 

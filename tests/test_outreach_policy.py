@@ -189,7 +189,7 @@ def test_single_match_copy_can_be_confident_and_names_a_real_requisition() -> No
         template="single_match",
     )[0]
 
-    assert "You just talked to my digital twin" in variant.body
+    assert "You just talked to my agentic digital twin" in variant.body
     assert "Backend Engineer (req REQ-42)" in variant.body
     assert "https://jobs.example/req-42" in variant.body
 

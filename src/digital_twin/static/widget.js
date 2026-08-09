@@ -21,7 +21,7 @@
 
   const frame = document.createElement("iframe");
   frame.src = `${base.replace(/\/$/, "")}/embed`;
-  frame.title = "Chat with Prathamesh's digital twin";
+  frame.title = "Chat with Prathamesh's agentic digital twin";
   frame.allow = "clipboard-write";
   Object.assign(frame.style, {
     display: "none",
@@ -37,8 +37,8 @@
   const button = document.createElement("button");
   button.type = "button";
   button.setAttribute("aria-expanded", "false");
-  button.setAttribute("aria-label", "Open Prathamesh's digital twin");
-  button.textContent = script.dataset.label || "ASK PK.TWIN  ↗";
+  button.setAttribute("aria-label", "Open Prathamesh's agentic digital twin");
+  button.textContent = script.dataset.label || "ASK AGENTIC TWIN  ↗";
   Object.assign(button.style, {
     float: position,
     minHeight: "52px",
@@ -56,9 +56,8 @@
     const open = frame.style.display !== "none";
     frame.style.display = open ? "none" : "block";
     button.setAttribute("aria-expanded", String(!open));
-    button.textContent = open ? (script.dataset.label || "ASK PK.TWIN  ↗") : "CLOSE TWIN  ×";
+    button.textContent = open ? (script.dataset.label || "ASK AGENTIC TWIN  ↗") : "CLOSE AGENTIC TWIN  ×";
   });
   root.append(frame, button);
   document.body.append(root);
 })();
-

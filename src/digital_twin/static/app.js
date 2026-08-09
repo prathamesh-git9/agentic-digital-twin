@@ -321,7 +321,7 @@
     const out = [];
     if (meta.refusal) {
       out.push(meta.grounded
-        ? '<span class="badge warn">Not the twin\'s to answer</span>'
+        ? '<span class="badge warn">Not the agentic digital twin\'s to answer</span>'
         : '<span class="badge warn">No evidence for this</span>');
     } else if (meta.grounded) {
       out.push('<span class="badge ok">Grounded in sources</span>');
@@ -745,7 +745,7 @@
         ${gaps.length ? gaps.map((g) => `
           <div class="fit-row gap">
             <strong>${esc(g.requirement || g)}</strong>
-            <p>Not stated in this CV. The twin will not claim it.</p>
+            <p>Not stated in this CV. The agentic digital twin will not claim it.</p>
           </div>`).join("") : "<p class='fit-empty'>Every requirement it could parse is evidenced.</p>"}
       </div>
       ${fit.caveat ? `<p class="fit-caveat">${esc(fit.caveat)}</p>` : ""}`;

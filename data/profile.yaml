@@ -7,8 +7,8 @@ person:
 summary:
   - >-
     Back-end engineer with 3.5+ years across Java, Spring Boot, Python, REST APIs,
-    and production support, with recent hands-on work in LLM integrations, agentic
-    workflows, and developer tools automation.
+    and production support, with recent hands-on work in LLM integrations, LangChain,
+    LangGraph, agentic workflows, and developer tools automation.
   - >-
     Strong at building reliable services, implementing tool execution layers,
     handling retries and guardrails, and turning ambiguous AI workflow ideas into
@@ -29,8 +29,8 @@ experience:
         instead of one-off prompting.
       - >-
         Integrated AI services such as OpenAI and Claude into developer-focused
-        automations, using function calling, prompt contracts, and failure handling to
-        keep agent behavior predictable.
+        automations, using LangChain, LangGraph, function calling, prompt contracts, and
+        failure handling to keep agent behavior predictable.
       - >-
         Built internal automations and review bots around GitHub style workflows, pull
         request checks, and issue handling, with strong attention to secrets, access
@@ -147,6 +147,8 @@ skills:
     - LLM integrations
     - OpenAI APIs
     - Claude integrations
+    - LangChain
+    - LangGraph
     - agentic workflows
     - function calling
     - tool orchestration

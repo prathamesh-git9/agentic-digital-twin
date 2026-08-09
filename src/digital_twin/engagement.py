@@ -104,7 +104,10 @@ class NotificationService:
                         data={
                             "token": self.settings.pushover_token,
                             "user": self.settings.pushover_user,
-                            "title": f"Digital twin · {kind.replace('_', ' ')[:40]}",
+                            "title": (
+                                "Agentic digital twin · "
+                                f"{kind.replace('_', ' ')[:40]}"
+                            ),
                             "message": _notification_text(kind, payload)[:1_024],
                         },
                         timeout=self.timeout,

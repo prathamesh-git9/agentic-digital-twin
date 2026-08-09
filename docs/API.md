@@ -1,4 +1,4 @@
-# Digital Twin API
+# Agentic Digital Twin API
 
 This is the backend contract for the standalone page, embedded widget, and owner tools.
 The interactive OpenAPI document is also available at `/docs`.
@@ -329,7 +329,7 @@ The current owner policy is count-based:
    max `3`), `decision` is `auto` and every candidate with a usable published or MX-enabled
    inferred address set is prepared for unattended delivery without selection.
 2. A sole candidate at/above `TWIN_SEND_CONFIDENCE_THRESHOLD` (default `85`) uses
-   `single_match`, which may say “You just talked to my digital twin.”
+   `single_match`, which may say “You just talked to my agentic digital twin.”
 3. Multiple candidates, or a lower-confidence sole candidate, use `fanout`. It says they
    **may** have looked at the profile and that they can ignore the message if not. It never says
    the recipient visited.

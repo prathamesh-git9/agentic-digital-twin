@@ -18,7 +18,7 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    app_name: str = "Prathamesh · Digital Twin"
+    app_name: str = "Prathamesh · Agentic Digital Twin"
     environment: Literal["development", "test", "production"] = "development"
     database_url: str = "sqlite:///./digital-twin.db"
     profile_path: Path = Path("data/profile.yaml")

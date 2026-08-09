@@ -231,9 +231,9 @@ class OutreachComposer:
                 )
             ]
         opening = (
-            "You just talked to my digital twin — thanks for taking a look."
+            "You just talked to my agentic digital twin — thanks for taking a look."
             if template == "single_match"
-            else "Thanks for taking a look at my digital twin."
+            else "Thanks for taking a look at my agentic digital twin."
         )
         common_end = (
             f"\n\n{referral}"
@@ -244,7 +244,9 @@ class OutreachComposer:
             OutreachVariant(
                 id="warm",
                 tone="warm",
-                subject=self._subject(role, "Thanks for visiting my twin"),
+                subject=self._subject(
+                    role, "Thanks for visiting my agentic digital twin"
+                ),
                 body=f"Hi {first_name} — {opening}\n\n{proof}{common_end}",
                 template=template,
             ),

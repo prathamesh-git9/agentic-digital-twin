@@ -9,6 +9,10 @@ APP = (STATIC / "app.js").read_text(encoding="utf-8")
 HTML = (STATIC / "index.html").read_text(encoding="utf-8")
 CSS = (STATIC / "styles.css").read_text(encoding="utf-8")
 CONFIG = (ROOT / "src" / "digital_twin" / "config.py").read_text(encoding="utf-8")
+PROFILE = (ROOT / "data" / "profile.yaml").read_text(encoding="utf-8")
+GROUNDING = (ROOT / "src" / "digital_twin" / "grounding.py").read_text(encoding="utf-8")
+MAIN = (ROOT / "src" / "digital_twin" / "main.py").read_text(encoding="utf-8")
+WIDGET = (STATIC / "widget.js").read_text(encoding="utf-8")
 BUILD_STATIC = (ROOT / "scripts" / "build_static.py").read_text(encoding="utf-8")
 
 
@@ -49,6 +53,19 @@ def test_premium_depth_system_shapes_every_portfolio_section() -> None:
     assert ".retrieval::before" in premium
     assert "background-attachment: fixed" not in premium
     assert "backdrop-filter: none" in premium
+
+
+def test_agentic_digital_twin_brand_and_frameworks_are_consistent() -> None:
+    public_copy = "\n".join((HTML, APP, WIDGET, GROUNDING, MAIN, CONFIG))
+    assert "Agentic digital twin" in HTML
+    assert "Ask his agentic digital twin anything." in HTML
+    assert "AI digital twin" not in public_copy
+    assert "Ask his digital twin" not in public_copy
+    assert "Prathamesh Kalamkar's digital twin" not in public_copy
+    assert "app.js?v=59" in HTML
+    for framework in ("LangChain", "LangGraph"):
+        assert HTML.count(framework) >= 4
+        assert framework in PROFILE
 
 
 def test_local_fallback_does_not_bypass_api_rate_or_budget_rejections() -> None:
