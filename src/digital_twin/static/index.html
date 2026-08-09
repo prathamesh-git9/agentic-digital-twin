@@ -45,7 +45,7 @@
 
     <!-- Version stamp: /static is cached immutably when the URL carries ?v=, so
          bumping the stamp is how a changed asset reaches a returning browser. -->
-    <link rel="stylesheet" href="/static/styles.css?v=62">
+    <link rel="stylesheet" href="/static/styles.css?v=63">
   </head>
   <body>
     <a class="skip-link" href="#composer-input">Skip to chat</a>
@@ -83,9 +83,9 @@
           <text class="cloud-route-label" x="784" y="445">events</text>
           <text class="cloud-route-label" x="846" y="580">evidence + state</text>
           <text class="cloud-route-label" x="1028" y="236">telemetry</text>
-          <circle class="cloud-packet p-request" r="5"><animateMotion dur="8s" repeatCount="indefinite" path="M74 286 C205 286 246 264 348 292 S510 362 658 350 S891 286 1068 306 S1250 336 1364 324"/></circle>
-          <circle class="cloud-packet p-events" r="5"><animateMotion dur="11s" begin="-4s" repeatCount="indefinite" path="M106 430 C254 430 330 392 454 414 S650 486 790 458 S1022 388 1190 420 S1290 438 1360 430"/></circle>
-          <circle class="cloud-packet p-data" r="5"><animateMotion dur="13s" begin="-7s" repeatCount="indefinite" path="M262 548 C408 548 486 522 612 536 S816 604 962 560 S1180 510 1352 542"/></circle>
+          <!-- One local pulse keeps the diagram alive without repainting a
+               full-screen SVG along three motion paths on every frame. -->
+          <circle class="cloud-packet p-request" cx="658" cy="350" r="5"/>
         </svg>
         <span class="cloud-fabric-label cloud-label-region">AWS cloud reference · illustrative</span>
         <span class="cloud-fabric-label cloud-label-edge">edge + ingress</span>
@@ -519,6 +519,6 @@
     <!-- Defines the retrieval engine app.js reads. Deferred scripts run in order,
          so this is guaranteed to be in place before the application boots. -->
     <script src="/static/twin-local.js?v=56" defer></script>
-    <script src="/static/app.js?v=57" defer></script>
+    <script src="/static/app.js?v=58" defer></script>
   </body>
 </html>

@@ -1106,8 +1106,8 @@
   const paint = () => {
     if (progress) {
       const max = document.documentElement.scrollHeight - window.innerHeight;
-      const pct = max > 0 ? (window.scrollY / max) * 100 : 0;
-      progress.style.width = `${pct}%`;
+      const ratio = max > 0 ? Math.min(1, window.scrollY / max) : 0;
+      progress.style.transform = `scaleX(${ratio})`;
     }
     // Light glass is right over the sky at the top of the page and wrong
     // everywhere else: at that fill, body copy and cards passing under the bar
@@ -1115,8 +1115,17 @@
     // first scroll it takes the heavy fill.
     bar?.classList.toggle("solid", window.scrollY > 8);
   };
-  addEventListener("scroll", paint, { passive: true });
-  addEventListener("resize", paint);
+  let paintQueued = false;
+  const queuePaint = () => {
+    if (paintQueued) return;
+    paintQueued = true;
+    requestAnimationFrame(() => {
+      paintQueued = false;
+      paint();
+    });
+  };
+  addEventListener("scroll", queuePaint, { passive: true });
+  addEventListener("resize", queuePaint);
   paint();
 
   /* ---------- copy an answer ---------- */
