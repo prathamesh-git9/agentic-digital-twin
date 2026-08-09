@@ -1376,11 +1376,14 @@ def create_app(
         async def publish_tool_event(event: dict[str, Any]) -> None:
             await events.publish(session_id, event, retain=False)
 
-        verified, tailored_for, used, trace, tool_remaining = await chat.answer(
-            visit,
-            message,
-            publish=publish_tool_event,
-        )
+        (
+            verified,
+            tailored_for,
+            used,
+            trace,
+            tool_remaining,
+            agent_run,
+        ) = await chat.answer(visit, message, publish=publish_tool_event)
         database.add_message(session_id, "user", message)
         database.add_message(session_id, "assistant", verified.text, verified.sources)
         database.update_visit(
@@ -1397,6 +1400,7 @@ def create_app(
             budget_remaining=remaining,
             tool_budget_remaining=tool_remaining,
             trace=trace,
+            agent_run=agent_run,
         )
 
     @app.post("/api/sessions/{session_id}/jd-fit", response_model=JobFitResponse)

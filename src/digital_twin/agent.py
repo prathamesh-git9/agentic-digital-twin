@@ -23,6 +23,7 @@ class AgentOutcome:
     evidence: list[EvidenceItem]
     trace: list[ToolTrace]
     extra_token_usage: int
+    model_turns: int
 
 
 class AgentRunner:
@@ -54,13 +55,15 @@ class AgentRunner:
         *,
         session_id: str,
         request: GenerationRequest,
+        allowed_tools: tuple[str, ...],
         publish: AgentEventCallback | None = None,
     ) -> AgentOutcome:
         if not self.enabled:
             draft = await self.provider.generate(request)
-            return AgentOutcome(draft, list(request.evidence), [], 0)
+            return AgentOutcome(draft, list(request.evidence), [], 0, 1)
 
         deadline = time.monotonic() + self.settings.tool_wall_clock_seconds
+        definitions = self.tools.definitions_for(allowed_tools)
         continuation: list[dict[str, Any]] = []
         evidence = list(request.evidence)
         trace: list[ToolTrace] = []
@@ -76,6 +79,7 @@ class AgentRunner:
                     request,
                     continuation=continuation,
                     allow_tools=True,
+                    definitions=definitions,
                     time_budget=remaining,
                 )
                 provider_turns += 1
@@ -165,6 +169,7 @@ class AgentRunner:
                         request,
                         continuation=continuation,
                         allow_tools=False,
+                        definitions=definitions,
                         time_budget=remaining,
                     )
                     provider_turns += 1
@@ -193,6 +198,7 @@ class AgentRunner:
             evidence,
             trace,
             continuation_tokens + repeated_context,
+            provider_turns,
         )
 
     async def _turn(
@@ -201,13 +207,14 @@ class AgentRunner:
         *,
         continuation: list[dict[str, Any]],
         allow_tools: bool,
+        definitions: list[dict[str, Any]],
         time_budget: float,
     ) -> ProviderTurn:
         generate_turn = self.provider.generate_turn  # type: ignore[attr-defined]
         value = await asyncio.wait_for(
             generate_turn(
                 request,
-                tools=self.tools.definitions if allow_tools else [],
+                tools=definitions if allow_tools else [],
                 continuation=continuation,
                 allow_tools=allow_tools,
             ),

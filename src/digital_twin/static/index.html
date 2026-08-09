@@ -46,7 +46,7 @@
 
     <!-- Version stamp: /static is cached immutably when the URL carries ?v=, so
          bumping the stamp is how a changed asset reaches a returning browser. -->
-    <link rel="stylesheet" href="/static/styles.css?v=71">
+    <link rel="stylesheet" href="/static/styles.css?v=72">
   </head>
   <body>
     <a class="skip-link" href="#composer-input">Skip to chat</a>
@@ -109,12 +109,12 @@
         <section class="panel note reveal d1">
           <span class="panel-label">How it answers</span>
           <ol class="pipeline">
-            <li>Scores every CV chunk two ways</li>
-            <li>Fuses both rankings by position</li>
-            <li>Answers only from what it retrieved</li>
-            <li>Cites the source of every claim</li>
+            <li>Understands the hiring goal</li>
+            <li>Builds the shortest safe plan</li>
+            <li>Chooses only relevant public tools</li>
+            <li>Verifies every claim before answering</li>
           </ol>
-          <p>Ask it something the CV does not evidence and it says so, rather than guessing.</p>
+          <p>Each answer includes the run: plan, evidence, tools used and verification outcome.</p>
         </section>
 
       </aside>
@@ -127,7 +127,7 @@
         <div id="intro">
           <h1 class="reveal">Prathamesh<em>.ai</em></h1>
           <p class="hero-lead reveal d1">Ask his agentic digital twin anything.</p>
-          <p class="hero-sub reveal d1">His experience, what he's built, or whether he fits the role you're hiring for. Every answer is retrieved from his CV or his public code, and cites it.</p>
+          <p class="hero-sub reveal d1">Give it a hiring goal. It plans the shortest safe route, retrieves evidence, chooses public tools when needed, and shows its work before answering.</p>
         </div>
 
         <div class="thread" id="messages" role="log" aria-live="polite"></div>
@@ -227,7 +227,7 @@
             <span><i class="runtime-agent"></i><b>Agent</b></span><em></em>
             <span><i class="runtime-tools"></i><b>Tools</b></span>
           </div>
-          <p class="runtime-caption">request → retrieval → model → cited answer</p>
+          <p class="runtime-caption">goal → plan → tools → evidence → verify</p>
         </section>
       </aside>
 
@@ -474,6 +474,6 @@
     <!-- Defines the retrieval engine app.js reads. Deferred scripts run in order,
          so this is guaranteed to be in place before the application boots. -->
     <script src="/static/twin-local.js?v=56" defer></script>
-    <script src="/static/app.js?v=59" defer></script>
+    <script src="/static/app.js?v=60" defer></script>
   </body>
 </html>

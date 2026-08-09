@@ -1187,6 +1187,100 @@ html[data-theme="dark"] {
 /* Live steps sit under the waiting line inside the pending bubble. */
 .waiting + .steps.live { margin-top: 16px; }
 
+/* A compact run graph makes the orchestration legible without turning the
+   answer into a developer console. It uses translucent paint rather than a
+   second backdrop blur, preserving the glass depth without adding scroll cost. */
+.agent-live,
+.run-overview {
+  margin-top: 14px;
+  padding: 12px 13px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, .48), transparent), var(--lg-fill);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .58);
+}
+html[data-theme="dark"] .agent-live,
+html[data-theme="dark"] .run-overview {
+  background: linear-gradient(135deg, rgba(255, 255, 255, .045), transparent), var(--lg-fill);
+}
+.agent-live[hidden] { display: none; }
+.agent-live-goal,
+.run-goal {
+  display: block;
+  color: var(--ink-2);
+  font-size: 12.5px;
+  font-weight: 620;
+}
+.phase-track {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 7px;
+  margin: 12px 0 0;
+  padding: 0;
+}
+.phase {
+  min-width: 0;
+  padding: 9px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--paper) 78%, transparent);
+}
+.phase-mark {
+  display: block;
+  width: 7px;
+  height: 7px;
+  margin-bottom: 8px;
+  border-radius: 50%;
+  background: var(--ink-3);
+}
+.phase[data-status="running"] { border-color: color-mix(in srgb, var(--clay) 48%, var(--line)); }
+.phase[data-status="running"] .phase-mark { background: var(--clay); animation: blink 1.3s var(--ease) infinite; }
+.phase[data-status="completed"] .phase-mark { background: var(--ok); }
+.phase[data-status="skipped"] { opacity: .62; }
+.phase[data-status="blocked"] .phase-mark {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--ink-3);
+}
+.phase-copy { display: block; min-width: 0; }
+.phase-copy b {
+  display: block;
+  color: var(--ink-2);
+  font-size: 10.5px;
+  font-weight: 620;
+  line-height: 1.35;
+}
+.phase-copy small {
+  display: block;
+  margin-top: 5px;
+  color: var(--ink-3);
+  font-size: 9.5px;
+  line-height: 1.4;
+}
+.agent-run > summary { color: var(--ink-2); font-weight: 600; }
+.run-overview { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
+.run-metrics {
+  color: var(--ink-3);
+  font: 400 9.5px/1.5 var(--mono);
+  text-align: right;
+}
+.agent-run .phase-track { margin-top: 9px; }
+.run-tools { margin-top: 15px; padding-top: 13px; border-top: 1px solid var(--line); }
+.run-tools-label {
+  color: var(--ink-3);
+  font: 600 9px/1 var(--mono);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 620px) {
+  .phase-track { grid-template-columns: 1fr; }
+  .phase { display: grid; grid-template-columns: 8px minmax(0, 1fr); gap: 9px; }
+  .phase-mark { margin: 4px 0 0; }
+  .run-overview { display: block; }
+  .run-metrics { display: block; margin-top: 7px; text-align: left; }
+}
+
 .trace-panel { margin-top: 16px; border-top: 1px solid var(--line); padding-top: 12px; max-width: 62ch; }
 .trace-panel summary {
   cursor: pointer; list-style: none; font-family: var(--sans);

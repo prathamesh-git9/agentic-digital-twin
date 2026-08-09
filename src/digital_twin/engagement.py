@@ -105,8 +105,7 @@ class NotificationService:
                             "token": self.settings.pushover_token,
                             "user": self.settings.pushover_user,
                             "title": (
-                                "Agentic digital twin · "
-                                f"{kind.replace('_', ' ')[:40]}"
+                                f"Agentic digital twin · {kind.replace('_', ' ')[:40]}"
                             ),
                             "message": _notification_text(kind, payload)[:1_024],
                         },

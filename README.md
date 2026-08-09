@@ -55,6 +55,10 @@ authorised effect. Tests assert the boundary directly.
   step with its status, duration and source hosts, and the finished trace stays folded under
   the answer it produced. Every answer states whether it is grounded, refused for lack of
   evidence, or declined as outside what the twin may decide.
+- Each question is routed through an explicit bounded plan. The planner narrows the available
+  tools by intent, streams retrieval/tool/verification phases over SSE, and returns a structured
+  `agent_run` so the interface can show what the system actually did rather than merely call
+  itself agentic.
 - Visitor-side session control: the conversation survives a reload, and one button purges the
   session server-side and drops the browser's copy of the transcript.
 

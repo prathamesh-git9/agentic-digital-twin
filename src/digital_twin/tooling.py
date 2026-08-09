@@ -199,6 +199,14 @@ class ToolRegistry:
     def definitions(self) -> list[dict[str, Any]]:
         return [spec.definition() for spec in self._specs.values()]
 
+    def definitions_for(self, names: tuple[str, ...]) -> list[dict[str, Any]]:
+        """Return only the tools admitted by the deterministic intent plan."""
+
+        allowed = set(names)
+        return [
+            spec.definition() for name, spec in self._specs.items() if name in allowed
+        ]
+
     @property
     def names(self) -> list[str]:
         return list(self._specs)
