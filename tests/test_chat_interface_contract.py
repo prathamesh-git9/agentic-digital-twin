@@ -27,6 +27,17 @@ def test_static_build_excludes_unused_cloud_art_and_aws_icons() -> None:
     assert '"cloud-infrastructure.webp"' not in BUILD_STATIC
 
 
+def test_background_is_code_native_and_theme_aware() -> None:
+    assert "--aurora-cyan:" in CSS
+    assert "--aurora-violet:" in CSS
+    assert "--aurora-warm:" in CSS
+    assert ".sky::before {" in CSS
+    assert ".sky::after {" in CSS
+    assert "background-size: 34px 34px" in CSS
+    assert ".cloud-art" not in CSS
+    assert "cloud-infrastructure.webp" not in HTML
+
+
 def test_local_fallback_does_not_bypass_api_rate_or_budget_rejections() -> None:
     assert "error.httpStatus = res.status" in APP
     assert "if (error.httpStatus) throw error" in APP

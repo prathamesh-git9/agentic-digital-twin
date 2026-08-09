@@ -28,6 +28,11 @@
   --sky-low: #f7fbff;
   --sun-core: #ffffff;
   --sun-halo: rgba(140, 196, 250, .38);
+  --aurora-cyan: rgba(26, 151, 244, .2);
+  --aurora-violet: rgba(105, 87, 238, .14);
+  --aurora-warm: rgba(255, 139, 76, .1);
+  --aurora-arc: rgba(35, 121, 205, .13);
+  --tech-dot: rgba(29, 109, 190, .18);
   --ridge-4: #dcebf9;
   --ridge-3: #c9dff3;
   --ridge-2: #b2cfeb;
@@ -67,6 +72,11 @@ html[data-theme="dark"] {
   --sky-low: #0d1e2e;
   --sun-core: #cfe6ff;
   --sun-halo: rgba(90, 167, 255, .22);
+  --aurora-cyan: rgba(31, 148, 239, .18);
+  --aurora-violet: rgba(117, 100, 255, .14);
+  --aurora-warm: rgba(255, 131, 70, .08);
+  --aurora-arc: rgba(89, 168, 240, .12);
+  --tech-dot: rgba(104, 175, 238, .17);
   --ridge-4: #15263a;
   --ridge-3: #112032;
   --ridge-2: #0e1a29;
@@ -108,18 +118,51 @@ a { color: inherit; }
 
 .sky {
   position: absolute; inset: 0;
-  background: linear-gradient(180deg, var(--sky-top) 0%, var(--sky-mid) 46%, var(--sky-low) 78%, var(--paper) 100%);
+  background:
+    radial-gradient(ellipse 46% 38% at 13% 16%, var(--aurora-cyan), transparent 72%),
+    radial-gradient(ellipse 42% 34% at 84% 13%, var(--aurora-violet), transparent 74%),
+    radial-gradient(ellipse 32% 27% at 69% 64%, var(--aurora-warm), transparent 76%),
+    linear-gradient(180deg, var(--sky-top) 0%, var(--sky-mid) 46%, var(--sky-low) 78%, var(--paper) 100%);
+}
+.sky::before {
+  content: ""; position: absolute; inset: -24% -8% 0;
+  background:
+    radial-gradient(ellipse at 18% -4%, transparent 0 53%, var(--aurora-arc) 53.15%, transparent 53.55%),
+    radial-gradient(ellipse at 82% -12%, transparent 0 57%, var(--aurora-arc) 57.15%, transparent 57.52%),
+    radial-gradient(ellipse at 51% -30%, transparent 0 64%, color-mix(in srgb, var(--aurora-arc) 58%, transparent) 64.12%, transparent 64.38%);
+}
+.sky::after {
+  content: ""; position: absolute; inset: 0;
+  background-image: radial-gradient(circle, var(--tech-dot) .7px, transparent .85px);
+  background-size: 34px 34px;
+  opacity: .38;
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, rgba(0, 0, 0, .72) 44%, transparent 82%);
+  mask-image: linear-gradient(to bottom, #000 0%, rgba(0, 0, 0, .72) 44%, transparent 82%);
 }
 
 /* Kept outside the 720px reading column so it never sits behind the copy. */
 .sun {
-  position: absolute; right: 7%; bottom: min(34vh, 300px); width: 96px; height: 96px;
+  position: absolute; right: -20px; top: 7%; width: min(32vw, 430px); height: min(32vw, 430px);
   border-radius: 50%;
-  background: var(--sun-core); filter: blur(.4px); opacity: .9;
+  background: radial-gradient(circle, var(--sun-core) 0 1.2%, var(--aurora-warm) 2.4%, transparent 62%);
+  opacity: .62;
 }
 .sun::after {
-  content: ""; position: absolute; inset: -180px; border-radius: 50%;
-  background: radial-gradient(circle, var(--sun-halo), transparent 60%);
+  content: ""; position: absolute; inset: 26%; border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--aurora-warm) 72%, transparent);
+  box-shadow: 0 0 48px var(--sun-halo);
+}
+
+@media (max-width: 700px) {
+  .sky {
+    background:
+      radial-gradient(ellipse 82% 30% at 8% 10%, var(--aurora-cyan), transparent 72%),
+      radial-gradient(ellipse 78% 28% at 94% 18%, var(--aurora-violet), transparent 74%),
+      linear-gradient(180deg, var(--sky-top) 0%, var(--sky-mid) 48%, var(--sky-low) 80%, var(--paper) 100%);
+  }
+  .sky::before { inset: -15% -58% 0; opacity: .72; }
+  .sky::after { background-size: 30px 30px; opacity: .3; }
+  .sun { right: -90px; top: 10%; width: 260px; height: 260px; opacity: .42; }
 }
 
 .ridges { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: min(62vh, 560px); }
