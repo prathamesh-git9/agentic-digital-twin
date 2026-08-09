@@ -63,11 +63,37 @@ def test_clawd_and_cloud_architecture_are_contained_and_lightweight() -> None:
     assert 'class="cloud-fabric"' in HTML
     for service in ("Edge", "API", "EC2", "Lambda", "SQS", "S3", "RDS", "Logs", "Cache"):
         assert f"<b>{service}</b>" in HTML
-    for zone in ("AWS edge cloud", "AWS compute cloud", "AWS data cloud"):
-        assert zone in HTML
-    assert 'class="aws-zone aws-zone-mobile"' in HTML
-    assert HTML.count('class="aws-zone-cloud"') == 4
-    assert 'viewBox="0 0 240 90"' in HTML
+    assert 'class="aws-reference"' in HTML
+    assert 'class="aws-ref-vpc"' in HTML
+    assert HTML.count('class="aws-ref-node ') == 8
+    for label in (
+        "AWS Cloud",
+        "eu-west-1",
+        "CloudFront",
+        "AWS WAF",
+        "API Gateway",
+        "Lambda",
+        "AgentCore",
+        "SQS",
+        "Evidence",
+        "CloudWatch",
+    ):
+        assert label in HTML
+    for asset in (
+        "aws-cloud.svg",
+        "region.svg",
+        "vpc.svg",
+        "cloudfront.svg",
+        "waf.svg",
+        "api-gateway.svg",
+        "lambda.svg",
+        "bedrock-agentcore.svg",
+        "sqs.svg",
+        "s3.svg",
+        "rds.svg",
+        "cloudwatch.svg",
+    ):
+        assert (STATIC / "aws" / asset).is_file()
     assert "request / response" not in HTML
     assert "evidence + state" not in HTML
     assert 'class="infra-sky"' not in HTML
@@ -89,9 +115,11 @@ def test_clawd_and_cloud_architecture_are_contained_and_lightweight() -> None:
     assert "animation: cloud-node-float" not in CSS
     assert ".cloud-service b { display: none; }" in CSS
     assert ".dock { margin-top: 32px; }" in CSS
-    assert ".aws-zone-mobile { display: none; }" in CSS
-    assert ".aws-zone-cloud {" in CSS
-    assert "border-radius: 999px" not in CSS.split(".aws-zone {", 1)[1].split("}", 1)[0]
+    assert ".aws-reference {" in CSS
+    assert ".aws-ref-vpc {" in CSS
+    assert ".cloud-service img {" in CSS
+    assert ".aws-zone" not in CSS
+    assert 'class="aws-zone' not in HTML
     assert ".band > .band-head { grid-column: 1; position: sticky;" in CSS
     assert "  .band-head { grid-column: 1; position: sticky;" not in CSS
     assert ".band[data-system]::after" in CSS
