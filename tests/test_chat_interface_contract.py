@@ -76,12 +76,20 @@ def test_clawd_and_cloud_architecture_are_contained_and_lightweight() -> None:
     assert "fill: #d97757" in CSS
     assert "@keyframes clawd-look-left" in CSS
     assert "@keyframes clawd-track" in CSS
+    assert "translate3d(var(--clawd-travel)" in CSS
     assert "grid-template-columns: 230px minmax(0, 720px) 230px" in CSS
     assert ".cloud-region-line" in CSS
-    assert "@keyframes cloud-route" in CSS
+    assert HTML.count("<animateMotion") == 0
+    assert HTML.count('class="cloud-packet') == 1
+    assert "animation: cloud-route" not in CSS
+    assert "animation: cloud-node-float" not in CSS
     assert ".band[data-system]::after" in CSS
     assert ".band[data-system] .band-head::after { display: none; }" in CSS
     assert ".bands" in CSS and "--infra-line-soft" in CSS
+    assert "content-visibility: auto" in CSS
+    assert "background-attachment: fixed" not in CSS
+    assert "progress.style.transform" in APP
+    assert "const queuePaint" in APP
     assert "@media (prefers-reduced-motion: reduce)" in CSS
 
 
