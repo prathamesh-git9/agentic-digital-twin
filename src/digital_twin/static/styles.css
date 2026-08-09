@@ -2154,31 +2154,15 @@ body.has-thread .suggestions, body.has-thread .dock-note { display: none; }
   .send { width: 38px; height: 38px; }
 }
 
-.cloudscape {
-  position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible;
+.cloud-art {
+  position: absolute; inset: 64px 0 auto; width: 100%; height: min(78%, 760px);
+  object-fit: cover; object-position: center top; opacity: .74;
+  -webkit-mask-image: linear-gradient(to bottom, #000 0 72%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0 72%, transparent 100%);
 }
-.cloud-bank {
-  fill: rgba(241, 249, 255, .72);
-  stroke: rgba(45, 119, 191, .42); stroke-width: 1.35;
-  transform-box: fill-box; transform-origin: center;
+html[data-theme="dark"] .cloud-art {
+  opacity: .25; filter: saturate(.7) brightness(.58) contrast(1.08);
 }
-.cloud-bank-a { opacity: .68; }
-.cloud-bank-b { opacity: .56; }
-.cloud-bank-c { opacity: .62; }
-.cloud-bank-d, .cloud-bank-e { opacity: .58; }
-html[data-theme="dark"] .cloud-bank {
-  fill: rgba(63, 105, 151, .2); stroke: rgba(111, 177, 239, .34);
-}
-
-.cloud-fabric { position: absolute; inset: 64px 0 0; }
-.aws-logo-clouds { position: absolute; inset: 0; }
-.aws-logo-cloud {
-  position: absolute; z-index: 1; width: 46px; height: 46px; display: block;
-  opacity: .78; border-radius: 7px; box-shadow: 0 8px 22px rgba(25, 53, 82, .14);
-}
-.aws-logo-cloud-a { left: 6%; top: 16px; }
-.aws-logo-cloud-b { right: 6%; top: 16px; }
-.aws-logo-cloud-c { left: 50%; top: 12px; transform: translateX(-50%); }
 
 /* Continue the cloud language after the first screen without returning to a
    noisy blueprint grid. The SVG pattern is a cloud outline plus server racks. */
@@ -2191,30 +2175,22 @@ html[data-theme="dark"] .cloud-bank {
   background-size: 720px 520px, 72px 72px, 72px 72px;
 }
 
-@media (max-width: 1180px) {
-  .aws-logo-cloud { width: 42px; height: 42px; }
-  .aws-logo-cloud-c { display: none; }
-}
-
 @media (max-width: 900px) {
-  .cloud-fabric { top: 54px; }
-  .aws-logo-cloud-a { left: 4%; top: 12px; }
-  .aws-logo-cloud-b { right: 4%; top: 12px; }
-  .cloud-bank-d, .cloud-bank-e { opacity: .46; }
+  .cloud-art { top: 54px; height: 72%; opacity: .6; }
 }
 
 @media (max-width: 700px) {
-  .aws-logo-cloud { width: 38px; height: 38px; opacity: .7; }
-  .aws-logo-cloud-a { left: auto; right: 16px; top: 10px; }
-  .aws-logo-cloud-b { display: none; }
+  .cloud-art {
+    top: 54px; height: 68%; object-position: left top; opacity: .46;
+    -webkit-mask-image: linear-gradient(to bottom, #000 0 76%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 0 76%, transparent 100%);
+  }
 }
 
 @media (max-width: 520px) {
   .bar { padding-left: 16px; }
   .clawd-float { top: -21px; --clawd-travel: calc(100cqw - 68px); width: 44px; height: 25px; }
   .clawd-float svg { width: 44px; height: 25px; }
-  .cloudscape { transform: scale(1.04); transform-origin: 55% 35%; }
-  .cloud-bank { stroke-width: 1; }
   .bands { background-size: 520px 376px, 58px 58px, 58px 58px; }
 }
 
@@ -2264,7 +2240,7 @@ html[data-theme="dark"] .cloud-bank {
 .scroll-cue svg { animation-iteration-count: 3; }
 
 @media (prefers-reduced-motion: reduce) {
-  .clawd-float, .clawd-float svg, .clawd-pose, .cloud-bank { animation: none; }
+  .clawd-float, .clawd-float svg, .clawd-pose { animation: none; }
   .clawd-default { opacity: 1; }
   .clawd-look-right, .clawd-look-left, .clawd-arms-up { opacity: 0; }
 }
