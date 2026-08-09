@@ -2265,3 +2265,490 @@ body.has-thread .suggestions, body.has-thread .dock-note { display: none; }
   .clawd-default { opacity: 1; }
   .clawd-look-right, .clawd-look-left, .clawd-arms-up { opacity: 0; }
 }
+
+/* =====================================================================
+   PREMIUM DEPTH SYSTEM
+
+   The portfolio below the twin now reads as a sequence of product surfaces,
+   not a long document laid over a repeated illustration. Each chapter gets a
+   quiet spectral accent, one elevated shell and denser bento content. The
+   material is intentionally paint-only: no off-screen blur layers, fixed
+   backgrounds or continuously animated decoration are added here.
+   ===================================================================== */
+
+:root {
+  --depth-canvas: #edf4fb;
+  --depth-surface: rgba(255, 255, 255, .78);
+  --depth-surface-strong: rgba(255, 255, 255, .94);
+  --depth-edge: rgba(68, 125, 186, .18);
+  --depth-edge-strong: rgba(55, 126, 202, .28);
+  --depth-shadow: 0 30px 90px -52px rgba(20, 67, 116, .42), 0 8px 28px -20px rgba(20, 67, 116, .2);
+  --section-accent: 29, 132, 225;
+}
+
+html[data-theme="dark"] {
+  --depth-canvas: #07111d;
+  --depth-surface: rgba(11, 27, 44, .88);
+  --depth-surface-strong: rgba(14, 34, 55, .96);
+  --depth-edge: rgba(112, 177, 238, .17);
+  --depth-edge-strong: rgba(112, 177, 238, .28);
+  --depth-shadow: 0 34px 100px -48px rgba(0, 0, 0, .82), 0 10px 34px -22px rgba(0, 0, 0, .72);
+}
+
+html.reveals .reveal {
+  transform: translateY(10px);
+  transition-duration: .42s;
+}
+
+.bands {
+  counter-reset: chapter;
+  isolation: isolate;
+  overflow: clip;
+  padding: clamp(22px, 3vw, 44px) 0 clamp(76px, 10vw, 138px);
+  background:
+    radial-gradient(ellipse 62% 20% at 2% 7%, rgba(51, 167, 239, .16), transparent 68%),
+    radial-gradient(ellipse 54% 18% at 100% 33%, rgba(116, 94, 240, .13), transparent 70%),
+    radial-gradient(ellipse 58% 16% at 4% 63%, rgba(35, 177, 208, .12), transparent 72%),
+    radial-gradient(ellipse 50% 15% at 96% 90%, rgba(255, 139, 76, .1), transparent 72%),
+    linear-gradient(180deg, var(--paper) 0, var(--depth-canvas) 9%, var(--depth-canvas) 92%, var(--paper) 100%);
+  background-size: auto;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.bands::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(circle, rgba(44, 117, 187, .18) .75px, transparent .9px);
+  background-size: 28px 28px;
+  opacity: .24;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 16%, #000 84%, transparent);
+  mask-image: linear-gradient(to right, transparent, #000 16%, #000 84%, transparent);
+}
+
+html[data-theme="dark"] .bands::before { opacity: .19; }
+
+#experience { --section-accent: 25, 142, 231; }
+#skills { --section-accent: 92, 93, 238; }
+#projects { --section-accent: 9, 160, 177; }
+#ai-systems { --section-accent: 32, 126, 225; }
+#work { --section-accent: 121, 84, 220; }
+#faq { --section-accent: 234, 125, 51; }
+
+.bands > .band {
+  counter-increment: chapter;
+  width: min(calc(100% - 32px), 1180px);
+  max-width: 1180px;
+  margin: clamp(16px, 2.4vw, 30px) auto 0;
+  padding: clamp(28px, 4vw, 48px);
+  border: 1px solid var(--depth-edge);
+  border-radius: clamp(26px, 3vw, 38px);
+  overflow: clip;
+  background:
+    radial-gradient(circle at 91% 3%, rgba(var(--section-accent), .16), transparent 31%),
+    linear-gradient(145deg, rgba(255, 255, 255, .54), transparent 42%),
+    var(--depth-surface);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .78), var(--depth-shadow);
+}
+
+html[data-theme="dark"] .bands > .band {
+  background:
+    radial-gradient(circle at 91% 3%, rgba(var(--section-accent), .15), transparent 32%),
+    linear-gradient(145deg, rgba(130, 188, 244, .07), transparent 44%),
+    var(--depth-surface);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .07), var(--depth-shadow);
+}
+
+.bands > .band:not(#cta)::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  inset: 0 0 auto;
+  width: auto;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 4%, rgba(var(--section-accent), .7) 26%, rgba(255, 255, 255, .82) 50%, transparent 88%);
+}
+
+.bands > .band[data-system]::after {
+  content: counter(chapter, decimal-leading-zero);
+  display: block;
+  position: absolute;
+  top: -27px;
+  right: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: rgba(var(--section-accent), .085);
+  box-shadow: none;
+  font: 750 clamp(108px, 12vw, 164px)/1 var(--sans);
+  letter-spacing: -.09em;
+  pointer-events: none;
+  text-transform: none;
+}
+
+.band > * { position: relative; z-index: 1; }
+
+.band-head .kicker {
+  color: rgb(var(--section-accent));
+  letter-spacing: .16em;
+}
+
+.band-head h2 {
+  max-width: 19ch;
+  color: var(--ink);
+  text-wrap: balance;
+}
+
+.system-chip {
+  border-color: rgba(var(--section-accent), .24);
+  background: rgba(var(--section-accent), .07);
+  color: color-mix(in srgb, rgb(var(--section-accent)) 76%, var(--ink));
+}
+
+.system-chip::before {
+  background: rgb(var(--section-accent));
+  box-shadow: 0 0 0 4px rgba(var(--section-accent), .1);
+}
+
+.chapter-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px 13px;
+  margin-top: 22px;
+  color: var(--ink-3);
+  font: 500 9px/1.35 var(--mono);
+  letter-spacing: .055em;
+  text-transform: uppercase;
+}
+
+.chapter-meta span { display: inline-flex; align-items: center; gap: 7px; }
+.chapter-meta span::before {
+  content: "";
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(var(--section-accent), .75);
+}
+
+@media (min-width: 1080px) {
+  .bands > .band:not(#cta) {
+    grid-template-columns: 220px minmax(0, 1fr);
+    gap: 34px 42px;
+  }
+
+  .band > .band-head { top: 92px; }
+  .band > .band-head h2 { font-size: clamp(23px, 1.85vw, 29px); }
+}
+
+/* Experience becomes a rack of readable system records instead of divider
+   rows floating in open space. */
+.timeline {
+  display: grid;
+  gap: 10px;
+}
+
+.timeline li,
+.timeline li:first-child {
+  grid-template-columns: 112px minmax(0, 205px) minmax(0, 1fr);
+  gap: 6px 22px;
+  padding: 21px 22px;
+  border: 1px solid var(--depth-edge);
+  border-radius: 20px;
+  background: linear-gradient(140deg, rgba(var(--section-accent), .055), transparent 42%), var(--depth-surface-strong);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .7), 0 15px 36px -30px rgba(20, 67, 116, .55);
+  transition: transform .22s var(--ease), border-color .22s var(--ease), box-shadow .22s var(--ease);
+}
+
+.timeline li:hover {
+  transform: translateY(-2px);
+  border-color: var(--depth-edge-strong);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .7), 0 22px 45px -28px rgba(20, 67, 116, .48);
+}
+
+.timeline .when { color: rgb(var(--section-accent)); }
+.timeline h3 { color: var(--ink); }
+.timeline p { color: var(--ink-2); }
+
+.edu {
+  margin-top: 12px;
+  padding: 22px 24px;
+  border-color: var(--depth-edge);
+  background: linear-gradient(135deg, rgba(var(--section-accent), .06), transparent 50%), var(--depth-surface-strong);
+}
+
+/* Capabilities use a deliberate bento rhythm. The two wide cards are the
+   systems-heavy categories recruiters most often need to scan. */
+.skillgrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.skillcard {
+  min-height: 154px;
+  padding: 23px;
+  border-color: var(--depth-edge);
+  background: linear-gradient(142deg, rgba(var(--section-accent), .08), transparent 48%), var(--depth-surface-strong);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .7), 0 18px 42px -34px rgba(30, 74, 120, .5);
+}
+
+#skills .skillcard:nth-child(3),
+#skills .skillcard:nth-child(6) { grid-column: 1 / -1; }
+
+.skillcard h3 { color: rgb(var(--section-accent)); }
+.skillcard li { background: rgba(var(--section-accent), .055); }
+.skillcard li.soft { background: transparent; }
+
+.stack-strip {
+  padding: 24px;
+  border: 1px solid var(--depth-edge);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, .36);
+}
+
+html[data-theme="dark"] .stack-strip { background: rgba(5, 14, 24, .28); }
+
+/* Selected work is a true card deck on wide screens. */
+.projects {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.project,
+.project:first-of-type {
+  display: block;
+  min-width: 0;
+  padding: 24px;
+  border: 1px solid var(--depth-edge);
+  border-radius: 22px;
+  background: linear-gradient(145deg, rgba(var(--section-accent), .09), transparent 44%), var(--depth-surface-strong);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .72), 0 20px 46px -36px rgba(19, 75, 111, .56);
+  transition: transform .22s var(--ease), border-color .22s var(--ease), box-shadow .22s var(--ease);
+}
+
+.project:hover {
+  transform: translateY(-3px);
+  border-color: var(--depth-edge-strong);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .72), 0 26px 52px -32px rgba(19, 75, 111, .5);
+}
+
+.project::before {
+  content: "";
+  left: 24px;
+  top: 58px;
+  width: 44px;
+  height: 2px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgb(var(--section-accent)), transparent);
+}
+
+.project-year {
+  display: inline-flex;
+  padding: 5px 9px;
+  border: 1px solid rgba(var(--section-accent), .22);
+  border-radius: 999px;
+  background: rgba(var(--section-accent), .07);
+  color: rgb(var(--section-accent));
+}
+
+.project h3 { margin-top: 31px; font-size: 18px; }
+.project p { font-size: 13.5px; line-height: 1.64; }
+.project .stack { gap: 5px; }
+
+/* The live retriever is presented as the working console it is. */
+.retrieval {
+  margin-top: 0;
+  padding: 25px;
+  border: 1px solid var(--depth-edge);
+  border-radius: 25px;
+  background: linear-gradient(145deg, rgba(var(--section-accent), .075), transparent 38%), var(--depth-surface-strong);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .72), 0 22px 56px -40px rgba(20, 67, 116, .62);
+}
+
+.retrieval::before {
+  content: "live retrieval console";
+  display: block;
+  margin-bottom: 23px;
+  color: rgb(var(--section-accent));
+  font: 600 9px/1 var(--mono);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+
+.retrieval::after {
+  top: 26px;
+  right: 25px;
+  padding-left: 12px;
+}
+
+.retrieval-form input,
+.rank,
+.mcp-card {
+  border-color: var(--depth-edge);
+  background: color-mix(in srgb, var(--depth-surface-strong) 94%, rgb(var(--section-accent)) 6%);
+}
+
+.rank { border-radius: 18px; }
+.rank-head { color: rgb(var(--section-accent)); }
+
+.mcp {
+  padding: 25px;
+  border: 1px solid var(--depth-edge);
+  border-radius: 25px;
+  background: var(--depth-surface-strong);
+}
+
+/* Repository and FAQ surfaces keep the same shell recipe and higher contrast. */
+.card {
+  border-color: var(--depth-edge);
+  background: linear-gradient(142deg, rgba(var(--section-accent), .065), transparent 44%), var(--depth-surface-strong);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .68), 0 18px 42px -35px rgba(30, 74, 120, .5);
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  border-color: var(--depth-edge-strong);
+  background: linear-gradient(142deg, rgba(var(--section-accent), .095), transparent 48%), var(--depth-surface-strong);
+}
+
+.faq {
+  margin-top: 0;
+  padding: 8px 25px;
+  border-color: var(--depth-edge);
+  background: var(--depth-surface-strong);
+}
+
+.faq summary { min-height: 64px; align-items: center; }
+.faq summary::after {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border: 1px solid rgba(var(--section-accent), .2);
+  border-radius: 50%;
+  background: rgba(var(--section-accent), .07);
+  color: rgb(var(--section-accent));
+}
+
+/* The final action is the one intentionally high-contrast surface. */
+.bands > #cta {
+  width: min(calc(100% - 32px), 1180px);
+  padding: 0;
+  border: 0;
+  overflow: visible;
+  background: none;
+  box-shadow: none;
+}
+
+#cta::after { display: none; }
+
+.cta {
+  margin: 0;
+  padding: clamp(38px, 6vw, 70px);
+  overflow: hidden;
+  border: 1px solid rgba(137, 200, 255, .34);
+  border-radius: clamp(28px, 3vw, 38px);
+  color: #f4f9ff;
+  background:
+    radial-gradient(circle at 83% 14%, rgba(78, 176, 255, .48), transparent 34%),
+    radial-gradient(circle at 12% 90%, rgba(121, 91, 232, .34), transparent 40%),
+    linear-gradient(132deg, #071a31 0%, #0b315d 52%, #0b4c82 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .2), 0 34px 90px -44px rgba(4, 43, 88, .75);
+}
+
+.cta::before {
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, .19), transparent 36%),
+    radial-gradient(circle, rgba(255, 255, 255, .3) .7px, transparent .85px);
+  background-size: auto, 24px 24px;
+  opacity: .45;
+}
+
+.cta h2 { color: #fff; font-size: clamp(34px, 5vw, 58px); }
+.cta p { color: rgba(226, 240, 255, .8); }
+.cta .system-chip { border-color: rgba(160, 211, 255, .28); background: rgba(255, 255, 255, .09); color: #cde8ff; }
+.cta .btn { background: #f6fbff; color: #0a3156; box-shadow: 0 12px 30px -18px rgba(0, 0, 0, .7); }
+.cta .btn.ghost { border-color: rgba(255, 255, 255, .24); background: rgba(255, 255, 255, .08); color: #edf7ff; }
+
+/* Static depth survives without taxing the scroll path. */
+.timeline li,
+.skillcard,
+.project,
+.card,
+.retrieval,
+.mcp,
+.faq,
+.edu,
+.cta {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+@media (max-width: 1180px) and (min-width: 761px) {
+  .projects { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .project:last-child { grid-column: 1 / -1; }
+}
+
+@media (max-width: 1079px) {
+  .bands > .band { width: min(calc(100% - 28px), 900px); }
+  .chapter-meta { margin-top: 16px; }
+  .timeline li,
+  .timeline li:first-child { grid-template-columns: 120px minmax(0, 1fr); }
+  .timeline .when { grid-column: 1; grid-row: 1; }
+  .timeline h3 { grid-column: 2; grid-row: 1; }
+  .timeline .where { grid-column: 2; grid-row: 2; }
+  .timeline p { grid-column: 1 / -1; grid-row: 3; margin-top: 8px; }
+}
+
+@media (max-width: 760px) {
+  .bands { padding-top: 14px; }
+  .bands > .band {
+    width: calc(100% - 20px);
+    margin-top: 12px;
+    padding: 24px 18px;
+    border-radius: 26px;
+  }
+  .bands > .band[data-system]::after { top: -13px; right: 16px; font-size: 92px; }
+  .system-chip { margin: 9px 0 0 7px; }
+  .band-head h2 { margin-top: 14px; font-size: clamp(26px, 8vw, 35px); }
+  .chapter-meta { gap: 6px 10px; }
+  .timeline li,
+  .timeline li:first-child { display: block; padding: 20px; }
+  .timeline .where { margin: 5px 0 11px; }
+  .timeline h3 { margin-top: 13px; }
+  .skillgrid,
+  .projects { grid-template-columns: 1fr; }
+  #skills .skillcard:nth-child(3),
+  #skills .skillcard:nth-child(6),
+  .project:last-child { grid-column: auto; }
+  .skillcard { min-height: 0; padding: 20px; }
+  .project,
+  .project:first-of-type { padding: 21px; }
+  .project::before { left: 21px; top: 54px; }
+  .retrieval,
+  .mcp { padding: 20px; border-radius: 21px; }
+  .retrieval::after { top: 21px; right: 20px; }
+  .rank-row { grid-template-columns: 1fr; }
+  .faq { padding: 6px 19px; }
+  .bands > #cta { width: calc(100% - 20px); padding: 0; }
+  .cta { padding: 34px 24px; }
+  .cta-row { display: grid; grid-template-columns: 1fr; }
+}
+
+@media (max-width: 390px) {
+  .system-chip { margin-left: 0; }
+  .chapter-meta span:last-child { display: none; }
+  .retrieval::before { max-width: 17ch; line-height: 1.35; }
+}
+
+@media (hover: none) {
+  .timeline li:hover,
+  .project:hover,
+  .card:hover { transform: none; }
+}

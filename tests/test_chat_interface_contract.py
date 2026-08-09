@@ -38,6 +38,19 @@ def test_background_is_code_native_and_theme_aware() -> None:
     assert "cloud-infrastructure.webp" not in HTML
 
 
+def test_premium_depth_system_shapes_every_portfolio_section() -> None:
+    premium = CSS.split("PREMIUM DEPTH SYSTEM", maxsplit=1)[1]
+    assert "styles.css?v=71" in HTML
+    assert HTML.count('class="chapter-meta"') == 6
+    assert ".bands > .band" in premium
+    assert "counter-increment: chapter" in premium
+    assert ".projects" in premium and "grid-template-columns: repeat(3" in premium
+    assert "#skills .skillcard:nth-child(3)" in premium
+    assert ".retrieval::before" in premium
+    assert "background-attachment: fixed" not in premium
+    assert "backdrop-filter: none" in premium
+
+
 def test_local_fallback_does_not_bypass_api_rate_or_budget_rejections() -> None:
     assert "error.httpStatus = res.status" in APP
     assert "if (error.httpStatus) throw error" in APP
