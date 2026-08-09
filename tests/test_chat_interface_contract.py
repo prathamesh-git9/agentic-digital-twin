@@ -66,6 +66,8 @@ def test_clawd_and_cloud_architecture_are_contained_and_lightweight() -> None:
     for zone in ("AWS edge cloud", "AWS compute cloud", "AWS data cloud"):
         assert zone in HTML
     assert 'class="aws-zone aws-zone-mobile"' in HTML
+    assert HTML.count('class="aws-zone-cloud"') == 4
+    assert 'viewBox="0 0 240 90"' in HTML
     assert "request / response" not in HTML
     assert "evidence + state" not in HTML
     assert 'class="infra-sky"' not in HTML
@@ -88,6 +90,8 @@ def test_clawd_and_cloud_architecture_are_contained_and_lightweight() -> None:
     assert ".cloud-service b { display: none; }" in CSS
     assert ".dock { margin-top: 32px; }" in CSS
     assert ".aws-zone-mobile { display: none; }" in CSS
+    assert ".aws-zone-cloud {" in CSS
+    assert "border-radius: 999px" not in CSS.split(".aws-zone {", 1)[1].split("}", 1)[0]
     assert ".band > .band-head { grid-column: 1; position: sticky;" in CSS
     assert "  .band-head { grid-column: 1; position: sticky;" not in CSS
     assert ".band[data-system]::after" in CSS
