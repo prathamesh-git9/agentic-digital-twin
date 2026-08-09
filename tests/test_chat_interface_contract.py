@@ -9,6 +9,7 @@ APP = (STATIC / "app.js").read_text(encoding="utf-8")
 HTML = (STATIC / "index.html").read_text(encoding="utf-8")
 CSS = (STATIC / "styles.css").read_text(encoding="utf-8")
 CONFIG = (ROOT / "src" / "digital_twin" / "config.py").read_text(encoding="utf-8")
+BUILD_STATIC = (ROOT / "scripts" / "build_static.py").read_text(encoding="utf-8")
 
 
 def test_boot_has_a_fast_local_fallback_while_live_ai_warms() -> None:
@@ -18,6 +19,11 @@ def test_boot_has_a_fast_local_fallback_while_live_ai_warms() -> None:
     assert 'state.transport = "local"' in APP
     assert "deferredRemote" in APP
     assert 'toast("Live AI connected.")' in APP
+
+
+def test_static_build_copies_nested_aws_icon_assets() -> None:
+    assert 'COPY_DIRS = ("aws",)' in BUILD_STATIC
+    assert "shutil.copytree(source, out / name, dirs_exist_ok=True)" in BUILD_STATIC
 
 
 def test_local_fallback_does_not_bypass_api_rate_or_budget_rejections() -> None:

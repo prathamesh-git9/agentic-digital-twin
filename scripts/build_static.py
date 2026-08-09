@@ -41,6 +41,7 @@ COPY = (
     "widget.js",
     "avatar.webp",
 )
+COPY_DIRS = ("aws",)
 
 
 def _repo_snapshot(offline: bool) -> list[dict[str, Any]]:
@@ -253,6 +254,12 @@ def build(out: Path, *, offline: bool) -> None:
             shutil.copy2(source, out / name)
         else:
             print(f"  missing {name}; skipped")
+    for name in COPY_DIRS:
+        source = STATIC / name
+        if source.is_dir():
+            shutil.copytree(source, out / name, dirs_exist_ok=True)
+        else:
+            print(f"  missing {name}/; skipped")
     for image in STATIC.glob("prathamesh.*"):
         shutil.copy2(image, out / image.name)
 
