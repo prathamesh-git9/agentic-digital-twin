@@ -55,7 +55,7 @@
   // triggers an honest refusal is a poor first impression of a grounded twin.
   const STARTERS = [
     "Give me the 60-second overview.",
-    "What's his experience with Java and Spring Boot?",
+    "Find backend roles at Stripe and compare his fit.",
     "Tell me about his work on AI agents.",
     "Is he a fit for a backend role?",
   ];
@@ -313,6 +313,43 @@
 
   const stepRows = (steps) => steps.map(stepRow).join("");
 
+  function phaseRow(step) {
+    const status = step.status || "pending";
+    return `
+      <li class="phase" data-phase="${esc(step.key)}" data-status="${esc(status)}">
+        <span class="phase-mark" aria-hidden="true"></span>
+        <span class="phase-copy">
+          <b>${esc(step.label || step.key)}</b>
+          ${step.detail ? `<small>${esc(step.detail)}</small>` : ""}
+        </span>
+      </li>`;
+  }
+
+  const phaseRows = (steps) => (steps || []).map(phaseRow).join("");
+
+  function agentRunPanel(run, toolSteps) {
+    if (!run || !Array.isArray(run.steps)) return "";
+    const mode = String(run.mode || "grounded-retrieval").replace(/-/g, " ");
+    const duration = typeof run.duration_ms === "number" ? ` · ${secs(run.duration_ms)}` : "";
+    const tools = Array.isArray(toolSteps) && toolSteps.length
+      ? `<div class="run-tools">
+           <span class="run-tools-label">Tool execution</span>
+           <ol class="steps">${stepRows(toolSteps)}</ol>
+         </div>`
+      : "";
+    return `<details class="trace-panel agent-run">
+      <summary>Agent run · ${esc(mode)}${duration}</summary>
+      <div class="run-overview">
+        <span class="run-goal">${esc(run.goal || "Produce a grounded answer")}</span>
+        <span class="run-metrics">${esc(run.evidence_count || 0)} evidence ·
+          ${esc(run.model_turns || 0)} model turn${run.model_turns === 1 ? "" : "s"} ·
+          ${esc(run.tool_calls || 0)} tool call${run.tool_calls === 1 ? "" : "s"}</span>
+      </div>
+      <ol class="phase-track">${phaseRows(run.steps)}</ol>
+      ${tools}
+    </details>`;
+  }
+
   // The claim status is the point of a grounded twin, so it is stated rather
   // than left to be inferred from the wording. The two refusals are not the
   // same thing: a contractual question is declined on policy and still cites
@@ -321,7 +358,7 @@
     const out = [];
     if (meta.refusal) {
       out.push(meta.grounded
-        ? '<span class="badge warn">Not the twin\'s to answer</span>'
+        ? '<span class="badge warn">Not the agentic digital twin\'s to answer</span>'
         : '<span class="badge warn">No evidence for this</span>');
     } else if (meta.grounded) {
       out.push('<span class="badge ok">Grounded in sources</span>');
@@ -353,7 +390,8 @@
     const steps = Array.isArray(trace) ? trace : [];
     const spent = steps.reduce((total, s) => total + (s.duration_ms || 0), 0);
     const calls = `${steps.length} tool ${steps.length === 1 ? "call" : "calls"}`;
-    const retrieval = steps.length
+    const runPanel = agentRunPanel(meta.agent_run, steps);
+    const retrieval = runPanel || (steps.length
       ? `<details class="trace-panel">
            <summary>How this was assembled · ${calls} · ${secs(spent)}</summary>
            <ol class="steps">${stepRows(steps)}</ol>
@@ -361,7 +399,7 @@
       : (trace && typeof trace === "object" && trace.candidates !== undefined
         ? `<div class="trace">${esc(trace.candidates)} chunks scored · BM25 + trigram ·`
           + ` fused by RRF · ${esc((cites || []).length)} cited</div>`
-        : "");
+        : ""));
     div.innerHTML = `
       <div class="bubble">
         <span class="label">${role === "twin" ? "Prathamesh" : "You"}</span>
@@ -409,13 +447,20 @@
       '<span class="waiting"><span class="typing"><i></i><i></i><i></i></span>' +
       '<span class="waiting-label">Finding the strongest evidence…</span>' +
       '<span class="waiting-clock">0s</span></span>' +
+      '<div class="agent-live" hidden><span class="agent-live-goal"></span>' +
+      '<ol class="phase-track live"></ol></div>' +
       '<ol class="steps live"></ol>';
     const startedAt = Date.now();
     const clock = slot.querySelector(".waiting-clock");
     const label = slot.querySelector(".waiting-label");
     // The tool events arrive on the session stream and have to find the turn
     // that is waiting for them.
-    state.pending = { steps: [], host: slot.querySelector(".steps"), label, tooled: false };
+    state.pending = {
+      steps: [], phases: [], host: slot.querySelector(".steps"), label, tooled: false,
+      phasePanel: slot.querySelector(".agent-live"),
+      phaseHost: slot.querySelector(".phase-track"),
+      goal: slot.querySelector(".agent-live-goal"),
+    };
     const ticker = setInterval(() => {
       const elapsed = Math.round((Date.now() - startedAt) / 1000);
       clock.textContent = `${elapsed}s`;
@@ -444,6 +489,7 @@
       pending.remove();
       turn("twin", r.answer, r.sources, r.trace, {
         grounded: r.grounded, refusal: r.refusal, tailored_for: r.tailored_for,
+        agent_run: r.agent_run,
       });
       showBudget(r);
     } catch (e) {
@@ -538,6 +584,27 @@
       if (p.candidates?.length) renderPeople(p.candidates);
     });
 
+    src.addEventListener("agent.plan", (e) => {
+      const p = JSON.parse(e.data);
+      const live = state.pending;
+      if (!live) return;
+      live.phases = Array.isArray(p.steps) ? p.steps : [];
+      live.goal.textContent = p.goal || "Producing a grounded answer";
+      live.phaseHost.innerHTML = phaseRows(live.phases);
+      live.phasePanel.hidden = false;
+      live.label.textContent = "Executing a bounded plan…";
+    });
+
+    src.addEventListener("agent.phase", (e) => {
+      const p = JSON.parse(e.data);
+      const live = state.pending;
+      if (!live) return;
+      const phase = live.phases.find((step) => step.key === p.key);
+      if (phase) Object.assign(phase, p);
+      live.phaseHost.innerHTML = phaseRows(live.phases);
+      if (p.status === "running" && p.detail) live.label.textContent = p.detail;
+    });
+
     /*
       The agent publishes every tool call and result as it happens. Rendering
       them live is what makes the execution contract visible: which public
@@ -551,7 +618,7 @@
       live.tooled = true;
       // The step list spells out each call, so the headline stays a headline
       // rather than repeating the last row verbatim.
-      live.label.textContent = "Consulting public sources…";
+      live.label.textContent = "Running the plan against public sources…";
       live.steps.push({ ...p, status: "running" });
       live.host.innerHTML = stepRows(live.steps);
       // Activity logged only research and failures, so a session where every
@@ -745,7 +812,7 @@
         ${gaps.length ? gaps.map((g) => `
           <div class="fit-row gap">
             <strong>${esc(g.requirement || g)}</strong>
-            <p>Not stated in this CV. The twin will not claim it.</p>
+            <p>Not stated in this CV. The agentic digital twin will not claim it.</p>
           </div>`).join("") : "<p class='fit-empty'>Every requirement it could parse is evidenced.</p>"}
       </div>
       ${fit.caveat ? `<p class="fit-caveat">${esc(fit.caveat)}</p>` : ""}`;

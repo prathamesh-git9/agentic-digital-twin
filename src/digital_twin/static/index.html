@@ -3,8 +3,8 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Ask an evidence-grounded AI twin about Prathamesh Kalamkar's back-end and AI agent engineering work. Every answer cites his CV or public code.">
-    <title>Prathamesh.ai · AI digital twin</title>
+    <meta name="description" content="Ask Prathamesh Kalamkar's evidence-grounded agentic digital twin about his back-end and AI agent engineering work. Every answer cites his CV or public code.">
+    <title>Prathamesh.ai · Agentic digital twin</title>
     <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
 
     <!-- Recruiters paste this link into Slack, LinkedIn and ATS notes. Without a
@@ -12,13 +12,13 @@
     <link rel="canonical" href="https://prathamesh-git9.github.io/digital-twin/">
     <meta property="og:type" content="profile">
     <meta property="og:site_name" content="Prathamesh Kalamkar">
-    <meta property="og:title" content="Prathamesh.ai · AI digital twin">
-    <meta property="og:description" content="Back-end &amp; AI agent engineer in Dublin. Ask the twin about his experience. Every answer cites the CV or the code.">
+    <meta property="og:title" content="Prathamesh.ai · Agentic digital twin">
+    <meta property="og:description" content="Back-end &amp; AI agent engineer in Dublin. Ask the agentic digital twin about his experience. Every answer cites the CV or the code.">
     <meta property="og:url" content="https://prathamesh-git9.github.io/digital-twin/">
     <meta property="og:image" content="https://prathamesh-git9.github.io/digital-twin/prathamesh.jpg">
     <meta name="twitter:card" content="summary">
-    <meta name="twitter:title" content="Prathamesh.ai · AI digital twin">
-    <meta name="twitter:description" content="Back-end &amp; AI agent engineer in Dublin. Ask the twin. Every answer cites the CV or the code.">
+    <meta name="twitter:title" content="Prathamesh.ai · Agentic digital twin">
+    <meta name="twitter:description" content="Back-end &amp; AI agent engineer in Dublin. Ask the agentic digital twin. Every answer cites the CV or the code.">
     <meta name="twitter:image" content="https://prathamesh-git9.github.io/digital-twin/prathamesh.jpg">
     <script type="application/ld+json">
     {
@@ -35,7 +35,8 @@
         { "@type": "CollegeOrUniversity", "name": "Savitribai Phule Pune University" }
       ],
       "knowsAbout": ["Java", "Spring Boot", "Python", "FastAPI", "LLM agent systems",
-        "Model Context Protocol", "Retrieval-augmented generation", "Prompt injection defence"],
+        "LangChain", "LangGraph", "Model Context Protocol", "Retrieval-augmented generation",
+        "Prompt injection defence"],
       "sameAs": [
         "https://www.linkedin.com/in/prathamesh-kalamkar/",
         "https://github.com/prathamesh-git9"
@@ -45,7 +46,7 @@
 
     <!-- Version stamp: /static is cached immutably when the URL carries ?v=, so
          bumping the stamp is how a changed asset reaches a returning browser. -->
-    <link rel="stylesheet" href="/static/styles.css?v=71">
+    <link rel="stylesheet" href="/static/styles.css?v=72">
   </head>
   <body>
     <a class="skip-link" href="#composer-input">Skip to chat</a>
@@ -108,12 +109,12 @@
         <section class="panel note reveal d1">
           <span class="panel-label">How it answers</span>
           <ol class="pipeline">
-            <li>Scores every CV chunk two ways</li>
-            <li>Fuses both rankings by position</li>
-            <li>Answers only from what it retrieved</li>
-            <li>Cites the source of every claim</li>
+            <li>Understands the hiring goal</li>
+            <li>Builds the shortest safe plan</li>
+            <li>Chooses only relevant public tools</li>
+            <li>Verifies every claim before answering</li>
           </ol>
-          <p>Ask it something the CV does not evidence and it says so, rather than guessing.</p>
+          <p>Each answer includes the run: plan, evidence, tools used and verification outcome.</p>
         </section>
 
       </aside>
@@ -125,8 +126,8 @@
              the chat from the page. -->
         <div id="intro">
           <h1 class="reveal">Prathamesh<em>.ai</em></h1>
-          <p class="hero-lead reveal d1">Ask his digital twin anything.</p>
-          <p class="hero-sub reveal d1">His experience, what he's built, or whether he fits the role you're hiring for. Every answer is retrieved from his CV or his public code, and cites it.</p>
+          <p class="hero-lead reveal d1">Ask his agentic digital twin anything.</p>
+          <p class="hero-sub reveal d1">Give it a hiring goal. It plans the shortest safe route, retrieves evidence, chooses public tools when needed, and shows its work before answering.</p>
         </div>
 
         <div class="thread" id="messages" role="log" aria-live="polite"></div>
@@ -204,8 +205,8 @@
             <button type="button" class="tile" data-ask="How does his retrieval actually work?"><b>RAG</b><i>hybrid + RRF</i></button>
             <button type="button" class="tile" data-ask="What is his experience with MCP?"><b>MCP</b><i>servers</i></button>
             <button type="button" class="tile" data-ask="How does he handle tool orchestration and failures?"><b>Tools</b><i>function calls</i></button>
-            <button type="button" class="tile" data-ask="What has he built with embeddings and vector search?"><b>Vectors</b><i>embeddings</i></button>
-            <button type="button" class="tile" data-ask="How does he evaluate whether an agent is actually working?"><b>Evals</b><i>baselines</i></button>
+            <button type="button" class="tile" data-ask="What has he built with LangChain?"><b>LangChain</b><i>tool pipelines</i></button>
+            <button type="button" class="tile" data-ask="How does he use LangGraph for durable agent workflows?"><b>LangGraph</b><i>state graphs</i></button>
             <button type="button" class="tile" data-ask="How does he defend against prompt injection?"><b>Guardrails</b><i>injection</i></button>
             <button type="button" class="tile" data-ask="What agent systems has he built, and how do they recover?"><b>Agents</b><i>durable</i></button>
             <button type="button" class="tile" data-ask="How does he keep every claim grounded in a source?"><b>Grounding</b><i>per claim</i></button>
@@ -226,7 +227,7 @@
             <span><i class="runtime-agent"></i><b>Agent</b></span><em></em>
             <span><i class="runtime-tools"></i><b>Tools</b></span>
           </div>
-          <p class="runtime-caption">request → retrieval → model → cited answer</p>
+          <p class="runtime-caption">goal → plan → tools → evidence → verify</p>
         </section>
       </aside>
 
@@ -279,7 +280,7 @@
           </article>
           <article class="skillcard reveal">
             <h3>AI &amp; agents</h3>
-            <ul><li>LLM integrations</li><li>OpenAI APIs</li><li>Claude</li><li>Agentic workflows</li><li>Function calling</li><li>Tool orchestration</li><li>Retries &amp; guardrails</li><li>Prompt contracts</li><li class="soft">MCP</li></ul>
+            <ul><li>LLM integrations</li><li>OpenAI APIs</li><li>Claude</li><li>LangChain</li><li>LangGraph</li><li>Agentic workflows</li><li>Function calling</li><li>Tool orchestration</li><li>Retries &amp; guardrails</li><li>Prompt contracts</li><li class="soft">MCP</li></ul>
           </article>
           <article class="skillcard reveal">
             <h3>Events &amp; data</h3>
@@ -309,6 +310,8 @@
     <span class="stack-chip"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M0 0h24v24H0V0zm22.034 18.276c-.175-1.095-.888-2.015-3.003-2.873-.736-.345-1.554-.585-1.797-1.14-.091-.33-.105-.51-.046-.705.15-.646.915-.84 1.515-.66.39.12.75.42.976.9 1.034-.676 1.034-.676 1.755-1.125-.27-.42-.404-.601-.586-.78-.63-.705-1.469-1.065-2.834-1.034l-.705.089c-.676.165-1.32.525-1.71 1.005-1.14 1.291-.811 3.541.569 4.471 1.365 1.02 3.361 1.244 3.616 2.205.24 1.17-.87 1.545-1.966 1.41-.811-.18-1.26-.586-1.755-1.336l-1.83 1.051c.21.48.45.689.81 1.109 1.74 1.756 6.09 1.666 6.871-1.004.029-.09.24-.705.074-1.65l.046.067zm-8.983-7.245h-2.248c0 1.938-.009 3.864-.009 5.805 0 1.232.063 2.363-.138 2.711-.33.689-1.18.601-1.566.48-.396-.196-.597-.466-.83-.855-.063-.105-.11-.196-.127-.196l-1.825 1.125c.305.63.75 1.172 1.324 1.517.855.51 2.004.675 3.207.405.783-.226 1.458-.691 1.811-1.411.51-.93.402-2.07.397-3.346.012-2.054 0-4.109 0-6.179l.004-.056z"/></svg>JavaScript</span>
     <span class="stack-chip"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M21.038,4.9l-7.577-4.498C13.009,0.134,12.505,0,12,0c-0.505,0-1.009,0.134-1.462,0.403L2.961,4.9 C2.057,5.437,1.5,6.429,1.5,7.503v8.995c0,1.073,0.557,2.066,1.462,2.603l7.577,4.497C10.991,23.866,11.495,24,12,24 c0.505,0,1.009-0.134,1.461-0.402l7.577-4.497c0.904-0.537,1.462-1.529,1.462-2.603V7.503C22.5,6.429,21.943,5.437,21.038,4.9z M15.17,18.946l0.013,0.646c0.001,0.078-0.05,0.167-0.111,0.198l-0.383,0.22c-0.061,0.031-0.111-0.007-0.112-0.085L14.57,19.29 c-0.328,0.136-0.66,0.169-0.872,0.084c-0.04-0.016-0.057-0.075-0.041-0.142l0.139-0.584c0.011-0.046,0.036-0.092,0.069-0.121 c0.012-0.011,0.024-0.02,0.036-0.026c0.022-0.011,0.043-0.014,0.062-0.006c0.229,0.077,0.521,0.041,0.802-0.101 c0.357-0.181,0.596-0.545,0.592-0.907c-0.003-0.328-0.181-0.465-0.613-0.468c-0.55,0.001-1.064-0.107-1.072-0.917 c-0.007-0.667,0.34-1.361,0.889-1.8l-0.007-0.652c-0.001-0.08,0.048-0.168,0.111-0.2l0.37-0.236 c0.061-0.031,0.111,0.007,0.112,0.087l0.006,0.653c0.273-0.109,0.511-0.138,0.726-0.088c0.047,0.012,0.067,0.076,0.048,0.151 l-0.144,0.578c-0.011,0.044-0.036,0.088-0.065,0.116c-0.012,0.012-0.025,0.021-0.038,0.028c-0.019,0.01-0.038,0.013-0.057,0.009 c-0.098-0.022-0.332-0.073-0.699,0.113c-0.385,0.195-0.52,0.53-0.517,0.778c0.003,0.297,0.155,0.387,0.681,0.396 c0.7,0.012,1.003,0.318,1.01,1.023C16.105,17.747,15.736,18.491,15.17,18.946z M19.143,17.859c0,0.06-0.008,0.116-0.058,0.145 l-1.916,1.164c-0.05,0.029-0.09,0.004-0.09-0.056v-0.494c0-0.06,0.037-0.093,0.087-0.122l1.887-1.129 c0.05-0.029,0.09-0.004,0.09,0.056V17.859z M20.459,6.797l-7.168,4.427c-0.894,0.523-1.553,1.109-1.553,2.187v8.833 c0,0.645,0.26,1.063,0.66,1.184c-0.131,0.023-0.264,0.039-0.398,0.039c-0.42,0-0.833-0.114-1.197-0.33L3.226,18.64 c-0.741-0.44-1.201-1.261-1.201-2.142V7.503c0-0.881,0.46-1.702,1.201-2.142l7.577-4.498c0.363-0.216,0.777-0.33,1.197-0.33 c0.419,0,0.833,0.114,1.197,0.33l7.577,4.498c0.624,0.371,1.046,1.013,1.164,1.732C21.686,6.557,21.12,6.411,20.459,6.797z"/></svg>Bash</span>
     <span class="stack-chip"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M17.3041 3.541h-3.6718l6.696 16.918H24Zm-10.6082 0L0 20.459h3.7442l1.3693-3.5527h7.0052l1.3693 3.5528h3.7442L10.5363 3.5409Zm-.3712 10.2232 2.2914-5.9456 2.2914 5.9456Z"/></svg>Claude</span>
+    <span class="stack-chip stack-mono">LangChain</span>
+    <span class="stack-chip stack-mono">LangGraph</span>
             </div>
           </div>
           <div class="stack-group">
@@ -402,7 +405,7 @@
       <section class="band" id="faq" data-system="control plane">
         <div class="band-head reveal"><span class="kicker"><i>06</i>Questions</span><span class="system-chip">Control plane</span><h2>What people ask before they get in touch.</h2><p class="chapter-meta"><span>Accuracy</span><span>Boundaries</span><span>Architecture</span></p></div>
         <div class="faq reveal">
-          <details><summary>Is this actually accurate?</summary><p>Every claim is retrieved from his CV or public repositories and cited underneath the answer. If something isn't evidenced, the twin says so rather than guessing.</p></details>
+          <details><summary>Is this actually accurate?</summary><p>Every claim is retrieved from his CV or public repositories and cited underneath the answer. If something isn't evidenced, the agentic digital twin says so rather than guessing.</p></details>
           <details><summary>Can it negotiate or accept an offer?</summary><p>No. It speaks about the work; it cannot commit anything on his behalf. Salary, offers, start dates and anything contractual are refused by design and handed to Prathamesh directly.</p></details>
           <details><summary>Why does it ask my name?</summary><p>So it can point you at the most relevant work. It's optional. Skipping gives you the identical conversation.</p></details>
           <details><summary>What is it built on?</summary><p>Python, FastAPI and SQLite with a provider-agnostic model layer. The source is public on GitHub, alongside the ten systems it talks about.</p></details>
@@ -412,7 +415,7 @@
         <div class="cta reveal">
           <span class="system-chip">Public endpoint</span>
           <h2>Still deciding?</h2>
-          <p>Ask the twin anything. It answers from the CV and the code, and tells you plainly when something isn't evidenced. Or skip it and talk to Prathamesh directly.</p>
+          <p>Ask the agentic digital twin anything. It answers from the CV and the code, and tells you plainly when something isn't evidenced. Or skip it and talk to Prathamesh directly.</p>
           <div class="cta-row">
             <button class="btn" id="cta-ask" type="button">Ask a question</button>
             <button class="btn ghost" id="cta-contact" type="button">Contact him</button>
@@ -424,7 +427,7 @@
 
     <footer class="foot">
       <div><strong>Prathamesh Kalamkar</strong><span>Back-end &amp; AI agent engineer · Dublin, Ireland</span></div>
-      <div class="foot-runtime" aria-label="Digital twin system online"><i></i><span>Edge</span><b>→</b><span>API</span><b>→</b><span>Agent</span><b>→</b><span>Evidence</span></div>
+      <div class="foot-runtime" aria-label="Agentic digital twin system online"><i></i><span>Edge</span><b>→</b><span>API</span><b>→</b><span>Agent</span><b>→</b><span>Evidence</span></div>
       <div class="foot-links">
         <a href="https://www.linkedin.com/in/prathamesh-kalamkar/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
         <a href="https://github.com/prathamesh-git9" target="_blank" rel="noopener noreferrer">GitHub</a>
@@ -444,7 +447,7 @@
       <div class="over-scrim" data-close></div>
       <section class="over-panel">
         <div class="over-head"><h2 id="contact-title">Get in touch</h2><button type="button" class="q" id="contact-close">Close</button></div>
-        <p class="over-lede">Straight to Prathamesh, not the twin.</p>
+        <p class="over-lede">Straight to Prathamesh, not the agentic digital twin.</p>
         <div class="contact-rows" id="contact-rows"></div>
       </section>
     </div>
@@ -471,6 +474,6 @@
     <!-- Defines the retrieval engine app.js reads. Deferred scripts run in order,
          so this is guaranteed to be in place before the application boots. -->
     <script src="/static/twin-local.js?v=56" defer></script>
-    <script src="/static/app.js?v=58" defer></script>
+    <script src="/static/app.js?v=60" defer></script>
   </body>
 </html>

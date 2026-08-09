@@ -289,13 +289,78 @@
     return `${lead}\n\n${body}`;
   }
 
+  function localAgentRun({ question, evidenceCount, grounded, refusal, started, policy = false }) {
+    const intent = policy
+      ? "policy"
+      : /\b(?:github|repo|repository|commit|source code)\b/i.test(question)
+        ? "repository"
+        : /\b(?:job|role|opening|vacancy|career)\b/i.test(question)
+          ? "roles"
+          : "profile";
+    const mode = policy ? "policy" : "grounded-retrieval";
+    return {
+      intent,
+      mode,
+      goal: policy
+        ? "Preserve the evidence and representation boundary"
+        : "Answer from the verified local evidence index",
+      steps: [
+        {
+          key: "route", label: "Understand the hiring goal", status: "completed",
+          detail: `Routed as ${intent.replace("_", " ")}.`,
+        },
+        {
+          key: "retrieve", label: "Retrieve verified profile evidence",
+          status: policy ? "skipped" : "completed",
+          detail: policy
+            ? "No research was needed."
+            : `Selected ${evidenceCount} relevant evidence chunk(s).`,
+        },
+        {
+          key: "tools", label: "Choose and run bounded tools", status: "skipped",
+          detail: policy
+            ? "No tool call was permitted or needed."
+            : "The local fallback stays inside the shipped evidence corpus.",
+        },
+        {
+          key: "verify", label: "Verify every claim against its source",
+          status: grounded ? "completed" : "blocked",
+          detail: grounded
+            ? "Every returned claim maps to a retrieved chunk."
+            : "No unsupported claim was allowed into the answer.",
+        },
+        {
+          key: "answer", label: "Return a concise cited answer", status: "completed",
+          detail: refusal ? "Returned a safe refusal." : "Returned with citations.",
+        },
+      ],
+      tools_considered: [],
+      tool_calls: 0,
+      model_turns: 0,
+      evidence_count: evidenceCount,
+      duration_ms: Math.max(0, Math.round(performance.now() - started)),
+      outcome: refusal ? "refused" : "grounded",
+    };
+  }
+
   function answer(index, corpus, question) {
+    const started = performance.now();
     const email = corpus.person.email;
     if (CONTRACT_RE.test(question)) {
-      return { answer: CONTACT_REFUSAL(email), sources: [], grounded: false, refusal: true };
+      return {
+        answer: CONTACT_REFUSAL(email), sources: [], grounded: false, refusal: true,
+        agent_run: localAgentRun({
+          question, evidenceCount: 0, grounded: false, refusal: true, started, policy: true,
+        }),
+      };
     }
     if (INJECTION_PATTERNS.some((pattern) => pattern.test(question))) {
-      return { answer: INJECTION_REFUSAL, sources: [], grounded: false, refusal: true };
+      return {
+        answer: INJECTION_REFUSAL, sources: [], grounded: false, refusal: true,
+        agent_run: localAgentRun({
+          question, evidenceCount: 0, grounded: false, refusal: true, started, policy: true,
+        }),
+      };
     }
     const { hits, trace } = retrieve(index, question);
     if (!hits.length) {
@@ -306,9 +371,12 @@
         sources: [],
         grounded: false,
         refusal: true,
+        agent_run: localAgentRun({
+          question, evidenceCount: 0, grounded: false, refusal: true, started,
+        }),
       };
     }
-    return {
+    const response = {
       answer: compose(question, hits),
       // Two chunks from the same CV entry are one citation, not two: repeating
       // the identical label under an answer reads as a rendering fault.
@@ -317,6 +385,10 @@
       refusal: false,
       trace,
     };
+    response.agent_run = localAgentRun({
+      question, evidenceCount: hits.length, grounded: true, refusal: false, started,
+    });
+    return response;
   }
 
   /* ---------- job-description fit ---------- */

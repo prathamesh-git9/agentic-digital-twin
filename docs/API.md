@@ -1,4 +1,4 @@
-# Digital Twin API
+# Agentic Digital Twin API
 
 This is the backend contract for the standalone page, embedded widget, and owner tools.
 The interactive OpenAPI document is also available at `/docs`.
@@ -184,6 +184,24 @@ visit, messages, mutable drafts, and proof packs.
   "tailored_for": null,
   "budget_remaining": 11234,
   "tool_budget_remaining": 21,
+  "agent_run": {
+    "intent": "web_research",
+    "mode": "tool-assisted",
+    "goal": "Research public sources and answer with attribution",
+    "steps": [
+      {"key": "route", "label": "Understand the hiring goal", "status": "completed"},
+      {"key": "retrieve", "label": "Retrieve verified profile evidence", "status": "completed"},
+      {"key": "tools", "label": "Choose and run bounded tools", "status": "completed"},
+      {"key": "verify", "label": "Verify every claim against its source", "status": "completed"},
+      {"key": "answer", "label": "Return a concise cited answer", "status": "completed"}
+    ],
+    "tools_considered": ["web_search", "fetch_page", "cv_lookup"],
+    "tool_calls": 1,
+    "model_turns": 2,
+    "evidence_count": 6,
+    "duration_ms": 612,
+    "outcome": "grounded"
+  },
   "trace": [
     {
       "sequence": 1,
@@ -203,6 +221,12 @@ visit, messages, mutable drafts, and proof packs.
 
 Only confirmed visitor context can set `tailored_for`. Salary negotiation, offer acceptance,
 contractual commitments, and start-date promises are always refused and handed to Prathamesh.
+`agent_run` is always present. It reports the deterministic intent plan, the tools admitted for
+that intent, each execution phase, evidence/model/tool counts, duration, and grounded or refused
+outcome. The planner narrows the schema set before the model makes bounded tool choices; it does
+not bypass the final claim verifier. `agent.plan` and `agent.phase` SSE frames stream the same
+phases while the response is running.
+
 `trace` is always present and is `[]` when no tool was called. Its order is the actual call
 order. `sequence` starts at `1` for each chat turn; `call_id` is the provider tool-call ID.
 Arguments are display-safe/redacted: URLs lose credentials/query/fragment, long queries are
@@ -329,7 +353,7 @@ The current owner policy is count-based:
    max `3`), `decision` is `auto` and every candidate with a usable published or MX-enabled
    inferred address set is prepared for unattended delivery without selection.
 2. A sole candidate at/above `TWIN_SEND_CONFIDENCE_THRESHOLD` (default `85`) uses
-   `single_match`, which may say “You just talked to my digital twin.”
+   `single_match`, which may say “You just talked to my agentic digital twin.”
 3. Multiple candidates, or a lower-confidence sole candidate, use `fanout`. It says they
    **may** have looked at the profile and that they can ignore the message if not. It never says
    the recipient visited.
@@ -458,6 +482,8 @@ after 15 seconds without an event. Event types are:
 | `research` | `status` is `idle`, `researching`, `candidates`, `empty`, `confirmed`, `skipped`, or `opted_out`. Completed events include candidates, dossiers, source reports, message, and disclosure. |
 | `research.progress` | `source`, per-source `status` (`running`, `ok`, `empty`, `blocked`, `timeout`, or `failed`), and short `message`. Transient. |
 | `research.dossier` | Enriched `candidates[]` and attributed `dossiers[]`. Transient; still not model authority. |
+| `agent.plan` | Intent, execution mode, bounded goal, ordered `steps[]`, and the intent-scoped `tools_considered[]`. Emitted once per chat turn. Transient. |
+| `agent.phase` | One plan-step `key`, its current `status`, and a safe display `detail`. Retrieval, tool choice, verification and answer completion stream independently. Transient. |
 | `tool.call` | `sequence`, provider `call_id`, `tool`, redacted `arguments`, and human `phrase`. Emitted immediately before bounded execution. Transient. |
 | `tool.result` | Matching `sequence`/`call_id`/`tool`, typed `status` (`ok`, `empty`, `blocked`, `timeout`, or `failed`), integer `duration_ms`, one-line `summary`, distinct public `source_urls[]`, and `cached`. Emitted for every `tool.call`, including denial, timeout, bad arguments, and exhausted budget. Transient. |
 | `roles.ready` | `roles` map keyed by candidate ID, each containing ATS status/reason and `roles[]`. |

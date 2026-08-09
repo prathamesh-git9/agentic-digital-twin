@@ -125,6 +125,35 @@ def test_simple_profile_question_uses_the_fast_path_without_tool_schemas(
     assert provider.tool_sets == []
     assert body["trace"] == []
     assert body["grounded"] is True
+    assert body["agent_run"]["intent"] == "profile"
+    assert body["agent_run"]["mode"] == "grounded-retrieval"
+    assert body["agent_run"]["tool_calls"] == 0
+    assert [step["key"] for step in body["agent_run"]["steps"]] == [
+        "route",
+        "retrieve",
+        "tools",
+        "verify",
+        "answer",
+    ]
+    assert body["agent_run"]["steps"][2]["status"] == "skipped"
+
+
+def test_agent_plan_limits_the_model_to_tools_relevant_to_the_intent(
+    app_factory: Callable[..., FastAPI],
+) -> None:
+    provider = ToolThenAnswerProvider()
+    with TestClient(
+        app_factory(answer_provider=provider, search_provider=PublicSearch())
+    ) as client:
+        session_id = client.post("/api/sessions").json()["session_id"]
+        body = ask_languages(client, session_id).json()
+
+    offered = {definition["function"]["name"] for definition in provider.tool_sets[0]}
+    assert offered == {"web_search", "cv_lookup"}
+    assert body["agent_run"]["intent"] == "web_research"
+    assert body["agent_run"]["mode"] == "tool-assisted"
+    assert body["agent_run"]["tool_calls"] == 1
+    assert body["agent_run"]["steps"][2]["status"] == "completed"
 
 
 def test_loop_stops_at_iteration_ceiling_then_forces_a_final_draft(

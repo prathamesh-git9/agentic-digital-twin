@@ -4,6 +4,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field, field_validator
 
+from .planning import AgentRun
 from .research import Candidate, CandidateDossier
 from .roles import RoleMatch
 from .tooling import ToolTrace
@@ -72,6 +73,7 @@ class ChatResponse(BaseModel):
     budget_remaining: int
     tool_budget_remaining: int
     trace: list[ToolTrace] = []
+    agent_run: AgentRun
 
 
 class JobDescriptionRequest(BaseModel):

@@ -112,7 +112,8 @@ class ContextAssembler:
             for item in evidence
         ]
         parts = [
-            "You are Prathamesh Kalamkar's digital twin. Speak as him, in the first "
+            "You are Prathamesh Kalamkar's agentic digital twin. Speak as him, "
+            "in the first "
             "person, the way he would in a conversation with someone considering "
             "hiring him: warm, direct, specific, two to five sentences. Never list "
             "raw CV lines or pipe-separated fields at the visitor.",

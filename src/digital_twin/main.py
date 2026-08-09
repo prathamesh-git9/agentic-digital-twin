@@ -108,7 +108,8 @@ from .tooling import ToolCall, ToolRegistry
 
 STATIC_DIR = Path(__file__).parent / "static"
 GREETING = (
-    "Hi — I’m Prathamesh’s evidence-grounded digital twin. Ask me about his work, "
+    "Hi — I’m Prathamesh’s evidence-grounded agentic digital twin. "
+    "Ask me about his work, "
     "projects, skills, or fit for a role. If you’d like, share your name so I can look "
     "for public professional context; it is completely optional, and Skip gives you the "
     "same full chat."
@@ -380,7 +381,7 @@ def create_app(
     app = FastAPI(
         title=settings.app_name,
         version=__version__,
-        description="A source-grounded recruiter-facing digital twin.",
+        description="A source-grounded recruiter-facing agentic digital twin.",
         lifespan=lifespan,
     )
     app.add_middleware(
@@ -1266,7 +1267,7 @@ def create_app(
         return ConfirmCandidateResponse(
             status="confirmed",
             candidate=candidate,
-            message="Confirmed context is now available to the twin.",
+            message="Confirmed context is now available to the agentic digital twin.",
             dossier=dossier,
             roles=roles.roles if roles else [],
             outreach=(
@@ -1375,11 +1376,14 @@ def create_app(
         async def publish_tool_event(event: dict[str, Any]) -> None:
             await events.publish(session_id, event, retain=False)
 
-        verified, tailored_for, used, trace, tool_remaining = await chat.answer(
-            visit,
-            message,
-            publish=publish_tool_event,
-        )
+        (
+            verified,
+            tailored_for,
+            used,
+            trace,
+            tool_remaining,
+            agent_run,
+        ) = await chat.answer(visit, message, publish=publish_tool_event)
         database.add_message(session_id, "user", message)
         database.add_message(session_id, "assistant", verified.text, verified.sources)
         database.update_visit(
@@ -1396,6 +1400,7 @@ def create_app(
             budget_remaining=remaining,
             tool_budget_remaining=tool_remaining,
             trace=trace,
+            agent_run=agent_run,
         )
 
     @app.post("/api/sessions/{session_id}/jd-fit", response_model=JobFitResponse)
