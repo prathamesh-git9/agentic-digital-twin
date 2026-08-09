@@ -65,7 +65,7 @@ class Settings(BaseSettings):
     email_verification_api_key: str = ""
     email_verification_base_url: str = "https://api.hunter.io/v2"
 
-    linkedin_url: str = "https://www.linkedin.com/in/prathameshkalamkar"
+    linkedin_url: str = "https://www.linkedin.com/in/prathamesh-kalamkar/"
     calendar_url: str = ""
     from_email: str = "prathameh7744yt@gmail.com"
     from_name: str = "Prathamesh Kalamkar"

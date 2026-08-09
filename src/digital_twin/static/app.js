@@ -795,7 +795,7 @@
       if (c.location) items.push(["", "Based in", c.location]);
     } catch { /* fall through to the static links below */ }
     // Always offered, independent of whether the contact endpoint responded.
-    items.push(["https://www.linkedin.com/in/prathameshkalamkar", "LinkedIn", "prathameshkalamkar"]);
+    items.push(["https://www.linkedin.com/in/prathamesh-kalamkar/", "LinkedIn", "prathamesh-kalamkar"]);
     items.push(["https://github.com/prathamesh-git9", "GitHub", "prathamesh-git9"]);
     rows.innerHTML = items.map(([href, label, value]) =>
       href
