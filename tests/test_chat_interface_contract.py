@@ -44,19 +44,31 @@ def test_owner_linkedin_profile_is_canonical_everywhere() -> None:
     assert "prathameshkalamkar" not in HTML + APP + CONFIG
 
 
-def test_cloud_architecture_visuals_are_site_wide_and_lightweight() -> None:
-    for component in (
-        "edge-node",
-        "api-node",
-        "agent-node",
-        "data-node",
-        "tools-node",
-        "trace-node",
-    ):
-        assert component in HTML
+def test_agent_ecosystem_is_contained_and_lightweight() -> None:
+    assert 'class="agent-showcase reveal"' in HTML
+    for agent in ("Claude Code", "Codex", "MCP"):
+        assert agent in HTML
+    assert 'class="infra-sky"' not in HTML
+    assert 'class="infra-component' not in HTML
     assert HTML.count("data-system=") == 7
+    assert HTML.count('class="system-chip"') == 7
     assert 'class="runtime-map"' in HTML
     assert 'class="foot-runtime"' in HTML
-    assert ".infra-component" in CSS
+    assert ".agent-showcase" in CSS
+    assert ".band[data-system]::after" in CSS
+    assert ".band[data-system] .band-head::after { display: none; }" in CSS
     assert ".bands" in CSS and "--infra-line-soft" in CSS
     assert "@media (prefers-reduced-motion: reduce)" in CSS
+
+
+def test_mobile_starters_use_a_bounded_grid_instead_of_a_clipped_scroller() -> None:
+    repair_css = CSS.split("UI REPAIR CONTRACT", maxsplit=1)[1]
+    assert "grid-template-columns: repeat(2, minmax(0, 1fr))" in repair_css
+    assert "overflow: visible" in repair_css
+    assert ".dock, .suggestions { min-width: 0; max-width: 100%; }" in repair_css
+    assert (
+        "body.has-thread .suggestions, body.has-thread .dock-note { display: none; }"
+        in repair_css
+    )
+    assert "body.has-thread .dock" in repair_css
+    assert "position: fixed" in repair_css
