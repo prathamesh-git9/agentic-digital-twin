@@ -45,11 +45,20 @@ def test_owner_linkedin_profile_is_canonical_everywhere() -> None:
 
 
 def test_clawd_and_cloud_architecture_are_contained_and_lightweight() -> None:
-    assert 'class="clawd-corner"' in HTML
+    assert 'class="clawd-float"' in HTML
     assert 'aria-label="Clawd, the animated Claude Code mascot"' in HTML
+    dock_start = HTML.index('class="dock reveal d2"')
+    clawd_start = HTML.index('class="clawd-float"')
+    composer_start = HTML.index('<form id="composer">')
+    assert dock_start < clawd_start < composer_start
+    header = HTML.split('<header class="bar">', maxsplit=1)[1].split(
+        "</header>", maxsplit=1
+    )[0]
+    assert "clawd-float" not in header
     for pose in ("clawd-default", "clawd-look-right", "clawd-look-left", "clawd-arms-up"):
         assert pose in HTML
     assert 'viewBox="0 0 18 5"' in HTML
+    assert 'preserveAspectRatio="none"' in HTML
     assert 'class="agent-showcase' not in HTML
     assert 'class="cloud-fabric"' in HTML
     for service in ("Edge", "API", "EC2", "Lambda", "SQS", "S3", "RDS", "Logs", "Cache"):
@@ -63,9 +72,11 @@ def test_clawd_and_cloud_architecture_are_contained_and_lightweight() -> None:
     assert HTML.count('class="system-chip"') == 7
     assert 'class="runtime-map"' in HTML
     assert 'class="foot-runtime"' in HTML
-    assert ".clawd-corner" in CSS
+    assert ".clawd-float" in CSS
     assert "fill: #d97757" in CSS
     assert "@keyframes clawd-look-left" in CSS
+    assert "@keyframes clawd-track" in CSS
+    assert "grid-template-columns: 230px minmax(0, 720px) 230px" in CSS
     assert ".cloud-region-line" in CSS
     assert "@keyframes cloud-route" in CSS
     assert ".band[data-system]::after" in CSS
