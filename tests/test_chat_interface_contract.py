@@ -21,9 +21,10 @@ def test_boot_has_a_fast_local_fallback_while_live_ai_warms() -> None:
     assert 'toast("Live AI connected.")' in APP
 
 
-def test_static_build_copies_nested_aws_icon_assets() -> None:
-    assert 'COPY_DIRS = ("aws",)' in BUILD_STATIC
+def test_static_build_copies_generated_cloud_asset_without_unused_aws_icons() -> None:
+    assert "COPY_DIRS: tuple[str, ...] = ()" in BUILD_STATIC
     assert "shutil.copytree(source, out / name, dirs_exist_ok=True)" in BUILD_STATIC
+    assert '"cloud-infrastructure.webp"' in BUILD_STATIC
 
 
 def test_local_fallback_does_not_bypass_api_rate_or_budget_rejections() -> None:
@@ -64,13 +65,14 @@ def test_clawd_and_cloud_architecture_are_contained_and_lightweight() -> None:
     for pose in ("clawd-default", "clawd-look-right", "clawd-look-left", "clawd-arms-up"):
         assert pose in HTML
     assert 'viewBox="0 0 18 5"' in HTML
-    assert 'preserveAspectRatio="none"' in HTML
     assert 'class="agent-showcase' not in HTML
-    assert 'class="cloud-fabric"' in HTML
-    assert 'class="aws-logo-clouds"' in HTML
-    assert HTML.count('class="aws-logo-cloud ') == 3
-    assert HTML.count("/static/aws/aws-cloud.svg") == 3
-    assert (STATIC / "aws" / "aws-cloud.svg").is_file()
+    assert 'class="cloud-art"' in HTML
+    assert HTML.count("/static/cloud-infrastructure.webp") == 1
+    assert (STATIC / "cloud-infrastructure.webp").is_file()
+    assert (STATIC / "cloud-infrastructure.webp").stat().st_size < 100_000
+    assert 'class="aws-logo-clouds"' not in HTML
+    assert 'class="aws-logo-cloud ' not in HTML
+    assert "/static/aws/aws-cloud.svg" not in HTML
     assert 'class="aws-reference"' not in HTML
     assert 'class="aws-ref-' not in HTML
     assert 'class="cloud-service' not in HTML
@@ -93,8 +95,10 @@ def test_clawd_and_cloud_architecture_are_contained_and_lightweight() -> None:
     assert HTML.count('class="cloud-packet') == 0
     assert "animation: cloud-route" not in CSS
     assert "animation: cloud-node-float" not in CSS
-    assert ".aws-logo-clouds" in CSS
-    assert ".aws-logo-cloud {" in CSS
+    assert ".cloud-art {" in CSS
+    assert "object-fit: cover" in CSS
+    assert ".aws-logo-clouds" not in CSS
+    assert ".aws-logo-cloud {" not in CSS
     assert ".dock { margin-top: 32px; }" in CSS
     assert ".aws-reference {" not in CSS
     assert ".aws-ref-vpc {" not in CSS
