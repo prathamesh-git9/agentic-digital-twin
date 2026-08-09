@@ -2170,12 +2170,12 @@ html[data-theme="dark"] .cloud-bank {
   fill: rgba(63, 105, 151, .2); stroke: rgba(111, 177, 239, .34);
 }
 
-.cloud-fabric { position: absolute; inset: 64px 0 0; opacity: .9; }
+.cloud-fabric { position: absolute; inset: 64px 0 0; opacity: 1; }
 .cloud-fabric::after {
   content: ""; position: absolute; z-index: 1; left: 17%; right: 17%; top: 8%; height: 66%;
   background: radial-gradient(ellipse at center, color-mix(in srgb, var(--sky-mid) 58%, transparent) 0 48%, transparent 78%);
 }
-.cloud-backbone { position: absolute; z-index: 0; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.cloud-backbone { position: absolute; z-index: 0; inset: 0; width: 100%; height: 100%; overflow: visible; opacity: .9; }
 .cloud-region-fill { fill: rgba(229, 243, 255, .12); }
 .cloud-region-line, .cloud-plane-line, .cloud-route {
   fill: none; vector-effect: non-scaling-stroke; stroke-linecap: round;
@@ -2190,29 +2190,58 @@ html[data-theme="dark"] .cloud-bank {
 #cloud-arrow path { fill: rgba(35, 112, 188, .7); }
 .cloud-packet { fill: #ff9d2e; opacity: .9; animation: packet-pulse 2.8s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
 
-/* These static zones occupy the quiet strip between the navigation and hero.
-   Their full-size SVGs are the containers, so they read as clouds rather than
-   rounded labels with a cloud icon. */
-.aws-zones {
-  position: absolute; z-index: 4; left: 4%; right: 4%; top: 6px;
-  display: flex; align-items: center; justify-content: space-between;
-  pointer-events: none;
+/* The reserved strip now follows the AWS diagram system itself: AWS Cloud is
+   the solid outer boundary, Region is teal and the VPC cluster is purple. */
+.aws-reference {
+  position: absolute; z-index: 4; left: 3.5%; right: 3.5%; top: 6px; height: 84px;
+  border: 1.5px solid rgba(36, 47, 62, .7); border-radius: 6px;
+  background: rgba(247, 251, 255, .78); color: #242f3e;
+  box-shadow: 0 8px 26px rgba(29, 76, 122, .08); pointer-events: none;
 }
-.aws-zone {
-  position: relative; width: clamp(184px, 18vw, 230px); height: 56px;
-  display: grid; place-items: center; color: #1d6eaf;
+.aws-reference::after {
+  content: ""; position: absolute; z-index: 0; inset: 7px;
+  border: 1px dashed rgba(0, 164, 166, .72); border-radius: 3px;
 }
-.aws-zone-cloud {
-  position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible;
-  fill: rgba(245, 251, 255, .94); stroke: rgba(45, 125, 197, .5);
-  stroke-width: 1.45; vector-effect: non-scaling-stroke;
+.aws-reference-title, .aws-reference-region {
+  position: absolute; z-index: 3; top: 3px; display: flex; align-items: center; gap: 6px;
+  padding: 2px 7px 2px 3px; background: rgba(247, 251, 255, .97); border-radius: 3px;
 }
-.aws-zone > span { position: relative; z-index: 1; min-width: 0; display: grid; gap: 3px; text-align: center; transform: translateY(6px); }
-.aws-zone b { font: 650 9px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; }
-.aws-zone small { color: var(--ink-3); font: 450 8px/1 var(--mono); white-space: nowrap; }
-.aws-zone-mobile { display: none; }
-html[data-theme="dark"] .aws-zone { color: #83c6ff; }
-html[data-theme="dark"] .aws-zone-cloud { fill: rgba(18, 43, 68, .94); stroke: rgba(121, 190, 245, .44); }
+.aws-reference-title { left: 8px; }
+.aws-reference-region { right: 8px; color: #007f81; }
+.aws-reference-title img, .aws-reference-region img { width: 20px; height: 20px; border-radius: 2px; }
+.aws-reference-title > span, .aws-reference-region > span { display: grid; gap: 1px; }
+.aws-reference-title b, .aws-reference-region b { font: 700 8px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; }
+.aws-reference-title small, .aws-reference-region small { color: var(--ink-3); font: 500 6.5px/1 var(--mono); letter-spacing: .05em; white-space: nowrap; }
+.aws-reference-flow {
+  position: absolute; z-index: 2; left: 14px; right: 14px; top: 24px; bottom: 5px;
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+}
+.aws-ref-node { width: 56px; flex: none; display: grid; justify-items: center; gap: 3px; }
+.aws-ref-node > img { width: 30px; height: 30px; display: block; border-radius: 4px; box-shadow: 0 3px 8px rgba(25, 53, 82, .12); }
+.aws-ref-node > b { color: #31465b; font: 650 7px/1 var(--mono); text-align: center; white-space: nowrap; }
+.aws-ref-arrow { position: relative; width: 17px; height: 1px; flex: none; background: rgba(71, 87, 103, .64); }
+.aws-ref-arrow::after { content: ""; position: absolute; right: -1px; top: -3px; border-left: 5px solid rgba(71, 87, 103, .72); border-top: 3.5px solid transparent; border-bottom: 3.5px solid transparent; }
+.aws-ref-vpc {
+  position: relative; min-width: 298px; height: 51px; padding: 11px 8px 3px;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  border: 1px dashed rgba(140, 79, 255, .86); border-radius: 4px;
+  background: rgba(140, 79, 255, .035);
+}
+.aws-ref-vpc-title {
+  position: absolute; left: 6px; top: -10px; display: flex; align-items: center; gap: 4px;
+  padding: 1px 5px 1px 2px; background: rgba(247, 251, 255, .97); color: #7137db;
+}
+.aws-ref-vpc-title img { width: 17px; height: 17px; border-radius: 2px; }
+.aws-ref-vpc-title b { font: 700 6.5px/1 var(--mono); letter-spacing: .05em; text-transform: uppercase; white-space: nowrap; }
+.aws-node-sqs { width: 40px; }
+.aws-node-data { width: 50px; }
+.aws-ref-pair { display: flex; gap: 2px; }
+.aws-ref-pair img { width: 22px; height: 22px; border-radius: 3px; box-shadow: 0 3px 8px rgba(25, 53, 82, .12); }
+html[data-theme="dark"] .aws-reference { background: rgba(10, 22, 35, .86); color: #edf6ff; border-color: rgba(217, 229, 240, .68); }
+html[data-theme="dark"] .aws-reference-title,
+html[data-theme="dark"] .aws-reference-region,
+html[data-theme="dark"] .aws-ref-vpc-title { background: rgba(10, 22, 35, .98); }
+html[data-theme="dark"] .aws-ref-node > b { color: #c5d9eb; }
 
 .cloud-service {
   position: absolute; z-index: 2; width: 54px; display: grid; justify-items: center; gap: 5px;
@@ -2220,12 +2249,10 @@ html[data-theme="dark"] .aws-zone-cloud { fill: rgba(18, 43, 68, .94); stroke: r
   text-transform: uppercase;
 }
 .cloud-service i {
-  width: 34px; height: 34px; display: grid; place-items: center;
-  border: 1px solid rgba(50, 133, 210, .48); border-radius: 11px;
-  background: rgba(236, 247, 255, .92); box-shadow: inset 0 1px 0 rgba(255,255,255,.95), 0 8px 18px rgba(32, 96, 158, .16);
+  width: 34px; height: 34px; display: block; border-radius: 4px;
+  box-shadow: 0 5px 13px rgba(32, 96, 158, .16);
 }
-html[data-theme="dark"] .cloud-service i { background: rgba(22, 48, 74, .6); box-shadow: inset 0 1px 0 rgba(255,255,255,.08); }
-.cloud-service svg { width: 23px; height: 23px; fill: none; stroke: currentColor; stroke-width: 1.35; stroke-linecap: round; stroke-linejoin: round; }
+.cloud-service img { width: 100%; height: 100%; display: block; border-radius: 4px; }
 .cloud-service b { display: none; }
 .cloud-service-edge { left: 1.6%; top: 25%; }
 .cloud-service-api { left: 19%; top: 22%; }
@@ -2251,10 +2278,11 @@ html[data-theme="dark"] .cloud-service i { background: rgba(22, 48, 74, .6); box
 }
 
 @media (max-width: 1180px) {
-  .cloud-fabric { opacity: .78; }
+  .cloud-backbone { opacity: .78; }
   .cloud-service { width: 32px; }
   .cloud-service i { width: 28px; height: 28px; border-radius: 9px; }
-  .cloud-service svg { width: 18px; height: 18px; }
+  .aws-reference-flow { gap: 5px; }
+  .aws-ref-arrow { width: 13px; }
 }
 
 @media (min-width: 701px) and (max-width: 1180px) {
@@ -2263,16 +2291,28 @@ html[data-theme="dark"] .cloud-service i { background: rgba(22, 48, 74, .6); box
 }
 
 @media (max-width: 900px) {
-  .cloud-fabric { top: 54px; opacity: .72; }
+  .cloud-fabric { top: 54px; }
+  .cloud-backbone { opacity: .72; }
   .cloud-plane-line, .cloud-service { display: none; }
   .cloud-route { stroke-width: 1; opacity: .72; }
   .cloud-bank-d, .cloud-bank-e { opacity: .46; }
 }
 
 @media (max-width: 700px) {
-  .aws-zones { justify-content: center; }
-  .aws-zone:not(.aws-zone-mobile) { display: none; }
-  .aws-zone-mobile { display: grid; width: min(250px, calc(100vw - 34px)); height: 60px; }
+  .aws-reference { left: 12px; right: 12px; height: 88px; }
+  .aws-reference-title small, .aws-reference-region { display: none; }
+  .aws-reference-flow { left: 7px; right: 7px; top: 24px; bottom: 4px; gap: 3px; justify-content: space-between; }
+  .aws-node-waf, .aws-arrow-waf, .aws-node-sqs, .aws-arrow-sqs,
+  .aws-node-cloudwatch, .aws-arrow-observe { display: none; }
+  .aws-ref-node { width: 44px; gap: 2px; }
+  .aws-ref-node > img { width: 25px; height: 25px; }
+  .aws-ref-node > b { font-size: 6px; }
+  .aws-ref-arrow { width: 10px; }
+  .aws-ref-vpc { min-width: 184px; height: 53px; padding: 11px 4px 3px; gap: 3px; }
+  .aws-ref-vpc .aws-ref-arrow { width: 8px; }
+  .aws-ref-vpc-title b { font-size: 5.5px; }
+  .aws-node-data { width: 42px; }
+  .aws-ref-pair img { width: 18px; height: 18px; }
   .deck { padding-top: 66px; }
 }
 
@@ -2282,7 +2322,7 @@ html[data-theme="dark"] .cloud-service i { background: rgba(22, 48, 74, .6); box
   .clawd-float svg { width: 44px; height: 25px; }
   .cloudscape { transform: scale(1.04); transform-origin: 55% 35%; }
   .cloud-bank { stroke-width: 1; }
-  .cloud-fabric { opacity: .66; }
+  .cloud-backbone { opacity: .66; }
   .bands { background-size: 520px 376px, 58px 58px, 58px 58px; }
 }
 
