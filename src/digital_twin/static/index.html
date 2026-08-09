@@ -45,7 +45,7 @@
 
     <!-- Version stamp: /static is cached immutably when the URL carries ?v=, so
          bumping the stamp is how a changed asset reaches a returning browser. -->
-    <link rel="stylesheet" href="/static/styles.css?v=63">
+    <link rel="stylesheet" href="/static/styles.css?v=64">
   </head>
   <body>
     <a class="skip-link" href="#composer-input">Skip to chat</a>
@@ -79,18 +79,31 @@
           <path class="cloud-route r-events" marker-end="url(#cloud-arrow)" d="M106 430 C254 430 330 392 454 414 S650 486 790 458 S1022 388 1190 420 S1290 438 1360 430"/>
           <path class="cloud-route r-data" marker-end="url(#cloud-arrow)" d="M262 548 C408 548 486 522 612 536 S816 604 962 560 S1180 510 1352 542"/>
           <path class="cloud-route r-observe" marker-end="url(#cloud-arrow)" d="M438 198 C584 222 686 204 812 224 S1030 270 1198 224 S1312 194 1360 206"/>
-          <text class="cloud-route-label" x="378" y="278">request / response</text>
-          <text class="cloud-route-label" x="784" y="445">events</text>
-          <text class="cloud-route-label" x="846" y="580">evidence + state</text>
-          <text class="cloud-route-label" x="1028" y="236">telemetry</text>
           <!-- One local pulse keeps the diagram alive without repainting a
                full-screen SVG along three motion paths on every frame. -->
           <circle class="cloud-packet p-request" cx="658" cy="350" r="5"/>
         </svg>
-        <span class="cloud-fabric-label cloud-label-region">AWS cloud reference · illustrative</span>
-        <span class="cloud-fabric-label cloud-label-edge">edge + ingress</span>
-        <span class="cloud-fabric-label cloud-label-compute">compute + agent runtime</span>
-        <span class="cloud-fabric-label cloud-label-data">data + observability</span>
+
+        <!-- A reserved cloud strip names the AWS-style layers without placing
+             labels underneath the hero copy, chat controls or fact pills. -->
+        <div class="aws-zones">
+          <span class="aws-zone aws-zone-edge">
+            <svg viewBox="0 0 32 24"><path d="M8 20h16a6 6 0 0 0 .5-12A9 9 0 0 0 7.2 6.5 6.8 6.8 0 0 0 8 20Z"/></svg>
+            <span><b>AWS edge cloud</b><small>CloudFront · API</small></span>
+          </span>
+          <span class="aws-zone aws-zone-compute">
+            <svg viewBox="0 0 32 24"><path d="M8 20h16a6 6 0 0 0 .5-12A9 9 0 0 0 7.2 6.5 6.8 6.8 0 0 0 8 20Z"/></svg>
+            <span><b>AWS compute cloud</b><small>EC2 · Lambda · agents</small></span>
+          </span>
+          <span class="aws-zone aws-zone-data">
+            <svg viewBox="0 0 32 24"><path d="M8 20h16a6 6 0 0 0 .5-12A9 9 0 0 0 7.2 6.5 6.8 6.8 0 0 0 8 20Z"/></svg>
+            <span><b>AWS data cloud</b><small>S3 · RDS · logs</small></span>
+          </span>
+          <span class="aws-zone aws-zone-mobile">
+            <svg viewBox="0 0 32 24"><path d="M8 20h16a6 6 0 0 0 .5-12A9 9 0 0 0 7.2 6.5 6.8 6.8 0 0 0 8 20Z"/></svg>
+            <span><b>AWS cloud architecture</b><small>API · EC2 · S3 · RDS</small></span>
+          </span>
+        </div>
 
         <span class="cloud-service cloud-service-edge"><i><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M4 12h16M12 4c3 3 3 13 0 16M12 4c-3 3-3 13 0 16"/></svg></i><b>Edge</b></span>
         <span class="cloud-service cloud-service-api"><i><svg viewBox="0 0 24 24"><path d="M5 7h14M5 12h14M5 17h14M8 5v14M16 5v14"/></svg></i><b>API</b></span>

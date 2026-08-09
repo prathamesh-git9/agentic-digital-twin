@@ -63,9 +63,11 @@ def test_clawd_and_cloud_architecture_are_contained_and_lightweight() -> None:
     assert 'class="cloud-fabric"' in HTML
     for service in ("Edge", "API", "EC2", "Lambda", "SQS", "S3", "RDS", "Logs", "Cache"):
         assert f"<b>{service}</b>" in HTML
-    assert "AWS cloud reference · illustrative" in HTML
-    assert "request / response" in HTML
-    assert "evidence + state" in HTML
+    for zone in ("AWS edge cloud", "AWS compute cloud", "AWS data cloud"):
+        assert zone in HTML
+    assert 'class="aws-zone aws-zone-mobile"' in HTML
+    assert "request / response" not in HTML
+    assert "evidence + state" not in HTML
     assert 'class="infra-sky"' not in HTML
     assert 'class="infra-component' not in HTML
     assert HTML.count("data-system=") == 7
@@ -83,6 +85,11 @@ def test_clawd_and_cloud_architecture_are_contained_and_lightweight() -> None:
     assert HTML.count('class="cloud-packet') == 1
     assert "animation: cloud-route" not in CSS
     assert "animation: cloud-node-float" not in CSS
+    assert ".cloud-service b { display: none; }" in CSS
+    assert ".dock { margin-top: 32px; }" in CSS
+    assert ".aws-zone-mobile { display: none; }" in CSS
+    assert ".band > .band-head { grid-column: 1; position: sticky;" in CSS
+    assert "  .band-head { grid-column: 1; position: sticky;" not in CSS
     assert ".band[data-system]::after" in CSS
     assert ".band[data-system] .band-head::after { display: none; }" in CSS
     assert ".bands" in CSS and "--infra-line-soft" in CSS
