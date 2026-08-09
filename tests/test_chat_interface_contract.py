@@ -44,17 +44,23 @@ def test_owner_linkedin_profile_is_canonical_everywhere() -> None:
     assert "prathameshkalamkar" not in HTML + APP + CONFIG
 
 
-def test_agent_ecosystem_is_contained_and_lightweight() -> None:
-    assert 'class="agent-showcase reveal"' in HTML
-    for agent in ("Claude Code", "Codex", "MCP"):
-        assert agent in HTML
+def test_clawd_and_cloud_architecture_are_contained_and_lightweight() -> None:
+    assert 'class="clawd-corner"' in HTML
+    assert 'aria-label="Animated Claude Code mascot"' in HTML
+    assert 'class="agent-showcase' not in HTML
+    assert 'class="cloud-fabric"' in HTML
+    for service in ("API", "EC2", "Lambda", "SQS", "S3", "RDS", "Logs", "Cache"):
+        assert f"<b>{service}</b>" in HTML
     assert 'class="infra-sky"' not in HTML
     assert 'class="infra-component' not in HTML
     assert HTML.count("data-system=") == 7
     assert HTML.count('class="system-chip"') == 7
     assert 'class="runtime-map"' in HTML
     assert 'class="foot-runtime"' in HTML
-    assert ".agent-showcase" in CSS
+    assert ".clawd-corner" in CSS
+    assert "@keyframes clawd-wave-left" in CSS
+    assert ".cloud-region-line" in CSS
+    assert "@keyframes cloud-route" in CSS
     assert ".band[data-system]::after" in CSS
     assert ".band[data-system] .band-head::after { display: none; }" in CSS
     assert ".bands" in CSS and "--infra-line-soft" in CSS
