@@ -19,8 +19,8 @@
   --line: #cfe0f4;
   --line-2: #b6cfeb;
   --ink: #0a1826;
-  --ink-2: #42607e;
-  --ink-3: #5d7897;
+  --ink-2: #3a5772;
+  --ink-3: #4e688a;
   /* Two blues: one that passes contrast on tinted ground at 11px, and the iOS
      system blue, which does not, kept for fills and glows where it is a shape
      rather than a word. */
@@ -63,8 +63,8 @@ html[data-theme="dark"] {
   --line: #1c3048;
   --line-2: #27435f;
   --ink: #e9f1fa;
-  --ink-2: #9db3ca;
-  --ink-3: #6a8299;
+  --ink-2: #b9cce0;
+  --ink-3: #adc2d8;
   --clay: #5aa7ff;
   --clay-2: #82bdff;
   --clay-lit: #5aa7ff;
@@ -340,7 +340,7 @@ body.has-thread .dock::before {
 .suggestions { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 13px; }
 .suggestions button { font: inherit; font-size: 13px; cursor: pointer; color: var(--ink-2); background: none; border: 1px solid var(--line); border-radius: var(--r-pill); padding: 8px 16px; transition: border-color .18s var(--ease), color .18s var(--ease), transform .14s var(--ease); }
 .suggestions button:hover { border-color: var(--clay); color: var(--clay); transform: translateY(-1px); }
-.dock-note { margin-top: 14px; font-size: 11.5px; color: var(--ink-3); }
+.dock-note { margin-top: 14px; font-size: 11.5px; color: var(--ink-2); }
 
 /* ---------- bands ---------- */
 
