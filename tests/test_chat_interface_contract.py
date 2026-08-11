@@ -35,20 +35,72 @@ def test_static_build_excludes_unused_cloud_art_and_aws_icons() -> None:
     assert '"cloud-infrastructure.webp"' not in BUILD_STATIC
 
 
+def _scene() -> str:
+    """The scene block with comments stripped.
+
+    The comments in it name the very properties these checks ban, because they
+    explain why those properties are banned. Matching on them makes the tests
+    fail on their own documentation.
+    """
+
+    block = CSS.split("---------- scene ----------", maxsplit=1)[1]
+    block = block.split("---------- bar")[0]
+    return re.sub(r"/\*.*?\*/", "", block, flags=re.S)
+
+
 def test_background_is_code_native_and_theme_aware() -> None:
-    assert "--aurora-cyan:" in CSS
-    assert "--aurora-violet:" in CSS
-    assert "--aurora-warm:" in CSS
+    auroras = ("--aurora-cyan:", "--aurora-azure:", "--aurora-violet:", "--aurora-mint:")
+    for token in auroras:
+        assert CSS.count(token) == 2, f"{token} needs a light and a dark value"
     assert ".sky::before {" in CSS
     assert ".sky::after {" in CSS
-    assert "background-size: 34px 34px" in CSS
     assert ".cloud-art" not in CSS
     assert "cloud-infrastructure.webp" not in HTML
+
+    scene = _scene()
+    # The scene is viewport-fixed so glass below the fold still has colour to
+    # refract. That is not the same thing as background-attachment: fixed, which
+    # is banned in the depth system because it repaints on every scroll frame.
+    assert "position: fixed; inset: 0" in scene
+    assert "background-attachment" not in scene
+    assert 'url("data:image/svg+xml' in scene
+    assert not re.search(r"url\([^)]*\.(png|jpe?g|webp|gif|svg|woff2?)", scene), (
+        "the scene must not download anything"
+    )
+
+
+def test_the_animated_background_cannot_cost_a_frame() -> None:
+    """Every drifting layer stays on the compositor.
+
+    This page has already had continuous render lag removed once. An animated
+    background regresses that the moment a keyframe touches a property the main
+    thread has to lay out or paint -- `left`, `filter`, `background-position` --
+    or the moment a blur lands on a layer that a transform animation is
+    re-rasterising. Transform and opacity are the two the compositor can run on
+    its own, so the keyframes are allowed nothing else.
+    """
+
+    scene = _scene()
+    for block in re.findall(r"@keyframes\s+drift-[a-z]\s*\{(.*?)\n\}", scene, re.S):
+        declared = set(re.findall(r"([a-z-]+)\s*:", block))
+        assert declared <= {"transform", "opacity"}, (
+            f"drift keyframes may only animate transform/opacity, found {declared}"
+        )
+
+    # A blur filter under a transform animation re-rasterises every frame; the
+    # blobs get their softness from gradient falloff instead.
+    assert "filter: blur" not in scene
+
+    animated = set(re.findall(r"animation:\s*drift-[a-z]", scene))
+    assert len(animated) >= 2, "expected several independently drifting layers"
+
+    reduced = CSS.split("prefers-reduced-motion", maxsplit=1)[1][:400]
+    assert "animation: none" in reduced
 
 
 def test_premium_depth_system_shapes_every_portfolio_section() -> None:
     premium = CSS.split("PREMIUM DEPTH SYSTEM", maxsplit=1)[1]
-    assert "styles.css?v=72" in HTML
+    assert "styles.css?v=74" in HTML
     assert HTML.count('class="chapter-meta"') == 6
     assert ".bands > .band" in premium
     assert "counter-increment: chapter" in premium
