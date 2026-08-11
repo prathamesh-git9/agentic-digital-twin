@@ -36,19 +36,50 @@ def test_static_build_excludes_unused_cloud_art_and_aws_icons() -> None:
 
 
 def test_background_is_code_native_and_theme_aware() -> None:
-    assert "--aurora-cyan:" in CSS
-    assert "--aurora-violet:" in CSS
-    assert "--aurora-warm:" in CSS
-    assert ".sky::before {" in CSS
-    assert ".sky::after {" in CSS
-    assert "background-size: 34px 34px" in CSS
+    # The hero scene is drawn entirely from tokens and gradients: no artwork to
+    # download, and every colour in it has a night value.
+    for token in ("--wash-clay:", "--wash-oat:", "--bloom-core:", "--arc:"):
+        assert CSS.count(token) == 2, f"{token} needs a light and a dark value"
+    assert ".sun::before {" in CSS
+    assert "repeating-radial-gradient" in CSS
     assert ".cloud-art" not in CSS
     assert "cloud-infrastructure.webp" not in HTML
+    scene = CSS.split("---------- scene ----------", maxsplit=1)[1]
+    scene = scene.split("---------- bar")[0]
+    assert 'url("data:image/svg+xml' in scene
+    # The grain's own data URI contains url(%23n) -- an internal SVG filter
+    # reference, not a fetch -- so match on asset extensions rather than url(.
+    assert not re.search(r"url\([^)]*\.(png|jpe?g|webp|gif|svg|woff2?)", scene), (
+        "the scene must not download anything"
+    )
+
+
+def test_the_palette_stays_warm() -> None:
+    """No blue survives anywhere in the stylesheet.
+
+    The page is Anthropic-warm end to end, and the way that regresses is not a
+    redesign -- it is one copied shadow or one `rgba(20, 70, 140, .1)` pasted
+    back in from an older revision, which is invisible in review and reads as a
+    rendering fault next to the clay. Bare triples are checked too, because
+    --section-accent stores its colours that way and a plain rgb() scan misses
+    them entirely.
+    """
+
+    triples = re.findall(r"rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)", CSS)
+    triples += re.findall(r"--section-accent:\s*(\d+),\s*(\d+),\s*(\d+)", CSS)
+    suspects = [(int(r), int(g), int(b)) for r, g, b in triples]
+    suspects += [
+        (int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16))
+        for h in re.findall(r"#([0-9a-fA-F]{6})\b", CSS)
+    ]
+    # Warm neutrals always have at least as much red as blue; a cold tint does not.
+    cold = [c for c in suspects if c[2] > c[0] + 12]
+    assert not cold, f"blue-dominant colours are back in the palette: {sorted(set(cold))}"
 
 
 def test_premium_depth_system_shapes_every_portfolio_section() -> None:
     premium = CSS.split("PREMIUM DEPTH SYSTEM", maxsplit=1)[1]
-    assert "styles.css?v=72" in HTML
+    assert "styles.css?v=73" in HTML
     assert HTML.count('class="chapter-meta"') == 6
     assert ".bands > .band" in premium
     assert "counter-increment: chapter" in premium
