@@ -46,17 +46,59 @@
 
     <!-- Version stamp: /static is cached immutably when the URL carries ?v=, so
          bumping the stamp is how a changed asset reaches a returning browser. -->
-    <link rel="stylesheet" href="/static/styles.css?v=74">
+    <link rel="stylesheet" href="/static/styles.css?v=75">
   </head>
   <body>
     <a class="skip-link" href="#composer-input">Skip to chat</a>
     <div class="progress" id="progress" aria-hidden="true"></div>
 
+    <!-- Two separate things. .scene is fixed and deliberately plain: it is only
+         there so the glass panels further down the page have a tinted ground to
+         refract. .range is the picture, and it is anchored to the first screen
+         so the landscape scrolls away instead of sitting behind the CV. -->
     <div class="scene" aria-hidden="true">
       <div class="sky"></div>
-      <div class="sun"></div>
-      <div class="haze"></div>
       <div class="grain"></div>
+    </div>
+
+    <div class="range" aria-hidden="true">
+      <div class="range-sky"></div>
+      <div class="sun"></div>
+      <!-- slice, not none: stretching the ridges to the viewport flattens the
+           hatching into stripes of different widths and the drawing falls apart. -->
+      <svg class="ridges" viewBox="0 0 1440 460" preserveAspectRatio="xMidYMax slice">
+        <defs>
+          <pattern id="hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(38)">
+            <line class="hatch-line" x1="0" y1="0" x2="0" y2="7" />
+          </pattern>
+          <pattern id="hatch-fine" width="4.5" height="4.5" patternUnits="userSpaceOnUse" patternTransform="rotate(38)">
+            <line class="hatch-line" x1="0" y1="0" x2="0" y2="4.5" />
+          </pattern>
+        </defs>
+
+        <!-- Peak spacing and height are both irregular on purpose. Evenly
+             spaced alternating points draw a sawtooth, not a mountain: the
+             eye reads the repeat instantly and the whole thing turns into a
+             zigzag border. Each range gets one dominant summit, offset from
+             the ranges in front of and behind it. -->
+        <g class="ridge r4">
+          <path d="M0,296 L64,258 L118,276 L186,203 L231,231 L298,166 L349,195 L408,140 L465,177 L503,118 L558,78 L607,146 L657,120 L714,187 L772,150 L826,206 L887,166 L945,215 L1006,172 L1059,221 L1124,163 L1187,209 L1249,176 L1318,227 L1377,194 L1440,231 L1440,460 L0,460 Z" />
+          <path class="shade" d="M0,296 L64,258 L118,276 L186,203 L231,231 L298,166 L349,195 L408,140 L465,177 L503,118 L558,78 L607,146 L657,120 L714,187 L772,150 L826,206 L887,166 L945,215 L1006,172 L1059,221 L1124,163 L1187,209 L1249,176 L1318,227 L1377,194 L1440,231 L1440,460 L0,460 Z" />
+        </g>
+        <g class="ridge r3">
+          <path d="M0,344 L78,299 L143,327 L212,259 L271,298 L338,236 L397,287 L468,228 L527,281 L593,243 L664,294 L731,252 L797,302 L864,258 L927,310 L998,266 L1067,317 L1137,274 L1206,320 L1281,278 L1352,324 L1440,293 L1440,460 L0,460 Z" />
+          <path class="shade" d="M0,344 L78,299 L143,327 L212,259 L271,298 L338,236 L397,287 L468,228 L527,281 L593,243 L664,294 L731,252 L797,302 L864,258 L927,310 L998,266 L1067,317 L1137,274 L1206,320 L1281,278 L1352,324 L1440,293 L1440,460 L0,460 Z" />
+        </g>
+        <g class="ridge r2">
+          <path d="M0,381 L91,346 L167,371 L246,324 L327,362 L412,316 L492,357 L577,320 L657,364 L742,328 L825,370 L907,333 L992,374 L1077,337 L1162,377 L1247,340 L1335,380 L1440,349 L1440,460 L0,460 Z" />
+          <path class="shade fine" d="M0,381 L91,346 L167,371 L246,324 L327,362 L412,316 L492,357 L577,320 L657,364 L742,328 L825,370 L907,333 L992,374 L1077,337 L1162,377 L1247,340 L1335,380 L1440,349 L1440,460 L0,460 Z" />
+        </g>
+        <g class="ridge r1">
+          <path d="M0,419 L106,401 L212,416 L327,396 L441,413 L556,393 L677,412 L797,392 L917,410 L1037,390 L1157,408 L1277,388 L1397,406 L1440,398 L1440,460 L0,460 Z" />
+          <path class="shade fine" d="M0,419 L106,401 L212,416 L327,396 L441,413 L556,393 L677,412 L797,392 L917,410 L1037,390 L1157,408 L1277,388 L1397,406 L1440,398 L1440,460 L0,460 Z" />
+        </g>
+      </svg>
+      <div class="haze"></div>
     </div>
 
     <header class="bar">

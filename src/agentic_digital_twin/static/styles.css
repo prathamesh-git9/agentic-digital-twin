@@ -19,7 +19,7 @@
   --line: #cfe0f4;
   --line-2: #b6cfeb;
   --ink: #0a1826;
-  --ink-2: #3a5772;
+  --ink-2: #35506a;
   --ink-3: #4e688a;
   /* Two blues: one that passes contrast on tinted ground at 11px, and the iOS
      system blue, which does not, kept for fills and glows where it is a shape
@@ -30,16 +30,20 @@
   --clay-ink: #ffffff;
   --clay-soft: rgba(10, 132, 255, .12);
   --ok: #0e7a52;
-  --sky-top: #d6e6fb;
-  --sky-mid: #e1edfc;
+  --sky-top: #dbe9fb;
+  --sky-mid: #e3eefc;
   --sky-low: #e9f1fc;
   --sun-core: #ffffff;
-  --sun-halo: rgba(120, 186, 255, .42);
-  --aurora-cyan: rgba(38, 168, 255, .26);
-  --aurora-azure: rgba(10, 132, 255, .22);
-  --aurora-violet: rgba(122, 106, 255, .26);
-  --aurora-mint: rgba(64, 214, 224, .2);
-  --grid-line: rgba(29, 109, 190, .1);
+  /* The colour the air turns at the horizon. It tints the lower sky and the
+     haze between ranges, so one value keeps them agreeing. */
+  --horizon: #b4d0f2;
+  /* Back to front, pale to deep: the only thing that reads as distance. */
+  --ridge-4: #c6dbf3;
+  --ridge-3: #b1caed;
+  --ridge-2: #99b9e4;
+  --ridge-1: #82a5d8;
+  --crest: rgba(24, 62, 122, .22);
+  --hatch: rgba(20, 54, 112, .12);
   --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Charter, Georgia, serif;
   --sans: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
@@ -72,15 +76,16 @@ html[data-theme="dark"] {
   --clay-soft: rgba(90, 167, 255, .16);
   --ok: #46c99a;
   --sky-top: #04101f;
-  --sky-mid: #071626;
+  --sky-mid: #061523;
   --sky-low: #071120;
-  --sun-core: #cfe6ff;
-  --sun-halo: rgba(90, 167, 255, .26);
-  --aurora-cyan: rgba(31, 148, 239, .3);
-  --aurora-azure: rgba(20, 110, 230, .26);
-  --aurora-violet: rgba(117, 100, 255, .24);
-  --aurora-mint: rgba(40, 190, 205, .18);
-  --grid-line: rgba(104, 175, 238, .09);
+  --sun-core: #bcdcff;
+  --horizon: #123253;
+  --ridge-4: #1b3a5c;
+  --ridge-3: #16304c;
+  --ridge-2: #11253b;
+  --ridge-1: #0c1b2c;
+  --crest: rgba(150, 200, 250, .22);
+  --hatch: rgba(160, 205, 250, .09);
 }
 
 * { box-sizing: border-box; }
@@ -119,88 +124,12 @@ a { color: inherit; }
   contain: layout paint style;
 }
 
-/*
-  The drift, and why there is exactly one of it.
-
-  A moving backdrop is not free on this page, because this page is made of
-  glass. Every `backdrop-filter` surface above the scene has to re-filter its
-  backdrop on any frame where that backdrop changes, and there are dozens of
-  them. So the cost of animating here scales with the glass, not with the
-  animation.
-
-  Measured on this page, scrolling the full document at 1440x900:
-
-    layers moving   median frame   frames over 32ms
-    3               33.3ms         95
-    2               16.7ms         76
-    1               16.7ms         27
-    0               16.7ms         29
-
-  One drifting layer is indistinguishable from a static background; two already
-  drop frames; three halve the frame rate. So the mesh below is static -- which
-  also makes it free to be more detailed -- and only the bright core moves.
-
-  Transform is the only property the keyframes touch, and the blobs get their
-  softness from gradient falloff rather than `filter: blur()`, which
-  re-rasterises under a transform animation. Both rules are enforced by test.
-*/
-@keyframes drift {
-  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
-  50% { transform: translate3d(-5%, 4%, 0) scale(1.14); }
-}
-
+/* Plain by design. The fixed layer is not the picture -- it is the tinted
+   ground that keeps the glass panels below the fold looking like glass. All
+   the drawing happens in .range, which scrolls. */
 .sky {
   position: absolute; inset: 0;
-  background: linear-gradient(170deg, var(--sky-top) 0%, var(--sky-mid) 45%, var(--sky-low) 100%);
-}
-
-/* The static mesh, in two layers purely to keep the gradient lists readable.
-   Nothing here moves, so the blob count costs a single rasterisation. */
-.sky::before {
-  content: ""; position: absolute; inset: 0;
-  background:
-    radial-gradient(ellipse 42% 34% at 16% 20%, var(--aurora-cyan), transparent 70%),
-    radial-gradient(ellipse 36% 30% at 78% 12%, var(--aurora-violet), transparent 72%),
-    radial-gradient(ellipse 28% 22% at 46% 4%, var(--aurora-azure), transparent 74%);
-}
-.sky::after {
-  content: ""; position: absolute; inset: 0;
-  background:
-    radial-gradient(ellipse 34% 28% at 66% 74%, var(--aurora-azure), transparent 72%),
-    radial-gradient(ellipse 30% 26% at 10% 76%, var(--aurora-mint), transparent 74%),
-    radial-gradient(ellipse 26% 24% at 90% 52%, var(--aurora-cyan), transparent 76%);
-}
-
-/* The one moving thing. Kept out of the 720px reading column, and its white
-   centre is small: at a wider core it bleached the whole right-hand third while
-   the left stayed saturated, and the hero read as two backgrounds meeting in
-   the middle. */
-.sun {
-  position: absolute; right: -8%; top: 2%;
-  width: min(46vw, 620px); aspect-ratio: 1;
-  border-radius: 50%;
-  background: radial-gradient(circle, var(--sun-core) 0 1.5%, var(--aurora-cyan) 18%, transparent 68%);
-  opacity: .38;
-  animation: drift 48s var(--ease) infinite;
-  will-change: transform;
-}
-/* One hard edge in a field of soft ones, so the eye has something to focus on. */
-.sun::after {
-  content: ""; position: absolute; inset: 30%; border-radius: 50%;
-  border: 1px solid color-mix(in srgb, var(--sun-core) 55%, transparent);
-  box-shadow: 0 0 70px var(--sun-halo);
-}
-
-/* Blueprint grid. Faded out towards the foot so it never competes with body
-   copy, and it is what keeps the aurora from looking like a lava lamp. */
-.haze {
-  position: absolute; inset: 0;
-  background-image:
-    linear-gradient(var(--grid-line) 1px, transparent 1px),
-    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
-  background-size: 62px 62px;
-  -webkit-mask-image: radial-gradient(ellipse 80% 65% at 50% 32%, #000 0%, rgba(0, 0, 0, .35) 55%, transparent 82%);
-  mask-image: radial-gradient(ellipse 80% 65% at 50% 32%, #000 0%, rgba(0, 0, 0, .35) 55%, transparent 82%);
+  background: linear-gradient(178deg, var(--sky-top) 0%, var(--sky-mid) 52%, var(--sky-low) 100%);
 }
 
 .grain {
@@ -209,15 +138,78 @@ a { color: inherit; }
 }
 html[data-theme="light"] .grain { opacity: .14; }
 
-@media (max-width: 700px) {
-  .sun { right: -30%; top: 4%; width: 400px; }
-  .haze { background-size: 46px 46px; }
+/* ---------- range ---------- */
+
+/*
+  The landscape. Anchored to the first screen rather than fixed, because a
+  horizon pinned to the bottom of the viewport sits behind body copy for the
+  rest of the document; this way you scroll past it.
+
+  It is drawn, not photographed: four ridge silhouettes, each with a crest line
+  and diagonal hatching on its face, which is what gives it the engraved look
+  rather than the flat-vector look. Nothing here downloads -- the hatch is an
+  SVG pattern and the ridges are four paths.
+*/
+.range {
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 100dvh; z-index: 1;
+  pointer-events: none; overflow: hidden;
+  contain: layout paint style;
 }
 
-/* A drifting background is decoration; for anyone who has asked the OS to stop
-   moving things, it holds its opening frame and the page is unchanged otherwise. */
-@media (prefers-reduced-motion: reduce) {
-  .sun { animation: none; }
+/* The sky only deepens near the horizon. The hero headline is dark ink sitting
+   over the top of this, so the upper half has to stay pale enough to read
+   against -- the drama is spent low, where the mountains are. */
+.range-sky {
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg,
+    transparent 0%,
+    color-mix(in srgb, var(--horizon) 18%, transparent) 46%,
+    color-mix(in srgb, var(--horizon) 62%, transparent) 74%,
+    var(--horizon) 100%);
+}
+
+/* Sketch sun: a disc and two rings, sitting just above the peaks. */
+.sun {
+  position: absolute; right: 15%; bottom: 54%;
+  width: min(13vw, 148px); aspect-ratio: 1; border-radius: 50%;
+  background: radial-gradient(circle, var(--sun-core) 0 38%, transparent 74%);
+  opacity: 1;
+}
+.sun::before, .sun::after {
+  content: ""; position: absolute; border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--sun-core) 62%, transparent);
+}
+.sun::before { inset: -26%; }
+.sun::after { inset: -58%; opacity: .55; }
+
+.ridges { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: min(48vh, 400px); }
+
+/* Fill, crest line and hatch all come from currentColor, so a ridge is themed
+   by one declaration instead of four. */
+.ridge { fill: currentColor; }
+.ridge > path { stroke: var(--crest); stroke-width: 1.15; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.ridge .shade { fill: url(#hatch); stroke: none; }
+.ridge .shade.fine { fill: url(#hatch-fine); }
+.hatch-line { stroke: var(--hatch); stroke-width: 1; }
+
+.r4 { color: var(--ridge-4); }
+.r3 { color: var(--ridge-3); }
+.r2 { color: var(--ridge-2); }
+.r1 { color: var(--ridge-1); }
+
+/* Atmospheric perspective: the far ranges sit back because air is between
+   them, not because they are a lighter swatch. Rendered over the ridges. */
+.haze {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  height: min(48vh, 400px);
+  background: linear-gradient(180deg, var(--horizon) 0%, transparent 38%);
+  opacity: .34;
+}
+
+@media (max-width: 700px) {
+  .sun { right: 8%; bottom: 44%; width: 96px; }
+  .ridges, .haze { height: min(42vh, 300px); }
 }
 
 /* ---------- bar ---------- */
@@ -1097,7 +1089,7 @@ html[data-theme="dark"] .person {
   across the top edge. The saturation is what separates it from plain frosting.
 */
 :root {
-  --lg-fill: rgba(255, 255, 255, .46);
+  --lg-fill: rgba(255, 255, 255, .7);
   --lg-fill-strong: rgba(255, 255, 255, .66);
   --lg-border: rgba(255, 255, 255, .68);
   --lg-blur: blur(34px) saturate(190%);
@@ -1105,7 +1097,7 @@ html[data-theme="dark"] .person {
   --lg-shadow: 0 1px 1px rgba(20,70,140,.06), 0 12px 32px rgba(20,70,140,.12);
 }
 html[data-theme="dark"] {
-  --lg-fill: rgba(22, 40, 62, .5);
+  --lg-fill: rgba(22, 40, 62, .7);
   --lg-fill-strong: rgba(22, 40, 62, .72);
   --lg-border: rgba(150, 195, 245, .18);
   --lg-spec: linear-gradient(150deg, rgba(180,215,255,.16) 0%, rgba(180,215,255,.04) 40%, transparent 64%);
@@ -1436,7 +1428,7 @@ div.dock-note { display: flex; align-items: baseline; justify-content: space-bet
 :root {
   --g-blur: blur(30px) saturate(180%);
   --g-blur-soft: blur(18px) saturate(150%);
-  --g-fill: rgba(246, 251, 255, .42);
+  --g-fill: rgba(246, 251, 255, .82);
   --g-fill-heavy: rgba(246, 251, 255, .68);
   --g-fill-bar: rgba(246, 251, 255, .78);
   --g-edge: rgba(255, 255, 255, .68);
@@ -1445,7 +1437,7 @@ div.dock-note { display: flex; align-items: baseline; justify-content: space-bet
   --g-shadow-lift: 0 2px 5px rgba(20, 70, 140, .07), 0 20px 46px rgba(20, 70, 140, .16);
 }
 html[data-theme="dark"] {
-  --g-fill: rgba(22, 40, 62, .46);
+  --g-fill: rgba(22, 40, 62, .68);
   --g-fill-heavy: rgba(11, 22, 36, .72);
   --g-fill-bar: rgba(8, 16, 27, .82);
   --g-edge: rgba(150, 195, 245, .18);

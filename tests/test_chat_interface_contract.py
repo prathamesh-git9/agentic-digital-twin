@@ -43,72 +43,89 @@ def _scene() -> str:
     fail on their own documentation.
     """
 
-    block = CSS.split("---------- scene ----------", maxsplit=1)[1]
-    block = block.split("---------- bar")[0]
+    return _section("---------- scene ----------")
+
+
+def _range() -> str:
+    """The range block, same treatment."""
+
+    return _section("---------- range ----------")
+
+
+def _section(marker: str) -> str:
+    # Split on the marker before stripping comments: the marker is itself a
+    # comment, so stripping first deletes it and the slice runs to end of file.
+    block = CSS.split(marker, maxsplit=1)[1].split("---------- bar")[0]
     return re.sub(r"/\*.*?\*/", "", block, flags=re.S)
 
 
 def test_background_is_code_native_and_theme_aware() -> None:
-    auroras = ("--aurora-cyan:", "--aurora-azure:", "--aurora-violet:", "--aurora-mint:")
-    for token in auroras:
+    for token in ("--horizon:", "--ridge-4:", "--ridge-1:", "--crest:", "--hatch:"):
         assert CSS.count(token) == 2, f"{token} needs a light and a dark value"
-    assert ".sky::before {" in CSS
-    assert ".sky::after {" in CSS
     assert ".cloud-art" not in CSS
     assert "cloud-infrastructure.webp" not in HTML
 
+    # The landscape is drawn, not downloaded: four ridge paths and an SVG hatch
+    # pattern. Nothing in the scene or the range may fetch a file.
+    assert HTML.count('class="ridge ') == 4
+    assert 'patternUnits="userSpaceOnUse"' in HTML
+    assert "url(#hatch)" in CSS
     scene = _scene()
-    # The scene is viewport-fixed so glass below the fold still has colour to
-    # refract. That is not the same thing as background-attachment: fixed, which
-    # is banned in the depth system because it repaints on every scroll frame.
-    assert "position: fixed; inset: 0" in scene
-    assert "background-attachment" not in scene
     assert 'url("data:image/svg+xml' in scene
     assert not re.search(r"url\([^)]*\.(png|jpe?g|webp|gif|svg|woff2?)", scene), (
         "the scene must not download anything"
     )
 
 
-def test_the_animated_background_cannot_cost_a_frame() -> None:
-    """The scene keeps to its measured one-moving-layer budget.
+def test_the_picture_scrolls_but_the_tint_does_not() -> None:
+    """The two background layers have different jobs and different positioning.
+
+    `.scene` is fixed and deliberately plain -- it exists so the glass panels
+    below the fold have a tinted ground to refract, because glass frosting flat
+    white produces flat white. `.range` is the illustration, and it is anchored
+    to the first screen: a horizon pinned to the bottom of the viewport sits
+    behind body copy for the rest of the document.
+
+    Neither may use `background-attachment: fixed`, which repaints on every
+    scroll frame and is banned in the depth system for that reason.
+    """
+
+    scene = _scene()
+    assert "position: fixed; inset: 0" in scene
+    assert "background-attachment" not in scene
+
+    rng = _range()
+    assert "position: absolute" in rng and "height: 100dvh" in rng
+    assert "position: fixed" not in rng
+
+
+def test_the_background_cannot_cost_a_frame() -> None:
+    """Nothing in the background animates, and that is a measured decision.
 
     This page has had continuous render lag removed once already, and it is
-    made of glass, so a moving backdrop is charged for twice: once to composite
-    the layer, and again for every `backdrop-filter` surface above it that must
-    re-filter a backdrop that changed. Measured while scrolling the full
-    document at 1440x900, median frame / frames over 32ms:
+    made of glass, so a moving backdrop is charged for twice: once to
+    composite the layer, and again for every `backdrop-filter` surface above
+    it that must re-filter a backdrop that changed. Measured while scrolling
+    the full document at 1440x900, median frame / frames over 32ms:
 
         3 moving layers  33.3ms / 95     2 layers  16.7ms / 76
         1 moving layer   16.7ms / 27     0 layers  16.7ms / 29
 
-    One layer is free. Two is not. The guard is the layer count, because the
-    tempting change -- "add one more drifting blob, it's only a gradient" --
-    is exactly the one the numbers say not to make.
+    The budget is one layer at most. The illustration spends it on nothing,
+    which is why the ranges can carry four silhouettes, crest strokes and two
+    hatch patterns without costing anything.
     """
 
-    scene = _scene()
-    for block in re.findall(r"@keyframes\s+drift\s*\{(.*?)\n\}", scene, re.S):
-        declared = set(re.findall(r"([a-z-]+)\s*:", block))
-        assert declared <= {"transform", "opacity"}, (
-            f"drift keyframes may only animate transform/opacity, found {declared}"
-        )
-
-    # A blur filter under a transform animation re-rasterises every frame; the
-    # blobs get their softness from gradient falloff instead.
-    assert "filter: blur" not in scene
-
-    moving = re.findall(r"animation:\s*[a-z-]+\s", scene)
-    assert len(moving) == 1, (
-        f"the scene affords exactly one animated layer, found {len(moving)}"
-    )
-
-    reduced = CSS.split("prefers-reduced-motion", maxsplit=1)[1][:400]
-    assert "animation: none" in reduced
+    background = _scene() + _range()
+    moving = re.findall(r"animation:\s*(?!none)[a-z-]+", background)
+    assert len(moving) <= 1, f"at most one animated layer, found {moving}"
+    # A blur filter over a large layer is the other way this gets expensive.
+    assert "filter: blur" not in background
 
 
 def test_premium_depth_system_shapes_every_portfolio_section() -> None:
     premium = CSS.split("PREMIUM DEPTH SYSTEM", maxsplit=1)[1]
-    assert "styles.css?v=74" in HTML
+    assert "styles.css?v=75" in HTML
     assert HTML.count('class="chapter-meta"') == 6
     assert ".bands > .band" in premium
     assert "counter-increment: chapter" in premium
