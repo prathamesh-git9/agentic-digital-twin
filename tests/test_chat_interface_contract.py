@@ -70,18 +70,24 @@ def test_background_is_code_native_and_theme_aware() -> None:
 
 
 def test_the_animated_background_cannot_cost_a_frame() -> None:
-    """Every drifting layer stays on the compositor.
+    """The scene keeps to its measured one-moving-layer budget.
 
-    This page has already had continuous render lag removed once. An animated
-    background regresses that the moment a keyframe touches a property the main
-    thread has to lay out or paint -- `left`, `filter`, `background-position` --
-    or the moment a blur lands on a layer that a transform animation is
-    re-rasterising. Transform and opacity are the two the compositor can run on
-    its own, so the keyframes are allowed nothing else.
+    This page has had continuous render lag removed once already, and it is
+    made of glass, so a moving backdrop is charged for twice: once to composite
+    the layer, and again for every `backdrop-filter` surface above it that must
+    re-filter a backdrop that changed. Measured while scrolling the full
+    document at 1440x900, median frame / frames over 32ms:
+
+        3 moving layers  33.3ms / 95     2 layers  16.7ms / 76
+        1 moving layer   16.7ms / 27     0 layers  16.7ms / 29
+
+    One layer is free. Two is not. The guard is the layer count, because the
+    tempting change -- "add one more drifting blob, it's only a gradient" --
+    is exactly the one the numbers say not to make.
     """
 
     scene = _scene()
-    for block in re.findall(r"@keyframes\s+drift-[a-z]\s*\{(.*?)\n\}", scene, re.S):
+    for block in re.findall(r"@keyframes\s+drift\s*\{(.*?)\n\}", scene, re.S):
         declared = set(re.findall(r"([a-z-]+)\s*:", block))
         assert declared <= {"transform", "opacity"}, (
             f"drift keyframes may only animate transform/opacity, found {declared}"
@@ -91,8 +97,10 @@ def test_the_animated_background_cannot_cost_a_frame() -> None:
     # blobs get their softness from gradient falloff instead.
     assert "filter: blur" not in scene
 
-    animated = set(re.findall(r"animation:\s*drift-[a-z]", scene))
-    assert len(animated) >= 2, "expected several independently drifting layers"
+    moving = re.findall(r"animation:\s*[a-z-]+\s", scene)
+    assert len(moving) == 1, (
+        f"the scene affords exactly one animated layer, found {len(moving)}"
+    )
 
     reduced = CSS.split("prefers-reduced-motion", maxsplit=1)[1][:400]
     assert "animation: none" in reduced
