@@ -60,16 +60,24 @@ def _section(marker: str) -> str:
 
 
 def test_background_is_code_native_and_theme_aware() -> None:
-    for token in ("--horizon:", "--ridge-4:", "--ridge-1:", "--crest:", "--hatch:"):
+    themed = ("--sky-high:", "--dawn:", "--dawn-hot:", "--facet:", "--snow:")
+    for token in themed:
         assert CSS.count(token) == 2, f"{token} needs a light and a dark value"
+
+    # Every range carries a lit value and a base value, and the gradient between
+    # them is what gives it volume. A range with only one of the pair is a flat
+    # fill, which is the version of this that read as a chart axis.
+    for n in (1, 2, 3, 4):
+        assert CSS.count(f"--ridge-{n}:") == 2, f"--ridge-{n} needs both themes"
+        assert CSS.count(f"--ridge-{n}-lit:") == 2, f"--ridge-{n}-lit needs both themes"
+        assert f"url(#lit{n})" in CSS, f"range {n} must use its gradient, not a flat fill"
+
     assert ".cloud-art" not in CSS
     assert "cloud-infrastructure.webp" not in HTML
 
-    # The landscape is drawn, not downloaded: four ridge paths and an SVG hatch
-    # pattern. Nothing in the scene or the range may fetch a file.
+    # The landscape is drawn, not downloaded.
     assert HTML.count('class="ridge ') == 4
-    assert 'patternUnits="userSpaceOnUse"' in HTML
-    assert "url(#hatch)" in CSS
+    assert HTML.count("<linearGradient") == 4
     scene = _scene()
     assert 'url("data:image/svg+xml' in scene
     assert not re.search(r"url\([^)]*\.(png|jpe?g|webp|gif|svg|woff2?)", scene), (
@@ -112,8 +120,8 @@ def test_the_background_cannot_cost_a_frame() -> None:
         1 moving layer   16.7ms / 27     0 layers  16.7ms / 29
 
     The budget is one layer at most. The illustration spends it on nothing,
-    which is why the ranges can carry four silhouettes, crest strokes and two
-    hatch patterns without costing anything.
+    which is why the ranges can carry four gradient-lit silhouettes, shadow
+    facets and snow caps without costing anything.
     """
 
     background = _scene() + _range()
@@ -125,7 +133,7 @@ def test_the_background_cannot_cost_a_frame() -> None:
 
 def test_premium_depth_system_shapes_every_portfolio_section() -> None:
     premium = CSS.split("PREMIUM DEPTH SYSTEM", maxsplit=1)[1]
-    assert "styles.css?v=75" in HTML
+    assert "styles.css?v=76" in HTML
     assert HTML.count('class="chapter-meta"') == 6
     assert ".bands > .band" in premium
     assert "counter-increment: chapter" in premium

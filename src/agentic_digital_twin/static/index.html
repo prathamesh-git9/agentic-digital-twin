@@ -46,7 +46,7 @@
 
     <!-- Version stamp: /static is cached immutably when the URL carries ?v=, so
          bumping the stamp is how a changed asset reaches a returning browser. -->
-    <link rel="stylesheet" href="/static/styles.css?v=75">
+    <link rel="stylesheet" href="/static/styles.css?v=76">
   </head>
   <body>
     <a class="skip-link" href="#composer-input">Skip to chat</a>
@@ -63,42 +63,55 @@
 
     <div class="range" aria-hidden="true">
       <div class="range-sky"></div>
+      <div class="dawn"></div>
       <div class="sun"></div>
-      <!-- slice, not none: stretching the ridges to the viewport flattens the
-           hatching into stripes of different widths and the drawing falls apart. -->
-      <svg class="ridges" viewBox="0 0 1440 460" preserveAspectRatio="xMidYMax slice">
+      <!-- slice, not none: stretching the drawing to the viewport skews every
+           facet and the light stops agreeing with the sun. -->
+      <svg class="ridges" viewBox="0 0 1440 520" preserveAspectRatio="xMidYMax slice">
         <defs>
-          <pattern id="hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(38)">
-            <line class="hatch-line" x1="0" y1="0" x2="0" y2="7" />
-          </pattern>
-          <pattern id="hatch-fine" width="4.5" height="4.5" patternUnits="userSpaceOnUse" patternTransform="rotate(38)">
-            <line class="hatch-line" x1="0" y1="0" x2="0" y2="4.5" />
-          </pattern>
+          <!-- The sun sits low on the right, so every ridge is lit from the
+               right and shadowed to the left. One gradient per range is what
+               separates a mountain from a zigzag: a flat fill has no volume,
+               and no amount of silhouette detail puts it back. -->
+          <linearGradient id="lit1" x1="1" y1="0" x2="0.1" y2="0.75">
+            <stop class="s1a" offset="0" /><stop class="s1b" offset="1" />
+          </linearGradient>
+          <linearGradient id="lit2" x1="1" y1="0" x2="0.15" y2="0.8">
+            <stop class="s2a" offset="0" /><stop class="s2b" offset="1" />
+          </linearGradient>
+          <linearGradient id="lit3" x1="1" y1="0" x2="0.2" y2="0.85">
+            <stop class="s3a" offset="0" /><stop class="s3b" offset="1" />
+          </linearGradient>
+          <linearGradient id="lit4" x1="1" y1="0" x2="0.25" y2="0.9">
+            <stop class="s4a" offset="0" /><stop class="s4b" offset="1" />
+          </linearGradient>
         </defs>
 
-        <!-- Peak spacing and height are both irregular on purpose. Evenly
-             spaced alternating points draw a sawtooth, not a mountain: the
-             eye reads the repeat instantly and the whole thing turns into a
-             zigzag border. Each range gets one dominant summit, offset from
-             the ranges in front of and behind it. -->
+        <!-- Back to front. Distant ranges sit LOW and small near the horizon;
+             the near massif is the tall one. One dominant summit with a twin
+             and a shoulder, then an irregular descent -- evenly spaced peaks
+             of equal height read as a chart axis, not a skyline. -->
         <g class="ridge r4">
-          <path d="M0,296 L64,258 L118,276 L186,203 L231,231 L298,166 L349,195 L408,140 L465,177 L503,118 L558,78 L607,146 L657,120 L714,187 L772,150 L826,206 L887,166 L945,215 L1006,172 L1059,221 L1124,163 L1187,209 L1249,176 L1318,227 L1377,194 L1440,231 L1440,460 L0,460 Z" />
-          <path class="shade" d="M0,296 L64,258 L118,276 L186,203 L231,231 L298,166 L349,195 L408,140 L465,177 L503,118 L558,78 L607,146 L657,120 L714,187 L772,150 L826,206 L887,166 L945,215 L1006,172 L1059,221 L1124,163 L1187,209 L1249,176 L1318,227 L1377,194 L1440,231 L1440,460 L0,460 Z" />
+          <path d="M0,392 L110,378 L200,394 L300,368 L395,388 L495,362 L590,384 L690,358 L790,380 L890,354 L990,378 L1090,352 L1195,376 L1300,350 L1400,374 L1440,362 L1440,520 L0,520 Z" />
         </g>
         <g class="ridge r3">
-          <path d="M0,344 L78,299 L143,327 L212,259 L271,298 L338,236 L397,287 L468,228 L527,281 L593,243 L664,294 L731,252 L797,302 L864,258 L927,310 L998,266 L1067,317 L1137,274 L1206,320 L1281,278 L1352,324 L1440,293 L1440,460 L0,460 Z" />
-          <path class="shade" d="M0,344 L78,299 L143,327 L212,259 L271,298 L338,236 L397,287 L468,228 L527,281 L593,243 L664,294 L731,252 L797,302 L864,258 L927,310 L998,266 L1067,317 L1137,274 L1206,320 L1281,278 L1352,324 L1440,293 L1440,460 L0,460 Z" />
+          <path d="M0,410 L90,392 L170,412 L260,380 L340,404 L430,372 L520,398 L615,366 L700,392 L790,358 L880,388 L975,354 L1065,386 L1160,350 L1255,384 L1350,348 L1440,378 L1440,520 L0,520 Z" />
         </g>
         <g class="ridge r2">
-          <path d="M0,381 L91,346 L167,371 L246,324 L327,362 L412,316 L492,357 L577,320 L657,364 L742,328 L825,370 L907,333 L992,374 L1077,337 L1162,377 L1247,340 L1335,380 L1440,349 L1440,460 L0,460 Z" />
-          <path class="shade fine" d="M0,381 L91,346 L167,371 L246,324 L327,362 L412,316 L492,357 L577,320 L657,364 L742,328 L825,370 L907,333 L992,374 L1077,337 L1162,377 L1247,340 L1335,380 L1440,349 L1440,460 L0,460 Z" />
+          <path d="M0,436 L70,420 L140,444 L220,410 L300,438 L380,398 L452,430 L530,392 L610,424 L700,352 L742,388 L790,346 L840,398 L910,368 L985,410 L1060,378 L1140,416 L1225,384 L1310,420 L1400,392 L1440,410 L1440,520 L0,520 Z" />
+          <path class="facet" d="M700,352 L742,388 L718,520 L672,520 Z M790,346 L840,398 L812,520 L764,520 Z" />
         </g>
         <g class="ridge r1">
-          <path d="M0,419 L106,401 L212,416 L327,396 L441,413 L556,393 L677,412 L797,392 L917,410 L1037,390 L1157,408 L1277,388 L1397,406 L1440,398 L1440,460 L0,460 Z" />
-          <path class="shade fine" d="M0,419 L106,401 L212,416 L327,396 L441,413 L556,393 L677,412 L797,392 L917,410 L1037,390 L1157,408 L1277,388 L1397,406 L1440,398 L1440,460 L0,460 Z" />
+          <path d="M0,470 L60,452 L118,398 L162,418 L228,336 L262,358 L318,258 L352,290 L392,214 L424,246 L468,150 L498,196 L534,168 L572,262 L612,232 L660,314 L706,286 L764,356 L820,330 L890,394 L960,372 L1040,424 L1120,404 L1210,444 L1300,428 L1390,458 L1440,448 L1440,520 L0,520 Z" />
+          <!-- Shadow faces: the left flank of each major peak, falling to the
+               base. Drawn as one path so the whole massif shades together. -->
+          <path class="facet" d="M468,150 L424,246 L392,214 L352,290 L318,258 L262,358 L228,336 L162,418 L118,398 L60,452 L0,470 L0,520 L468,520 Z" />
+          <!-- Snow, only on what stands high enough to hold it. -->
+          <path class="snow" d="M468,150 L452,182 L468,176 L482,196 L498,196 Z M534,168 L522,196 L538,190 L548,212 L560,206 Z M392,214 L380,240 L394,234 L406,252 L416,242 Z" />
         </g>
       </svg>
       <div class="haze"></div>
+    </div>
     </div>
 
     <header class="bar">

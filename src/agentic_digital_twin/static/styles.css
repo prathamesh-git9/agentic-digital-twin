@@ -36,19 +36,29 @@
   --sun-core: #ffffff;
   /* The colour the air turns at the horizon. It tints the lower sky and the
      haze between ranges, so one value keeps them agreeing. */
-  --horizon: #b4d0f2;
-  /* Back to front, pale to deep: the only thing that reads as distance. */
-  --ridge-4: #c6dbf3;
-  --ridge-3: #b1caed;
-  --ridge-2: #99b9e4;
-  --ridge-1: #82a5d8;
-  --crest: rgba(24, 62, 122, .22);
-  --hatch: rgba(20, 54, 112, .12);
+  /* Sky overhead, and the warm band it thins into at the horizon. Cool ranges
+     against a warm glow is what makes this read as light rather than shapes. */
+  --sky-high: #a9cdf0;
+  --dawn: #fbe6cd;
+  --dawn-hot: #ffdfae;
+  --sun-halo: rgba(255, 208, 146, .5);
+  /* Back to front, near to far. Each range has a lit value (sun side) and a
+     base value (shadow side); the gradient between them is the volume. */
+  --ridge-1: #5878a8;
+  --ridge-1-lit: #8fabd2;
+  --ridge-2: #7c99c4;
+  --ridge-2-lit: #b0c6de;
+  --ridge-3: #a3bbd8;
+  --ridge-3-lit: #cfdeed;
+  --ridge-4: #c4d4e6;
+  --ridge-4-lit: #e4edf5;
+  --facet: rgba(16, 38, 74, .16);
+  --snow: rgba(255, 255, 255, .85);
   --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Charter, Georgia, serif;
   --sans: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
   --ease: cubic-bezier(.22, .68, .3, 1);
-  --bar-h: 65px;
+  --bar-h: 52px;
   /* One radius scale. There were nineteen distinct values before this,
      which is why neighbouring components never looked related. */
   --r-xs: 6px;
@@ -67,8 +77,8 @@ html[data-theme="dark"] {
   --line: #1c3048;
   --line-2: #27435f;
   --ink: #e9f1fa;
-  --ink-2: #b9cce0;
-  --ink-3: #adc2d8;
+  --ink-2: #cfdeeb;
+  --ink-3: #bccfe1;
   --clay: #5aa7ff;
   --clay-2: #82bdff;
   --clay-lit: #5aa7ff;
@@ -79,13 +89,20 @@ html[data-theme="dark"] {
   --sky-mid: #061523;
   --sky-low: #071120;
   --sun-core: #bcdcff;
-  --horizon: #123253;
-  --ridge-4: #1b3a5c;
-  --ridge-3: #16304c;
-  --ridge-2: #11253b;
-  --ridge-1: #0c1b2c;
-  --crest: rgba(150, 200, 250, .22);
-  --hatch: rgba(160, 205, 250, .09);
+  --sky-high: #10263f;
+  --dawn: #2a2b46;
+  --dawn-hot: #7a5570;
+  --sun-halo: rgba(214, 146, 168, .28);
+  --ridge-1: #070e18;
+  --ridge-1-lit: #1e3450;
+  --ridge-2: #0d1a2b;
+  --ridge-2-lit: #2b4160;
+  --ridge-3: #16283f;
+  --ridge-3-lit: #3a5573;
+  --ridge-4: #22364f;
+  --ridge-4-lit: #4a6684;
+  --facet: rgba(0, 0, 0, .35);
+  --snow: rgba(206, 228, 250, .62);
 }
 
 * { box-sizing: border-box; }
@@ -145,10 +162,19 @@ html[data-theme="light"] .grain { opacity: .14; }
   horizon pinned to the bottom of the viewport sits behind body copy for the
   rest of the document; this way you scroll past it.
 
-  It is drawn, not photographed: four ridge silhouettes, each with a crest line
-  and diagonal hatching on its face, which is what gives it the engraved look
-  rather than the flat-vector look. Nothing here downloads -- the hatch is an
-  SVG pattern and the ridges are four paths.
+  It is a dawn, not a silhouette. Three things carry that, and the first
+  version had none of them:
+
+  - a warm horizon. Cool blue ranges against a warm glow is the whole reason
+    a mountain hero reads as light rather than as shapes; monochrome blue
+    ranges on blue sky are just a chart.
+  - volume. Every range is filled with a gradient lit from the sun's side,
+    and the near massif carries explicit shadow faces. A flat fill has no
+    form, and no amount of silhouette detail puts it back.
+  - one subject. A dominant summit with a twin and a shoulder, then an
+    irregular descent, rather than a row of equal peaks.
+
+  Still downloads nothing: four paths, three facet paths, and gradients.
 */
 .range {
   position: absolute; top: 0; left: 0; right: 0;
@@ -157,59 +183,81 @@ html[data-theme="light"] .grain { opacity: .14; }
   contain: layout paint style;
 }
 
-/* The sky only deepens near the horizon. The hero headline is dark ink sitting
-   over the top of this, so the upper half has to stay pale enough to read
-   against -- the drama is spent low, where the mountains are. */
+/* Sky proper: blue overhead, thinning toward the horizon the way air actually
+   does. It stays light enough at the top that the dark hero headline sitting
+   over it still reads -- the reference puts white type on a saturated sky, and
+   that is the one thing here that could not be borrowed. */
 .range-sky {
   position: absolute; inset: 0;
   background: linear-gradient(180deg,
-    transparent 0%,
-    color-mix(in srgb, var(--horizon) 18%, transparent) 46%,
-    color-mix(in srgb, var(--horizon) 62%, transparent) 74%,
-    var(--horizon) 100%);
+    var(--sky-high) 0%,
+    color-mix(in srgb, var(--sky-high) 55%, transparent) 34%,
+    transparent 62%);
 }
 
-/* Sketch sun: a disc and two rings, sitting just above the peaks. */
+/* The warm band the sun sits in. Sitting under the ridges in paint order, so
+   the ranges read as dark against it. */
+.dawn {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  height: min(62vh, 520px);
+  background:
+    radial-gradient(ellipse 58% 70% at 78% 96%, var(--dawn-hot), transparent 72%),
+    linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--dawn) 45%, transparent) 46%, var(--dawn) 100%);
+}
+
+/* Low and to the right, bloom rather than disc -- it is the light source for
+   every gradient below it, so it has to sit on the side they are lit from. */
 .sun {
-  position: absolute; right: 15%; bottom: 54%;
-  width: min(13vw, 148px); aspect-ratio: 1; border-radius: 50%;
-  background: radial-gradient(circle, var(--sun-core) 0 38%, transparent 74%);
-  opacity: 1;
+  position: absolute; right: 16%; bottom: 30%;
+  width: min(15vw, 170px); aspect-ratio: 1; border-radius: 50%;
+  background: radial-gradient(circle, var(--sun-core) 0 26%, color-mix(in srgb, var(--sun-core) 45%, transparent) 44%, transparent 72%);
 }
-.sun::before, .sun::after {
-  content: ""; position: absolute; border-radius: 50%;
-  border: 1px solid color-mix(in srgb, var(--sun-core) 62%, transparent);
+.sun::after {
+  content: ""; position: absolute; inset: -120%; border-radius: 50%;
+  background: radial-gradient(circle, var(--sun-halo) 0 28%, transparent 68%);
 }
-.sun::before { inset: -26%; }
-.sun::after { inset: -58%; opacity: .55; }
 
-.ridges { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: min(48vh, 400px); }
+.ridges { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: min(40vh, 330px); }
 
-/* Fill, crest line and hatch all come from currentColor, so a ridge is themed
-   by one declaration instead of four. */
-.ridge { fill: currentColor; }
-.ridge > path { stroke: var(--crest); stroke-width: 1.15; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
-.ridge .shade { fill: url(#hatch); stroke: none; }
-.ridge .shade.fine { fill: url(#hatch-fine); }
-.hatch-line { stroke: var(--hatch); stroke-width: 1; }
+.r4 > path { fill: url(#lit4); }
+.r3 > path { fill: url(#lit3); }
+.r2 > path { fill: url(#lit2); }
+.r1 > path { fill: url(#lit1); }
 
-.r4 { color: var(--ridge-4); }
-.r3 { color: var(--ridge-3); }
-.r2 { color: var(--ridge-2); }
-.r1 { color: var(--ridge-1); }
+/* Lit edge on the sun's side, shadow on the other. */
+.s1a { stop-color: var(--ridge-1-lit); } .s1b { stop-color: var(--ridge-1); }
+.s2a { stop-color: var(--ridge-2-lit); } .s2b { stop-color: var(--ridge-2); }
+.s3a { stop-color: var(--ridge-3-lit); } .s3b { stop-color: var(--ridge-3); }
+.s4a { stop-color: var(--ridge-4-lit); } .s4b { stop-color: var(--ridge-4); }
+
+/* The shaded flanks. Multiply would be truer but costs a blend layer over the
+   whole hero; a flat dark at low alpha is indistinguishable here. */
+.ridge .facet { fill: var(--facet); stroke: none; }
+.ridge .snow { fill: var(--snow); stroke: none; }
+
+/* The bases dissolve rather than ending in a wall of fill. Without this the
+   near massif reads as a dark wedge occupying the bottom-left corner: a
+   mountain drawn to the edge of its box stops being a mountain and becomes a
+   shape. In the reference the foreground fades to pale and the peaks float. */
+.range::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0;
+  height: min(30vh, 250px);
+  background: linear-gradient(180deg, transparent 0%, var(--dawn) 62%, var(--paper) 100%);
+}
 
 /* Atmospheric perspective: the far ranges sit back because air is between
-   them, not because they are a lighter swatch. Rendered over the ridges. */
+   them, not because they are a lighter swatch. */
 .haze {
   position: absolute; left: 0; right: 0; bottom: 0;
-  height: min(48vh, 400px);
-  background: linear-gradient(180deg, var(--horizon) 0%, transparent 38%);
-  opacity: .34;
+  height: min(40vh, 330px);
+  background: linear-gradient(180deg, var(--dawn) 0%, transparent 52%);
+  opacity: .62;
 }
 
 @media (max-width: 700px) {
-  .sun { right: 8%; bottom: 44%; width: 96px; }
-  .ridges, .haze { height: min(42vh, 300px); }
+  .sun { right: 10%; bottom: 34%; width: 108px; }
+  .ridges, .haze { height: min(40vh, 300px); }
+  .dawn { height: min(48vh, 360px); }
 }
 
 /* ---------- bar ---------- */
@@ -332,7 +380,7 @@ body.has-thread .dock::before {
 .suggestions { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 13px; }
 .suggestions button { font: inherit; font-size: 13px; cursor: pointer; color: var(--ink-2); background: none; border: 1px solid var(--line); border-radius: var(--r-pill); padding: 8px 16px; transition: border-color .18s var(--ease), color .18s var(--ease), transform .14s var(--ease); }
 .suggestions button:hover { border-color: var(--clay); color: var(--clay); transform: translateY(-1px); }
-.dock-note { margin-top: 14px; font-size: 11.5px; color: var(--ink-2); }
+.dock-note { margin-top: 14px; font-size: 11.5px; color: var(--ink); }
 
 /* ---------- bands ---------- */
 
@@ -1097,7 +1145,7 @@ html[data-theme="dark"] .person {
   --lg-shadow: 0 1px 1px rgba(20,70,140,.06), 0 12px 32px rgba(20,70,140,.12);
 }
 html[data-theme="dark"] {
-  --lg-fill: rgba(22, 40, 62, .7);
+  --lg-fill: rgba(22, 40, 62, .86);
   --lg-fill-strong: rgba(22, 40, 62, .72);
   --lg-border: rgba(150, 195, 245, .18);
   --lg-spec: linear-gradient(150deg, rgba(180,215,255,.16) 0%, rgba(180,215,255,.04) 40%, transparent 64%);
@@ -1437,7 +1485,7 @@ div.dock-note { display: flex; align-items: baseline; justify-content: space-bet
   --g-shadow-lift: 0 2px 5px rgba(20, 70, 140, .07), 0 20px 46px rgba(20, 70, 140, .16);
 }
 html[data-theme="dark"] {
-  --g-fill: rgba(22, 40, 62, .68);
+  --g-fill: rgba(22, 40, 62, .82);
   --g-fill-heavy: rgba(11, 22, 36, .72);
   --g-fill-bar: rgba(8, 16, 27, .82);
   --g-edge: rgba(150, 195, 245, .18);
@@ -2888,4 +2936,64 @@ html[data-theme="dark"] .stack-strip { background: rgba(5, 14, 24, .28); }
   .timeline li:hover,
   .project:hover,
   .card:hover { transform: none; }
+}
+
+
+/* =====================================================================
+   NAV BAR
+   =====================================================================
+
+   Over the hero the bar was a full-width frosted strip 65px tall carrying a
+   logo at one edge and six links at the other, with a third of the viewport
+   of nothing between them. That reads as a heavy empty band rather than as
+   navigation, and it was covering the top of the sky for no purpose.
+
+   So there is no strip over the hero. The links carry their own glass and sit
+   as one control, the bar itself is transparent, and the band only appears
+   once there is page travelling underneath it -- which is the state .solid
+   already existed for.
+   ===================================================================== */
+
+.bar {
+  gap: 12px;
+  padding: 8px clamp(14px, 4vw, 34px);
+}
+
+html .bar:not(.solid) {
+  background: transparent;
+  border-bottom-color: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* One grouped control, not six loose words. */
+.bar-right {
+  gap: 1px;
+  padding: 3px;
+  border-radius: var(--r-pill);
+  background: var(--g-fill);
+  border: 1px solid var(--g-edge);
+  box-shadow: var(--g-shadow);
+  backdrop-filter: var(--g-blur-soft);
+  -webkit-backdrop-filter: var(--g-blur-soft);
+}
+
+.bar-right a, .bar-right .q {
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: var(--r-pill);
+}
+.bar-right a:hover, .bar-right .q:hover {
+  background: color-mix(in srgb, var(--clay) 12%, transparent);
+  color: var(--clay);
+}
+
+/* Scrolled: the strip comes back, because now something is passing under it. */
+.bar.solid .bar-right {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
