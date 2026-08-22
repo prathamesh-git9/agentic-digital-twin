@@ -1,0 +1,2999 @@
+/*
+  Charcoal and amber, conversation-led.
+
+  Restraint borrowed from Perplexity: one accent, hairline dividers, compact
+  low-elevation surfaces, and the input treated as the focal artefact of the
+  page rather than a footer control. Narrative bands below it, experience,
+  work, questions, reveal on scroll.
+*/
+
+:root {
+  color-scheme: light;
+  /* The page ground is tinted, not white. Every glass surface on this page was
+     already blurring and saturating what sits behind it, but behind it was flat
+     #ffffff, so there was nothing to refract and the whole system read as grey
+     boxes. Colour under the glass is what makes the glass visible. */
+  --paper: #e9f1fc;
+  --paper-2: #dce9f9;
+  --raised: #ffffff;
+  --line: #cfe0f4;
+  --line-2: #b6cfeb;
+  --ink: #0a1826;
+  --ink-2: #35506a;
+  --ink-3: #4e688a;
+  /* Two blues: one that passes contrast on tinted ground at 11px, and the iOS
+     system blue, which does not, kept for fills and glows where it is a shape
+     rather than a word. */
+  --clay: #0b5fc4;
+  --clay-2: #08498f;
+  --clay-lit: #0a84ff;
+  --clay-ink: #ffffff;
+  --clay-soft: rgba(10, 132, 255, .12);
+  --ok: #0e7a52;
+  --sky-top: #dbe9fb;
+  --sky-mid: #e3eefc;
+  --sky-low: #e9f1fc;
+  --sun-core: #ffffff;
+  /* The colour the air turns at the horizon. It tints the lower sky and the
+     haze between ranges, so one value keeps them agreeing. */
+  /* Sky overhead, and the warm band it thins into at the horizon. Cool ranges
+     against a warm glow is what makes this read as light rather than shapes. */
+  --sky-high: #a9cdf0;
+  --dawn: #fbe6cd;
+  --dawn-hot: #ffdfae;
+  --sun-halo: rgba(255, 208, 146, .5);
+  /* Back to front, near to far. Each range has a lit value (sun side) and a
+     base value (shadow side); the gradient between them is the volume. */
+  --ridge-1: #5878a8;
+  --ridge-1-lit: #8fabd2;
+  --ridge-2: #7c99c4;
+  --ridge-2-lit: #b0c6de;
+  --ridge-3: #a3bbd8;
+  --ridge-3-lit: #cfdeed;
+  --ridge-4: #c4d4e6;
+  --ridge-4-lit: #e4edf5;
+  --facet: rgba(16, 38, 74, .16);
+  --snow: rgba(255, 255, 255, .85);
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Charter, Georgia, serif;
+  --sans: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --ease: cubic-bezier(.22, .68, .3, 1);
+  --bar-h: 52px;
+  /* One radius scale. There were nineteen distinct values before this,
+     which is why neighbouring components never looked related. */
+  --r-xs: 6px;
+  --r-sm: 10px;
+  --r-md: 16px;
+  --r-lg: 22px;
+  --r-pill: 999px;
+}
+
+/* Night variant: the same blue, lifted so it stays legible on deep navy. */
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --paper: #071120;
+  --paper-2: #0d1c2e;
+  --raised: #10202f;
+  --line: #1c3048;
+  --line-2: #27435f;
+  --ink: #e9f1fa;
+  --ink-2: #cfdeeb;
+  --ink-3: #bccfe1;
+  --clay: #5aa7ff;
+  --clay-2: #82bdff;
+  --clay-lit: #5aa7ff;
+  --clay-ink: #051019;
+  --clay-soft: rgba(90, 167, 255, .16);
+  --ok: #46c99a;
+  --sky-top: #04101f;
+  --sky-mid: #061523;
+  --sky-low: #071120;
+  --sun-core: #bcdcff;
+  --sky-high: #10263f;
+  --dawn: #2a2b46;
+  --dawn-hot: #7a5570;
+  --sun-halo: rgba(214, 146, 168, .28);
+  --ridge-1: #070e18;
+  --ridge-1-lit: #1e3450;
+  --ridge-2: #0d1a2b;
+  --ridge-2-lit: #2b4160;
+  --ridge-3: #16283f;
+  --ridge-3-lit: #3a5573;
+  --ridge-4: #22364f;
+  --ridge-4-lit: #4a6684;
+  --facet: rgba(0, 0, 0, .35);
+  --snow: rgba(206, 228, 250, .62);
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+
+body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); line-height: 1.62; -webkit-font-smoothing: antialiased; }
+
+h1, h2 { margin: 0; font-family: var(--serif); font-weight: 500; letter-spacing: -.015em; line-height: 1.14; }
+p { margin: 0; }
+a { color: inherit; }
+
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.skip-link { position: absolute; left: -999px; }
+.skip-link:focus { left: 12px; top: 12px; background: var(--clay); color: var(--clay-ink); padding: 10px 16px; border-radius: var(--r-sm); z-index: 99; }
+:focus-visible { outline: 2px solid var(--clay); outline-offset: 3px; border-radius: var(--r-xs); }
+
+@keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+
+/* ---------- scene ---------- */
+
+/*
+  Fixed, not anchored to the first screen. The old scene stopped at 100dvh and
+  handed off to flat paper, which meant every glass surface below the fold was
+  frosting a solid colour -- blur and saturate with nothing to work on, so the
+  panels read as grey boxes rather than glass. A viewport-fixed aurora gives the
+  whole page something to refract.
+
+  This is `position: fixed` on a compositor layer, not `background-attachment:
+  fixed`, which is the version that repaints the element on every scroll frame
+  and is banned further down this file for exactly that reason.
+*/
+.scene {
+  position: fixed; inset: 0; z-index: 0;
+  pointer-events: none; overflow: hidden;
+  contain: layout paint style;
+}
+
+/* Plain by design. The fixed layer is not the picture -- it is the tinted
+   ground that keeps the glass panels below the fold looking like glass. All
+   the drawing happens in .range, which scrolls. */
+.sky {
+  position: absolute; inset: 0;
+  background: linear-gradient(178deg, var(--sky-top) 0%, var(--sky-mid) 52%, var(--sky-low) 100%);
+}
+
+.grain {
+  position: absolute; inset: 0; opacity: .3;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='3'/%3E%3C/filter%3E%3Crect width='150' height='150' filter='url(%23n)' opacity='.34'/%3E%3C/svg%3E");
+}
+html[data-theme="light"] .grain { opacity: .14; }
+
+/* ---------- range ---------- */
+
+/*
+  The landscape. Anchored to the first screen rather than fixed, because a
+  horizon pinned to the bottom of the viewport sits behind body copy for the
+  rest of the document; this way you scroll past it.
+
+  It is a dawn, not a silhouette. Three things carry that, and the first
+  version had none of them:
+
+  - a warm horizon. Cool blue ranges against a warm glow is the whole reason
+    a mountain hero reads as light rather than as shapes; monochrome blue
+    ranges on blue sky are just a chart.
+  - volume. Every range is filled with a gradient lit from the sun's side,
+    and the near massif carries explicit shadow faces. A flat fill has no
+    form, and no amount of silhouette detail puts it back.
+  - one subject. A dominant summit with a twin and a shoulder, then an
+    irregular descent, rather than a row of equal peaks.
+
+  Still downloads nothing: four paths, three facet paths, and gradients.
+*/
+.range {
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 100dvh; z-index: 1;
+  pointer-events: none; overflow: hidden;
+  contain: layout paint style;
+}
+
+/* Sky proper: blue overhead, thinning toward the horizon the way air actually
+   does. It stays light enough at the top that the dark hero headline sitting
+   over it still reads -- the reference puts white type on a saturated sky, and
+   that is the one thing here that could not be borrowed. */
+.range-sky {
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg,
+    var(--sky-high) 0%,
+    color-mix(in srgb, var(--sky-high) 55%, transparent) 34%,
+    transparent 62%);
+}
+
+/* The warm band the sun sits in. Sitting under the ridges in paint order, so
+   the ranges read as dark against it. */
+.dawn {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  height: min(62vh, 520px);
+  background:
+    radial-gradient(ellipse 58% 70% at 78% 96%, var(--dawn-hot), transparent 72%),
+    linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--dawn) 45%, transparent) 46%, var(--dawn) 100%);
+}
+
+/* Low and to the right, bloom rather than disc -- it is the light source for
+   every gradient below it, so it has to sit on the side they are lit from. */
+.sun {
+  position: absolute; right: 16%; bottom: 30%;
+  width: min(15vw, 170px); aspect-ratio: 1; border-radius: 50%;
+  background: radial-gradient(circle, var(--sun-core) 0 26%, color-mix(in srgb, var(--sun-core) 45%, transparent) 44%, transparent 72%);
+}
+.sun::after {
+  content: ""; position: absolute; inset: -120%; border-radius: 50%;
+  background: radial-gradient(circle, var(--sun-halo) 0 28%, transparent 68%);
+}
+
+.ridges { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: min(40vh, 330px); }
+
+.r4 > path { fill: url(#lit4); }
+.r3 > path { fill: url(#lit3); }
+.r2 > path { fill: url(#lit2); }
+.r1 > path { fill: url(#lit1); }
+
+/* Lit edge on the sun's side, shadow on the other. */
+.s1a { stop-color: var(--ridge-1-lit); } .s1b { stop-color: var(--ridge-1); }
+.s2a { stop-color: var(--ridge-2-lit); } .s2b { stop-color: var(--ridge-2); }
+.s3a { stop-color: var(--ridge-3-lit); } .s3b { stop-color: var(--ridge-3); }
+.s4a { stop-color: var(--ridge-4-lit); } .s4b { stop-color: var(--ridge-4); }
+
+/* The shaded flanks. Multiply would be truer but costs a blend layer over the
+   whole hero; a flat dark at low alpha is indistinguishable here. */
+.ridge .facet { fill: var(--facet); stroke: none; }
+.ridge .snow { fill: var(--snow); stroke: none; }
+
+/* The bases dissolve rather than ending in a wall of fill. Without this the
+   near massif reads as a dark wedge occupying the bottom-left corner: a
+   mountain drawn to the edge of its box stops being a mountain and becomes a
+   shape. In the reference the foreground fades to pale and the peaks float. */
+.range::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0;
+  height: min(30vh, 250px);
+  background: linear-gradient(180deg, transparent 0%, var(--dawn) 62%, var(--paper) 100%);
+}
+
+/* Atmospheric perspective: the far ranges sit back because air is between
+   them, not because they are a lighter swatch. */
+.haze {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  height: min(40vh, 330px);
+  background: linear-gradient(180deg, var(--dawn) 0%, transparent 52%);
+  opacity: .62;
+}
+
+@media (max-width: 700px) {
+  .sun { right: 10%; bottom: 34%; width: 108px; }
+  .ridges, .haze { height: min(40vh, 300px); }
+  .dawn { height: min(48vh, 360px); }
+}
+
+/* ---------- bar ---------- */
+
+.bar { position: sticky; top: 0; z-index: 40; display: flex; align-items: center; gap: 14px; padding: 14px clamp(16px, 5vw, 40px); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
+.bar-left { display: flex; align-items: center; gap: 9px; text-decoration: none; color: inherit; }
+.face { border-radius: 50%; object-fit: cover; }
+.name { font-size: 14px; font-weight: 550; letter-spacing: -.01em; }
+.name em { font-style: normal; color: var(--clay); }
+.bar-right { margin-left: auto; display: flex; align-items: center; gap: 2px; }
+.bar-right a { font-size: 13.5px; color: var(--ink-2); text-decoration: none; padding: 7px 11px; border-radius: var(--r-sm); transition: color .18s var(--ease), background .18s var(--ease); }
+.bar-right a:hover { color: var(--ink); background: var(--paper-2); }
+
+.q { position: relative; font: inherit; font-size: 13.5px; cursor: pointer; color: var(--ink-2); background: none; border: 0; border-radius: var(--r-sm); padding: 7px 11px; transition: color .18s var(--ease), background .18s var(--ease); }
+.q:hover { color: var(--ink); background: var(--paper-2); }
+.q.strong { color: var(--clay); font-weight: 550; }
+.q .dot { position: absolute; top: 4px; right: 4px; width: 6px; height: 6px; border-radius: 50%; background: var(--clay); }
+
+main { position: relative; z-index: 2; }
+
+/* ---------- motion ---------- */
+
+/*
+  Content is visible by default and the animation is an enhancement layered on
+  top. It used to be the other way round: every .reveal started at opacity 0 and
+  needed JavaScript to become visible, so anything that stopped this page's
+  script — an error before armReveals, a blocked file, an extension — left the
+  whole page below the hero as blank white. The page must never depend on JS to
+  render what it already has in the HTML.
+*/
+.reveal { opacity: 1; transform: none; }
+html.reveals .reveal { opacity: 0; transform: translateY(18px); transition: opacity .7s var(--ease), transform .7s var(--ease); }
+html.reveals .reveal.in { opacity: 1; transform: none; }
+html.reveals .reveal.d1 { transition-delay: .09s; }
+html.reveals .reveal.d2 { transition-delay: .18s; }
+
+/* ---------- ask hero ---------- */
+
+.ask-hero { position: relative; z-index: 2; max-width: 720px; margin: 0 auto; padding: 0 clamp(16px, 5vw, 24px); display: flex; flex-direction: column; justify-content: center; }
+.ask-hero h1 { font-size: clamp(44px, 6.6vw, 108px); letter-spacing: -.042em; font-weight: 500; }
+/* The .ai carries the accent: it is the brand and the whole premise in two
+   characters, so it should not read as part of the surname. */
+.ask-hero h1 em { font-style: normal; color: var(--clay); }
+/* Two lines, not one block: the invitation to type reads first, the qualifier
+   second. A single paragraph gave them equal weight and neither landed. */
+.hero-lead { color: var(--ink); font-size: clamp(19px, 1.5vw, 27px); font-weight: 500; letter-spacing: -.015em; margin-top: 18px; }
+.hero-sub { color: var(--ink-2); font-size: clamp(14.5px, 1vw, 17px); margin-top: 10px; max-width: 56ch; line-height: 1.6; }
+
+.thread { display: flex; flex-direction: column; gap: 28px; padding: 34px 0 8px; }
+.turn { animation: rise .4s var(--ease); }
+.turn .label { font: 400 10.5px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); display: block; margin-bottom: 10px; }
+/* pre-wrap preserves the newlines an answer is composed with, but on its own it
+   will not break inside a word. A pasted token with no spaces (a URL, a base64
+   blob) therefore stretched the page to 42,000px. */
+.turn .text { font-size: 16px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.turn.twin .text { font-family: var(--serif); font-size: 18px; line-height: 1.62; }
+.turn.you { display: flex; justify-content: flex-end; }
+.turn.you .label { display: none; }
+.turn.you .bubble { max-width: 82%; }
+/* Needs its own surface plus a hairline: on charcoal, a marginally lighter
+   fill is indistinguishable from the page behind it. */
+.turn.you .text { background: var(--raised); border: 1px solid var(--line-2); border-radius: 16px 16px 4px 16px; padding: 12px 17px; font-size: 15.5px; }
+
+.cites { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+.cite { font: 400 11px/1 var(--mono); color: var(--ink-3); border: 1px solid var(--line); border-radius: var(--r-xs); padding: 5px 8px; }
+/* How the answer was retrieved, not decoration: it is what distinguishes a
+   grounded answer from a confident-sounding one. */
+.trace { font: 400 10.5px/1.5 var(--mono); color: var(--ink-3); opacity: .72; margin-top: 8px; letter-spacing: .02em; }
+
+.typing { display: inline-flex; gap: 5px; padding: 6px 0; }
+.typing i { width: 5px; height: 5px; border-radius: 50%; background: var(--clay); animation: blink 1.3s var(--ease) infinite; }
+.typing i:nth-child(2) { animation-delay: .16s; }
+.typing i:nth-child(3) { animation-delay: .32s; }
+@keyframes blink { 0%, 60%, 100% { opacity: .22; } 30% { opacity: 1; } }
+
+/*
+  The input is the focal artefact, so it stays reachable. Without sticky it
+  sank below the fold from the second answer onward: the visitor finished
+  reading and had no visible way to ask anything else.
+*/
+/* Static until there is a conversation to scroll. Pinning it from the start
+   pushed the composer to the foot of the 86vh hero -- the one thing the visitor
+   is meant to reach first sat lowest -- and on a narrow screen the pinned dock
+   landed on top of the facts strip and clipped it. */
+.dock { position: relative; z-index: 5; margin-top: 34px; container-type: inline-size; }
+body.has-thread .dock {
+  position: sticky; bottom: 0; margin-top: auto; padding: 16px 0 14px;
+}
+/* A veil the thread scrolls under. Blur alone left the last answer legible
+   straight through the composer, cut off mid-word, so the lower half is opaque
+   paper and only the top edge fades. */
+body.has-thread .dock::before {
+  content: ""; position: absolute; top: -60px; bottom: -40px;
+  /* Bleeds past the column so the blur covers the gutter, but the gutter is
+     only ~19px on a phone, so a flat -24px hung 5px off-screen and gave the
+     whole page a horizontal scrollbar. */
+  inset-inline: calc(-1 * clamp(0px, 4vw, 24px));
+  z-index: -1; pointer-events: none;
+  /* Translucent, not solid. A flat --paper fill was invisible against the old
+     white page; over the aurora it reads as a pale rectangle with two visible
+     edges parked in the middle of the conversation. The heavier blur does the
+     work the opacity used to, so the answer still stops being legible where it
+     passes underneath. */
+  background: linear-gradient(to top, color-mix(in srgb, var(--paper) 82%, transparent) 72%, transparent);
+  backdrop-filter: blur(22px) saturate(160%); -webkit-backdrop-filter: blur(22px) saturate(160%);
+  mask-image: linear-gradient(to top, #000 76%, transparent);
+  -webkit-mask-image: linear-gradient(to top, #000 76%, transparent);
+}
+/* The composer is the page's primary action, so it carries the most weight on
+   the screen: an opaque surface and a real shadow, not another glass panel. */
+#composer { display: flex; align-items: flex-end; gap: 10px; background: var(--paper); border: 1px solid var(--line-2); border-radius: var(--r-lg); padding: 14px 14px 14px 22px; box-shadow: 0 22px 50px -26px rgba(24, 54, 92, .45), 0 2px 6px -3px rgba(24, 54, 92, .16); transition: border-color .22s var(--ease), box-shadow .22s var(--ease); }
+#composer:focus-within { border-color: var(--clay); box-shadow: 0 0 0 4px var(--clay-soft), 0 22px 50px -26px rgba(24, 54, 92, .45); }
+#composer textarea { flex: 1; border: 0; background: none; resize: none; outline: none; font: inherit; font-size: clamp(17px, 1.1vw, 20px); color: var(--ink); max-height: 180px; padding: 9px 0; }
+#composer textarea::placeholder { color: var(--ink-3); }
+
+.send { flex: none; width: 40px; height: 40px; border: 0; border-radius: var(--r-sm); background: var(--clay); color: var(--clay-ink); cursor: pointer; display: grid; place-items: center; transition: background .18s var(--ease), transform .14s var(--ease); }
+.send:hover { background: var(--clay-2); transform: translateY(-1px); }
+.send[disabled] { opacity: .4; cursor: not-allowed; transform: none; }
+
+.suggestions { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 13px; }
+.suggestions button { font: inherit; font-size: 13px; cursor: pointer; color: var(--ink-2); background: none; border: 1px solid var(--line); border-radius: var(--r-pill); padding: 8px 16px; transition: border-color .18s var(--ease), color .18s var(--ease), transform .14s var(--ease); }
+.suggestions button:hover { border-color: var(--clay); color: var(--clay); transform: translateY(-1px); }
+.dock-note { margin-top: 14px; font-size: 11.5px; color: var(--ink); }
+
+/* ---------- bands ---------- */
+
+/* Solid ground: the scene occupies the first screen, and without an opaque
+   surface the ridges show through the copy below it. */
+.bands { position: relative; z-index: 2; background: var(--paper); }
+/* Width comes from scaling the gutters, not from a vw cap: a vw max-width
+   would also shrink the phone layout, which already has none to spare. */
+.band { max-width: 1900px; margin: 0 auto; padding: clamp(72px, 12vh, 120px) clamp(16px, 6vw, 100px) 0; }
+/* `ch` on this div resolves against its own 16px sans, not the 36px serif
+   heading inside it, so 46ch clamped every headline to about 368px and left a
+   third of the page empty beside it. Cap the heading in its own units. */
+.band-head { max-width: none; }
+.band-head h2 { max-width: 34ch; }
+/* Numbered so the page reads as an ordered sequence rather than a pile of
+   equally weighted sections. */
+.kicker { font: 400 11px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--clay); display: inline-flex; align-items: baseline; gap: 11px; }
+.kicker i { font-style: normal; color: var(--ink-3); opacity: .75; }
+.band-head h2 { font-size: clamp(25px, 2.9vw, 48px); margin-top: 16px; letter-spacing: -.028em; }
+
+.timeline { list-style: none; margin: 44px 0 0; padding: 0; }
+/* Three columns: when, what, detail. The markup groups the last three in one
+   div, so `display: contents` lets them sit in the grid directly rather than
+   stacking in a single narrow column beside a third of empty page. */
+.timeline li { display: grid; grid-template-columns: 150px minmax(0, 230px) minmax(0, 1fr); column-gap: 34px; row-gap: 4px; padding: 26px 0; border-top: 1px solid var(--line); }
+.timeline li > div { display: contents; }
+.timeline .when { grid-column: 1; grid-row: 1 / span 2; }
+.timeline h3 { grid-column: 2; grid-row: 1; }
+.timeline .where { grid-column: 2; grid-row: 2; }
+.timeline p { grid-column: 3; grid-row: 1 / span 2; }
+.timeline .when { font: 400 12px/1.7 var(--mono); color: var(--ink-3); }
+.timeline h3 { font-size: clamp(17.5px, 1.12vw, 21px); font-weight: 600; letter-spacing: -.015em; margin: 0; }
+.timeline .where { display: block; font-size: 13.5px; color: var(--clay); margin-top: 4px; }
+.timeline p { font-size: clamp(14.5px, .93vw, 17.5px); color: var(--ink-2); margin-top: 0; max-width: 62ch; }
+
+.edu { border-top: 1px solid var(--line); padding-top: 26px; margin-top: 8px; }
+.edu p { font-size: 14.5px; color: var(--ink-2); margin-top: 8px; }
+.edu b { color: var(--ink); font-weight: 600; }
+
+/* ================= retrieval explorer ================= */
+
+.retrieval { margin-top: 40px; }
+.retrieval-lede { max-width: 80ch; color: var(--ink-2); font-size: clamp(15px, .96vw, 18px); }
+.retrieval-form { display: flex; gap: 10px; margin-top: 24px; flex-wrap: wrap; }
+.retrieval-form input { flex: 1 1 280px; min-width: 0; font: 400 14px/1.4 var(--mono); color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 12px 14px; }
+.retrieval-form input:focus-visible { outline: 2px solid var(--clay); outline-offset: 1px; }
+.retrieval-out { margin-top: 26px; }
+.retrieval-meta, .retrieval-empty { font: 400 11.5px/1.7 var(--mono); color: var(--ink-3); }
+.rank-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-top: 18px; }
+.rank { border: 1px solid var(--line); border-radius: var(--r-md); padding: 20px; }
+.rank.fused { margin-top: 16px; }
+.rank-head { font: 400 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--clay); }
+.rank-note { display: block; font-size: 12px; color: var(--ink-3); margin-top: 6px; }
+.rank ol { list-style: none; margin: 14px 0 0; padding: 0; counter-reset: rank; }
+.rank li { counter-increment: rank; display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; padding: 9px 0; border-top: 1px solid var(--line); align-items: baseline; }
+.rank li::before { content: counter(rank); grid-column: 1 / -1; font: 400 10px/1 var(--mono); color: var(--ink-3); }
+.rank-src { font: 400 12px/1.5 var(--mono); color: var(--ink-2); word-break: break-word; }
+.rank-score { font: 400 12px/1.5 var(--mono); color: var(--clay); }
+.rank-from { grid-column: 1 / -1; font: 400 10.5px/1.5 var(--mono); color: var(--ink-3); }
+.rank-text { grid-column: 1 / -1; margin: 6px 0 0; font-size: 13.5px; line-height: 1.6; color: var(--ink-3); }
+
+/* ================= tech stack strip ================= */
+
+/*
+  Real brand marks, inlined as single paths taking currentColor so they hold up
+  in both themes. The two groups are not decoration: the CV distinguishes
+  production experience from familiarity, and a flat logo wall would quietly
+  upgrade every one of them.
+*/
+.stack-strip { display: grid; gap: 22px; margin-top: 40px; padding-top: 32px; border-top: 1px solid var(--line); }
+.stack-label { display: block; font: 400 10px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 14px; }
+.stack-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.stack-chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 13px; color: var(--ink-2);
+  background: var(--paper); border: 1px solid var(--line);
+  border-radius: var(--r-pill); padding: 8px 16px;
+  transition: border-color .18s var(--ease), color .18s var(--ease);
+}
+.stack-chip svg { fill: currentColor; flex: none; opacity: .82; }
+.stack-chip:hover { border-color: var(--line-2); color: var(--ink); }
+.stack-chip:hover svg { opacity: 1; }
+/* Same convention the skills grid already uses: faded means stated as
+   familiarity rather than production work. */
+.stack-chip.soft { color: var(--ink-3); border-style: dashed; }
+.stack-chip.soft svg { opacity: .55; }
+.stack-mono { font: 600 12px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; }
+
+/* ================= mcp servers ================= */
+
+.mcp { margin-top: 64px; }
+.mcp-lede { max-width: 80ch; color: var(--ink-2); margin-top: 16px; font-size: clamp(15px, .96vw, 18px); }
+.mcp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; margin-top: 28px; }
+.mcp-card { border: 1px solid var(--line); border-radius: var(--r-md); padding: 20px; }
+.mcp-card h4 { margin: 0; font: 500 15px/1.3 var(--mono); letter-spacing: -.01em; }
+.mcp-card p { margin: 10px 0 0; font-size: 14px; color: var(--ink-3); }
+.mcp-counts { display: flex; gap: 14px; margin-top: 14px; }
+.mcp-counts span { font: 400 11px/1.3 var(--mono); color: var(--ink-3); display: flex; flex-direction: column; gap: 3px; }
+.mcp-counts b { font-size: 17px; color: var(--ink); font-weight: 500; }
+.mcp-card .topics { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+.mcp-card .topics span { font: 400 11px/1 var(--mono); color: var(--ink-3); border: 1px solid var(--line); border-radius: var(--r-pill); padding: 4px 9px; }
+.mcp-eval b { color: var(--clay); }
+.mcp-basis { margin: 8px 0 0; font: 400 10.5px/1.5 var(--mono); color: var(--ink-3); }
+.mcp-list { margin-top: 14px; }
+.mcp-list-label { font: 400 10px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
+.mcp-list .topics { margin-top: 8px; }
+.mcp-card h4 a { color: inherit; text-decoration: none; border-bottom: 1px solid var(--line); }
+.mcp-card h4 a:hover { border-bottom-color: var(--clay); }
+.mcp-detail { font: 400 11px/1 var(--mono); color: var(--ink-3); }
+/* The uvx invocations run past 200 characters. Scroll them rather than let a
+   card grow four lines taller than its neighbours. */
+.mcp-install { display: block; margin-top: 14px; font: 400 11.5px/1.6 var(--mono); color: var(--ink-3); background: var(--glass); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 8px 10px; max-height: 5.6em; overflow: auto; white-space: pre-wrap; word-break: break-all; }
+
+/* Matches .mcp-grid and .skillgrid: separated bordered cards, not a joined
+   slab. The 1px gutter trick also sat its contents 1px right of every other
+   section on the page. */
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin-top: 44px; }
+.card { background: var(--paper); border: 1px solid var(--line); border-radius: var(--r-md); padding: 24px; transition: background .2s var(--ease); }
+.card:hover { background: var(--paper-2); }
+.card h3 { font-size: 16px; font-weight: 600; margin: 0; }
+.card h3 a { text-decoration: none; }
+.card h3 a:hover { color: var(--clay); }
+.card p { font-size: 13.5px; color: var(--ink-2); margin-top: 9px; }
+.card .topics { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 14px; }
+.card .topics span { font: 400 11px/1 var(--mono); color: var(--ink-3); border: 1px solid var(--line); border-radius: var(--r-pill); padding: 4px 9px; }
+
+.faq { margin-top: 40px; }
+.faq details { border-top: 1px solid var(--line); }
+.faq summary { cursor: pointer; padding: 20px 0; font-size: 16px; font-weight: 550; list-style: none; display: flex; justify-content: space-between; gap: 16px; }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after { content: "+"; color: var(--clay); font-weight: 400; font-size: 20px; line-height: 1; }
+.faq details[open] summary::after { content: "\2212"; }
+.faq p { padding: 0 0 22px; color: var(--ink-2); font-size: 15px; max-width: 64ch; }
+
+/* ---------- people + visitor ---------- */
+
+.people { padding: 10px 0 4px; animation: rise .4s var(--ease); }
+.people h2 { font-size: 20px; }
+.people-sub { color: var(--ink-3); font-size: 13.5px; margin-top: 7px; }
+.people-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-top: 18px; }
+.person { background: var(--raised); border: 1px solid var(--line); border-radius: var(--r-md); padding: 20px 16px; text-align: center; cursor: pointer; display: flex; flex-direction: column; align-items: center; transition: border-color .2s var(--ease), transform .2s var(--ease); }
+.person:hover { border-color: var(--clay); transform: translateY(-3px); }
+.person img, .person .initials { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; margin-bottom: 13px; }
+.person .initials { display: grid; place-items: center; background: var(--clay-soft); color: var(--clay); font-weight: 600; font-size: 21px; }
+.person strong { font-size: 14.5px; }
+.person .role { font-size: 12.5px; color: var(--ink-2); margin-top: 3px; }
+.person .desc { font-size: 12.5px; color: var(--ink-3); margin-top: 9px; line-height: 1.5; }
+.person .src { font: 400 11px/1 var(--mono); color: var(--ink-3); margin-top: 9px; }
+.person .pct { margin-top: 11px; font: 400 11.5px/1 var(--mono); color: var(--clay); }
+.person .pick { margin-top: 14px; width: 100%; }
+
+.visitor { display: flex; align-items: center; gap: 14px; padding: 15px 17px; margin: 14px 0 4px; background: var(--clay-soft); border-radius: var(--r-md); animation: rise .4s var(--ease); }
+.visitor-photo { width: 46px; height: 46px; border-radius: 50%; object-fit: cover; flex: none; }
+.visitor-photo.initials { display: grid; place-items: center; background: var(--raised); color: var(--clay); font-weight: 600; font-size: 16px; }
+.visitor-body { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.visitor-body strong { font-size: 15px; }
+.visitor-body > span { font-size: 13px; color: var(--ink-2); }
+.visitor-actions { margin-left: auto; display: flex; gap: 8px; flex: none; }
+.chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+.chips a, .chips .chip { font: 400 11.5px/1 var(--mono); text-decoration: none; color: var(--ink-2); background: var(--raised); border-radius: var(--r-xs); padding: 5px 9px; }
+.chips a:hover { color: var(--clay); }
+
+/* ---------- buttons ---------- */
+
+.btn { font: inherit; font-size: 14px; font-weight: 550; cursor: pointer; border: 0; background: var(--clay); color: var(--clay-ink); border-radius: var(--r-sm); padding: 10px 18px; transition: background .18s var(--ease); }
+.btn:hover { background: var(--clay-2); }
+.btn.ghost { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 1px var(--line-2); }
+.btn.ghost:hover { background: var(--paper-2); }
+.btn.sm { font-size: 13px; padding: 8px 14px; border-radius: var(--r-sm); }
+
+/* ---------- activity ---------- */
+
+.feed-wrap { position: relative; z-index: 3; max-width: 720px; margin: 0 auto; padding: 0 clamp(16px, 5vw, 24px); }
+.feed { padding: 16px 18px; background: var(--raised); border: 1px solid var(--line); border-radius: var(--r-md); animation: rise .3s var(--ease); }
+.feed-head { display: flex; justify-content: space-between; font: 400 10.5px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 11px; }
+.feed ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 9px; }
+.feed li { font-size: 13.5px; color: var(--ink-2); display: flex; gap: 11px; }
+.feed time { font: 400 12px/1.6 var(--mono); color: var(--ink-3); flex: none; }
+.linkish { border: 0; background: none; font: inherit; font-size: 12px; color: var(--clay); cursor: pointer; }
+
+/* ---------- footer ---------- */
+
+.foot { position: relative; z-index: 2; max-width: 940px; margin: clamp(80px, 12vh, 130px) auto 0; padding: 30px clamp(16px, 5vw, 24px) 46px; border-top: 1px solid var(--line); display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
+.foot strong { display: block; font-size: 14.5px; }
+.foot span { font-size: 13px; color: var(--ink-3); }
+.foot-links { margin-left: auto; display: flex; gap: 20px; font-size: 13.5px; }
+.foot-links a { color: var(--ink-2); text-decoration: none; }
+.foot-links a:hover { color: var(--clay); }
+
+/* ---------- overlays ---------- */
+
+.over { position: fixed; inset: 0; z-index: 70; animation: fade .2s var(--ease); }
+.over-scrim { position: absolute; inset: 0; background: rgba(8, 8, 10, .6); }
+.over-panel { position: absolute; top: 0; right: 0; height: 100%; width: min(520px, 100%); background: var(--paper); border-left: 1px solid var(--line); padding: 26px clamp(20px, 3vw, 30px); overflow-y: auto; animation: slide .34s var(--ease); }
+@keyframes slide { from { transform: translateX(30px); opacity: .5; } to { transform: none; opacity: 1; } }
+.over-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.over-head h2 { font-size: 21px; }
+.over-lede { color: var(--ink-2); font-size: 14.5px; margin-bottom: 20px; }
+
+.contact-rows { display: flex; flex-direction: column; gap: 9px; }
+.contact-row { display: block; padding: 15px 17px; text-decoration: none; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--raised); color: var(--ink); transition: border-color .18s var(--ease); }
+.contact-row:hover { border-color: var(--clay); }
+.contact-row span { font: 400 10.5px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); display: block; margin-bottom: 5px; }
+.contact-row strong { font-size: 14.5px; font-weight: 550; }
+
+.repo { border-bottom: 1px solid var(--line); padding: 17px 0; }
+.repo:last-child { border-bottom: 0; }
+.repo strong { font-size: 15px; font-weight: 600; }
+.repo strong a { text-decoration: none; }
+.repo strong a:hover { color: var(--clay); }
+.repo p { font-size: 13.5px; margin-top: 6px; color: var(--ink-2); }
+.opportunity-list { display: grid; gap: 12px; }
+.opportunity { padding: 17px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--raised); }
+.opportunity-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
+.opportunity-head h3 { font-size: 15px; line-height: 1.35; }
+.opportunity-head p { margin-top: 4px; color: var(--ink-3); font-size: 12.5px; }
+.opportunity-head > strong { flex: none; color: var(--clay); font: 600 14px/1 var(--mono); padding: 7px 8px; border: 1px solid color-mix(in srgb, var(--clay) 36%, transparent); border-radius: var(--r-pill); }
+.opportunity ul { list-style: none; display: grid; gap: 8px; margin: 15px 0 0; padding: 13px 0 0; border-top: 1px solid var(--line); }
+.opportunity li { color: var(--ink-2); font-size: 12.5px; line-height: 1.45; }
+.opportunity li span { color: var(--ink-3); font: 400 9.5px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; margin-right: 7px; }
+.opportunity-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 16px; }
+.opportunity-foot > span { color: var(--ink-3); font: 400 9.5px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; }
+.opportunity-foot .btn { padding: 8px 12px; font-size: 11.5px; text-decoration: none; }
+.radar-note { color: var(--ink-3); font-size: 12px; line-height: 1.5; margin-top: 18px; }
+.radar-loading { display: flex; gap: 14px; align-items: flex-start; padding: 20px 0; }
+.radar-loading i { flex: none; width: 12px; height: 12px; margin-top: 4px; border: 2px solid var(--line-2); border-top-color: var(--clay); border-radius: 50%; animation: spin .8s linear infinite; }
+.radar-loading strong { display: block; font-size: 15px; }
+.radar-loading p { color: var(--ink-2); font-size: 13px; line-height: 1.5; margin-top: 5px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.jd-form textarea { width: 100%; min-height: 180px; padding: 15px; font: inherit; font-size: 14px; border: 1px solid var(--line-2); border-radius: var(--r-md); background: var(--raised); color: var(--ink); resize: vertical; }
+.sheet-actions, .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 12px; }
+
+.modal { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 20px; background: rgba(8, 8, 10, .62); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); animation: fade .2s var(--ease); }
+.modal-card { width: min(420px, 100%); background: var(--paper); border: 1px solid var(--line-2); border-radius: var(--r-lg); padding: 30px 28px; animation: rise .3s var(--ease); }
+.modal-card h2 { font-size: 21px; }
+.modal-card p { color: var(--ink-2); font-size: 14.5px; margin: 10px 0 22px; }
+.modal-card input { width: 100%; padding: 13px 15px; margin-bottom: 10px; font: inherit; font-size: 15px; border: 1px solid var(--line-2); border-radius: var(--r-sm); background: var(--raised); color: var(--ink); }
+.modal-card input:focus { outline: none; border-color: var(--clay); }
+
+.toast { position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%); z-index: 95; background: var(--ink); color: var(--paper); padding: 11px 21px; border-radius: var(--r-pill); font-size: 13.5px; animation: rise .25s var(--ease); }
+
+/* ---------- responsive ---------- */
+
+@media (max-width: 820px) {
+  .bar-right a { display: none; }
+  .timeline li { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+}
+
+@media (max-width: 620px) {
+  .bar-right .q:not(.strong) { display: none; }
+  .bar-right .q#bell { display: inline-flex; }
+  .people-grid { grid-template-columns: 1fr; }
+  .visitor { flex-wrap: wrap; }
+  .visitor-actions { margin-left: 0; width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition-duration: .001ms !important; }
+  .reveal { opacity: 1; transform: none; }
+}
+
+/* Waiting state: explicit, because a grounded answer takes seconds and silent
+   dots read as a dead page. */
+.waiting { display: inline-flex; align-items: center; gap: 11px; }
+.waiting-label { font-family: var(--sans); font-size: 14.5px; color: var(--ink-3); }
+.waiting-clock { font: 400 12px/1 var(--mono); color: var(--clay); border: 1px solid var(--line); border-radius: var(--r-pill); padding: 4px 9px; }
+
+/* ================= glass pass ================= */
+
+/*
+  Frosted surfaces over the sky. Translucent fill plus a light top edge reads
+  as glass; without the highlight it just looks washed out. Every glass panel
+  keeps an opaque fallback colour for browsers without backdrop-filter.
+*/
+:root {
+  /* Was .58, which let dense hero copy ghost through the sticky header as the
+     page scrolled under it and read as clutter rather than depth. */
+  --glass: rgba(255, 255, 255, .86);
+  --glass-strong: rgba(255, 255, 255, .78);
+  --glass-edge: rgba(255, 255, 255, .85);
+  --glass-blur: blur(20px) saturate(1.5);
+}
+html[data-theme="dark"] {
+  --glass: rgba(18, 32, 48, .86);
+  --glass-strong: rgba(18, 32, 48, .78);
+  --glass-edge: rgba(146, 190, 240, .16);
+}
+
+.bar {
+  background: var(--glass);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-bottom: 1px solid var(--glass-edge);
+}
+
+/* Deliberately not glass. Every other surface here is translucent, so the one
+   opaque card is the one the eye lands on -- which is exactly where the visitor
+   is meant to start. */
+#composer {
+  background: var(--raised);
+  border-color: var(--line-2);
+  box-shadow:
+    0 2px 6px rgba(10, 24, 38, .05),
+    0 26px 56px -28px rgba(20, 70, 140, .5);
+}
+html[data-theme="dark"] #composer { box-shadow: 0 26px 60px -28px rgba(0, 0, 0, .7); }
+
+.suggestions button,
+.person,
+.visitor,
+.feed {
+  background: var(--glass);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-color: var(--glass-edge);
+}
+.person { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .6), 0 14px 34px rgba(20, 70, 140, .08); }
+
+.turn.you .text {
+  background: var(--glass-strong);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-color: var(--glass-edge);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .7);
+}
+
+.cite { background: var(--glass); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); }
+
+/* ================= measure ================= */
+
+/*
+  The answers were running the full 720px column, which at this size is well
+  past a comfortable line. Capping the measure is what makes a block of prose
+  look deliberately set rather than reflowed.
+*/
+.turn.twin .text { max-width: 62ch; }
+.turn.twin .cites { max-width: 62ch; }
+.ask-hero > #intro p { max-width: 44ch; }
+
+/* ================= conversation state ================= */
+
+/*
+  Once a conversation runs, the page is a transcript rather than a landing
+  screen. The deck no longer forces a full viewport, and the rails stop being
+  centred: centring them inside a 7,700px column parked them 2,579px above the
+  viewport, so they vanished entirely. Pinned, they stay useful while the
+  transcript scrolls past.
+*/
+body.has-thread .deck { align-items: start; min-height: 0; }
+body.has-thread .rail { position: sticky; top: calc(var(--bar-h) + 18px); }
+/* Intro furniture, and the sticky dock would otherwise sit on top of both. */
+body.has-thread .quickfacts,
+body.has-thread .scroll-cue { display: none; }
+/* Ridges behind a wall of body copy are just noise, and the transcript needs
+   the contrast more than the page needs the weather. */
+body.has-thread .scene { opacity: .32; }
+
+/* ================= scroll cue ================= */
+
+.scroll-cue {
+  display: inline-flex; align-items: center; gap: 8px; align-self: center;
+  margin-top: clamp(20px, 4vh, 44px);
+  font: 400 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase;
+  color: var(--ink-3); text-decoration: none;
+  opacity: .8; transition: color .2s var(--ease), opacity .2s var(--ease);
+}
+.scroll-cue:hover { color: var(--clay); opacity: 1; }
+.scroll-cue svg { animation: nudge 2.4s var(--ease) infinite; }
+@keyframes nudge { 0%, 60%, 100% { transform: none; } 30% { transform: translateY(3px); } }
+
+/* ================= detail ================= */
+
+/* Selection inherited the browser default blue, which clashed with the accent
+   on every highlighted line of an answer. */
+::selection { background: var(--clay-soft); color: var(--ink); }
+
+/* The default scrollbar is a slab of system chrome against a soft page. */
+* { scrollbar-width: thin; scrollbar-color: var(--line-2) transparent; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--line-2); border-radius: var(--r-pill);
+  border: 3px solid var(--paper); background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--ink-3); background-clip: padding-box; }
+
+/* A citation is checkable evidence, so it should look like it rewards a look. */
+.cite { cursor: help; transition: border-color .16s var(--ease), color .16s var(--ease); }
+.cite:hover { border-color: var(--clay); color: var(--ink-2); }
+
+/* The send button had no disabled affordance beyond opacity, and no press
+   feedback at all. */
+.send:active { transform: translateY(0) scale(.94); }
+.suggestions button:active { transform: translateY(0) scale(.98); }
+.stack-chip:active { transform: scale(.98); }
+
+/* Links in prose were indistinguishable from body text until hovered. */
+.mcp-lede a { color: var(--clay); text-decoration: none; border-bottom: 1px solid transparent; }
+.mcp-lede a:hover { border-bottom-color: currentColor; }
+
+/* Long single-word tokens in a repository description or a tool name must not
+   push a card wider than its column. */
+.card p, .mcp-card p, .rank-src, .mcp-install { overflow-wrap: anywhere; }
+
+/* An answer arriving should not shift what is already on screen. */
+.thread { scroll-margin-top: calc(var(--bar-h) + 16px); }
+
+/* ================= scroll progress ================= */
+
+.progress {
+  position: fixed; top: 0; left: 0; height: 2px; width: 100%;
+  background: linear-gradient(90deg, var(--clay), color-mix(in srgb, var(--clay) 40%, var(--sky-top)));
+  z-index: 60; transform: scaleX(0); transform-origin: left center;
+  will-change: transform;
+}
+
+/* ================= answer actions ================= */
+
+.turn-actions { display: flex; gap: 8px; margin-top: 12px; opacity: 0; transition: opacity .2s var(--ease); }
+.turn:hover .turn-actions, .turn-actions:focus-within { opacity: 1; }
+.turn-actions button {
+  font: 400 11.5px/1 var(--mono); cursor: pointer; color: var(--ink-3);
+  background: var(--glass);
+  -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-edge); border-radius: var(--r-xs); padding: 6px 10px;
+  transition: color .16s var(--ease), border-color .16s var(--ease);
+}
+.turn-actions button:hover { color: var(--clay); border-color: var(--clay); }
+
+/* ================= quick facts ================= */
+
+.quickfacts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 26px; }
+.quickfacts span {
+  display: inline-flex; align-items: baseline; gap: 7px;
+  font-size: 13px; color: var(--ink-2);
+  background: var(--glass); backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-edge); border-radius: var(--r-pill); padding: 8px 16px;
+}
+.quickfacts b { font-size: 14.5px; color: var(--clay); font-weight: 650; }
+
+/* ================= skills ================= */
+
+.skillgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; margin-top: 44px; }
+.skillcard {
+  background: var(--glass); backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-edge); border-radius: var(--r-md); padding: 22px;
+}
+.skillcard h3 { font-size: 13px; font-weight: 600; letter-spacing: .02em; margin: 0 0 14px; color: var(--clay); }
+.skillcard ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.skillcard li { font-size: 12.5px; color: var(--ink); background: var(--paper-2); border-radius: var(--r-xs); padding: 5px 10px; }
+/* Faded entries are the CV's own "familiarity" wording, kept visually distinct
+   so a reviewer is never misled about depth. */
+.skillcard li.soft { color: var(--ink-3); background: transparent; box-shadow: inset 0 0 0 1px var(--line); }
+
+.legend { display: flex; align-items: center; gap: 9px; margin-top: 20px; font-size: 12.5px; color: var(--ink-3); }
+.swatch { width: 22px; height: 10px; border-radius: var(--r-xs); background: linear-gradient(90deg, var(--paper-2) 50%, transparent 50%); box-shadow: inset 0 0 0 1px var(--line); flex: none; }
+
+/* ================= projects ================= */
+
+.projects { margin-top: 44px; }
+.project { display: grid; grid-template-columns: 90px minmax(0, 1fr); gap: 20px; padding: 28px 0; border-top: 1px solid var(--line); }
+.project-year { font: 400 12px/1.7 var(--mono); color: var(--clay); }
+.project h3 { font-size: 19px; font-weight: 600; letter-spacing: -.02em; margin: 0; }
+.project p { font-size: 14.5px; color: var(--ink-2); margin-top: 10px; max-width: 64ch; }
+.stack { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+.stack span { font: 400 11.5px/1 var(--mono); color: var(--ink-3); border: 1px solid var(--line); border-radius: var(--r-pill); padding: 5px 11px; }
+
+/* ================= certifications ================= */
+
+.certs { margin-top: 36px; padding-top: 24px; border-top: 1px solid var(--line); }
+.certrow { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.certrow span { font-size: 13px; color: var(--ink-2); background: var(--glass); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); border: 1px solid var(--glass-edge); border-radius: var(--r-pill); padding: 8px 16px; }
+
+/* ================= closing call to action ================= */
+
+.cta {
+  margin-top: 40px; padding: clamp(36px, 6vw, 60px);
+  background: var(--glass); backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-edge); border-radius: var(--r-lg);
+}
+.cta h2 { font-size: clamp(26px, 3.6vw, 38px); }
+.cta p { color: var(--ink-2); font-size: 16px; margin: 16px auto 0; max-width: 52ch; }
+.cta-row { display: flex; gap: 12px; margin-top: 28px; flex-wrap: wrap; }
+
+@media (max-width: 700px) {
+  .project { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+}
+
+/* ================= surfaces over solid ground ================= */
+
+/*
+  Glass only reads against the sky. Panels inside the lower bands sit on solid
+  paper, where a translucent white fill renders as nothing at all, so these
+  get a real tinted surface and a border instead.
+*/
+.skillcard,
+.cta,
+.certrow span {
+  background: var(--paper-2);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-color: var(--line-2);
+}
+.skillcard { box-shadow: none; }
+.cta { background: linear-gradient(170deg, var(--paper-2), var(--paper) 70%); }
+.skillcard li { background: var(--paper); }
+.skillcard li.soft { background: transparent; }
+
+/* The closing panel followed a full band of padding, leaving a dead screen
+   between the last question and the call to action. */
+#cta { padding-top: clamp(28px, 4vh, 44px); }
+#cta .cta { margin-top: 0; }
+
+/* ================= chat legibility fixes ================= */
+
+/*
+  The thread must be able to scroll clear of the sticky dock, otherwise the
+  final lines of an answer sit permanently behind the composer.
+*/
+.thread { padding-bottom: 250px; }
+
+/* The visitor's own turn was glass over near-white sky: invisible. It needs a
+   tinted surface that survives both the sky and the solid bands. */
+.turn.you .text {
+  background: var(--paper-2);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: 1px solid var(--line-2);
+  box-shadow: none;
+}
+html[data-theme="dark"] .turn.you .text { background: var(--paper-2); }
+
+/* A firmer veil, so text passing under the dock is muted rather than sliced. */
+.dock::before {
+  background: linear-gradient(to top,
+    color-mix(in srgb, var(--paper) 92%, transparent) 42%,
+    color-mix(in srgb, var(--paper) 55%, transparent) 78%,
+    transparent);
+}
+
+/* The composer sits over scrolling text, so it must be opaque. Translucent
+   fill let answers show through it and read as clipped mid-sentence. */
+#composer { background: var(--raised); backdrop-filter: none; -webkit-backdrop-filter: none; border-color: var(--line-2); }
+
+/* Suggestion pills were glass against near-white sky: no visible edge. */
+.suggestions button { background: var(--paper-2); backdrop-filter: none; -webkit-backdrop-filter: none; border-color: var(--line-2); }
+
+/* Start the veil above the composer so nothing meets its edge mid-line. Only
+   in the threaded state -- otherwise it stacked with the dock's own margin and
+   left a dead 68px band between the intro copy and the composer. */
+body.has-thread .dock { padding-top: 34px; }
+
+@media (max-width: 700px) {
+  /* A tall phone hero would push the composer off-screen, so let content lead. */
+  .deck { min-height: 0; padding-top: 28px; }
+  .ask-hero { padding-top: 24px; padding-bottom: 32px; }
+
+  /* The three-column row has no room on a phone; stack it back. */
+  .timeline li { grid-template-columns: 1fr; row-gap: 6px; }
+  .timeline li > div { display: contents; }
+  .timeline .when, .timeline h3, .timeline .where, .timeline p { grid-column: 1; grid-row: auto; }
+  .timeline p { margin-top: 10px; }
+
+  /* 86vh of guaranteed height leaves a dead screen below the composer once the
+     rails are stacked away; let the hero be as tall as its content. */
+  .ask-hero { min-height: 0; padding-top: 40px; padding-bottom: 24px; }
+  .ask-hero > #intro p { margin-top: 16px; }
+  .dock { margin-top: 26px; }
+}
+
+/* ================= mobile overflow ================= */
+
+/* The dock veil bleeds past the column edges by design, and long source
+   labels are unbreakable strings; both push a phone viewport sideways. */
+body { overflow-x: hidden; }
+.cite { word-break: break-word; max-width: 100%; }
+.chips a, .chips .chip, .stack span { word-break: break-word; }
+
+@media (max-width: 520px) {
+  .dock::before { left: -16px; right: -16px; }
+  .turn.you .bubble { max-width: 92%; }
+  .thread { padding-bottom: 210px; }
+}
+
+/* The twin has a name so the boundary reads cleanly: Kal speaks about the
+   work, Prathamesh is who you contract with. */
+.tag-kal {
+  margin-left: 9px; font: 400 10.5px/1 var(--mono); letter-spacing: .12em;
+  text-transform: uppercase; color: var(--clay);
+  border: 1px solid var(--clay); border-radius: var(--r-pill); padding: 4px 8px;
+}
+.ask-hero > #intro p b { color: var(--ink); font-weight: 650; }
+
+/* ================= three-column deck ================= */
+
+.deck {
+  display: grid; gap: clamp(16px, 2vw, 28px);
+  grid-template-columns: minmax(210px, 1fr) minmax(0, 3.1fr) minmax(210px, 1fr);
+  justify-content: center; align-items: center;
+  max-width: 1900px; margin: 0 auto;
+  padding: calc(var(--bar-h) * .4) clamp(16px, 4vw, 80px) 0;
+  min-height: calc(100dvh - var(--bar-h));
+}
+.deck .ask-hero { max-width: none; padding-left: 0; padding-right: 0; }
+
+.rail { display: flex; flex-direction: column; gap: 12px; }
+
+.panel {
+  background: var(--glass); backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-edge); border-radius: var(--r-md); padding: 16px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .55);
+}
+.panel-label { display: block; font: 400 10px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 12px; }
+
+/* identity */
+.identity { text-align: left; }
+.rail-face { border-radius: 50%; object-fit: cover; display: block; margin-bottom: 12px; box-shadow: 0 0 0 1px var(--line-2); }
+.identity strong { display: block; font-size: 14.5px; letter-spacing: -.01em; }
+.identity > span { display: block; font-size: 12.5px; color: var(--ink-2); margin-top: 3px; }
+.avail { display: inline-flex !important; align-items: center; gap: 7px; font-size: 12px !important; color: var(--ok) !important; margin-top: 9px !important; }
+.avail i { width: 6px; height: 6px; border-radius: 50%; background: var(--ok); }
+.rail-links { display: flex; flex-direction: column; gap: 4px; margin-top: 13px; padding-top: 13px; border-top: 1px solid var(--line); }
+.rail-links a, .rail-links button { font-size: 12.5px; color: var(--clay); text-decoration: none; text-align: left; padding: 0; }
+
+/* at a glance */
+.glance { margin: 0; display: flex; flex-direction: column; gap: 9px; }
+.glance div { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+.glance dt { font-size: 12px; color: var(--ink-3); }
+.glance dd { margin: 0; font-size: 12.5px; font-weight: 550; }
+
+/* jump nav */
+nav.panel a { display: block; font-size: 13px; color: var(--ink-2); text-decoration: none; padding: 6px 0; border-bottom: 1px solid var(--line); transition: color .16s var(--ease), padding-left .16s var(--ease); }
+nav.panel a:last-child { border-bottom: 0; }
+nav.panel a:hover { color: var(--clay); padding-left: 5px; }
+
+/* tools */
+.toollist, .pipeline { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.toollist li, .pipeline li { display: flex; flex-direction: column; gap: 2px; }
+.toollist b, .pipeline b { font-size: 12.5px; font-weight: 600; }
+.toollist span, .pipeline span { font-size: 11.5px; color: var(--ink-3); line-height: 1.45; }
+.pipeline { counter-reset: step; list-style: none; margin: 0; padding: 0; display: grid; gap: 9px; font-size: 12.5px; color: var(--ink-2); line-height: 1.5; }
+.pipeline li { position: relative; padding-left: 22px; }
+.pipeline li::before {
+  counter-increment: step; content: counter(step, decimal-leading-zero);
+  position: absolute; left: 0; top: 1px;
+  font: 400 10px/1.4 var(--mono); color: var(--clay);
+}
+
+.panel.note p { font-size: 12px; color: var(--ink-2); line-height: 1.55; }
+
+@media (max-width: 1180px) {
+  .deck { grid-template-columns: minmax(200px, 230px) minmax(0, 1fr); }
+  .rail-right { display: none; }
+}
+@media (max-width: 900px) {
+  .deck { grid-template-columns: minmax(0, 1fr); padding: 0; }
+  .rail-left { display: none; }
+  .deck .ask-hero { padding-left: clamp(16px, 5vw, 24px); padding-right: clamp(16px, 5vw, 24px); }
+}
+
+/* The name badge is gone with the naming. */
+.tag-kal { display: none; }
+
+/* ================= clouds ================= */
+
+.clouds { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.cloud { position: absolute; fill: var(--cloud); filter: blur(.4px); will-change: transform; }
+:root { --cloud: rgba(255, 255, 255, .92); }
+html[data-theme="dark"] { --cloud: rgba(148, 190, 236, .09); }
+
+/* Three speeds so the layers separate; the far ones are smaller and fainter. */
+.cloud.c1 { width: 150px; top: 12%; left: -18%; opacity: .95; animation: drift 92s linear infinite; }
+.cloud.c2 { width: 220px; top: 24%; left: -26%; opacity: .8;  animation: drift 138s linear infinite; animation-delay: -40s; }
+.cloud.c3 { width: 280px; top: 6%;  left: -34%; opacity: .55; animation: drift 186s linear infinite; animation-delay: -95s; }
+.cloud.c4 { width: 120px; top: 34%; left: -14%; opacity: .5;  animation: drift 112s linear infinite; animation-delay: -66s; }
+
+@keyframes drift { from { transform: translateX(0); } to { transform: translateX(165vw); } }
+
+/* ================= visible weather ================= */
+
+/*
+  The clouds were near-white at low opacity against a pale sky, which is to say
+  invisible. They need real contrast against the gradient plus a soft shadow to
+  read as volume rather than a flat blob.
+*/
+:root { --cloud: #ffffff; --cloud-shadow: rgba(120, 170, 220, .38); }
+html[data-theme="dark"] { --cloud: rgba(150, 190, 240, .13); --cloud-shadow: transparent; }
+
+.cloud { filter: drop-shadow(0 8px 14px var(--cloud-shadow)); }
+.cloud.c1 { width: 210px; top: 9%;  opacity: 1;   animation-duration: 96s; }
+.cloud.c2 { width: 300px; top: 21%; opacity: .95; animation-duration: 142s; }
+.cloud.c3 { width: 380px; top: 4%;  opacity: .8;  animation-duration: 190s; }
+.cloud.c4 { width: 170px; top: 32%; opacity: .75; animation-duration: 116s; }
+/* Two extra start mid-sky so the scene is never empty on first paint. */
+.cloud.c5 { width: 250px; top: 15%; left: 34%; opacity: .9; animation: drift 158s linear infinite; animation-delay: -18s; }
+.cloud.c6 { width: 330px; top: 27%; left: 62%; opacity: .7; animation: drift 176s linear infinite; animation-delay: -30s; }
+
+/* ================= tighten the middle ================= */
+
+/*
+  The composer was pinned to the bottom of an 86vh hero, leaving a dead band
+  between the opening line and the input. The conversation should begin where
+  the reader's eye already is.
+*/
+.ask-hero { min-height: 0; padding-bottom: 28px; }
+.dock { margin-top: 0; }
+.thread:empty { padding: 18px 0 0; }
+
+/* ================= more glass ================= */
+
+.panel, .feed, .visitor, .person, .suggestions button, .cite, .quickfacts span, .certrow span {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .75),
+    inset 0 -1px 0 rgba(120, 170, 220, .1),
+    0 10px 30px rgba(20, 70, 140, .07);
+}
+html[data-theme="dark"] .panel,
+html[data-theme="dark"] .feed,
+html[data-theme="dark"] .person {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05), 0 14px 34px rgba(0, 0, 0, .4);
+}
+
+/* Cards in the lower bands pick up the same frosted treatment, now that they
+   sit on a translucent ground rather than flat paper. */
+.bands { background: color-mix(in srgb, var(--paper) 88%, transparent); -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); }
+.skillcard, .cta {
+  background: var(--glass-strong);
+  backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
+  border-color: var(--glass-edge);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .7), 0 12px 34px rgba(20, 70, 140, .08);
+}
+
+.stack-panel .aistack { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 11px; }
+.aistack li { display: flex; flex-direction: column; gap: 2px; padding-left: 13px; position: relative; }
+.aistack li::before { content: ""; position: absolute; left: 0; top: 6px; width: 5px; height: 5px; border-radius: 50%; background: var(--clay); }
+.aistack b { font-size: 12.5px; font-weight: 600; }
+.aistack span { font-size: 11.5px; color: var(--ink-3); line-height: 1.45; }
+
+/* Keep the weather above the headline: a cloud passing behind display type
+   costs more legibility than it adds atmosphere. */
+.cloud.c4 { top: 3%; }
+.cloud.c6 { top: 18%; }
+.clouds { bottom: auto; height: 46%; }
+
+/* ================= liquid glass ================= */
+
+/*
+  iOS-style glass: heavy blur with saturation lift so colour behind bleeds
+  through, a very light fill, a hairline light border, and a specular highlight
+  across the top edge. The saturation is what separates it from plain frosting.
+*/
+:root {
+  --lg-fill: rgba(255, 255, 255, .7);
+  --lg-fill-strong: rgba(255, 255, 255, .66);
+  --lg-border: rgba(255, 255, 255, .68);
+  --lg-blur: blur(34px) saturate(190%);
+  --lg-spec: linear-gradient(150deg, rgba(255,255,255,.85) 0%, rgba(255,255,255,.18) 38%, transparent 62%);
+  --lg-shadow: 0 1px 1px rgba(20,70,140,.06), 0 12px 32px rgba(20,70,140,.12);
+}
+html[data-theme="dark"] {
+  --lg-fill: rgba(22, 40, 62, .86);
+  --lg-fill-strong: rgba(22, 40, 62, .72);
+  --lg-border: rgba(150, 195, 245, .18);
+  --lg-spec: linear-gradient(150deg, rgba(180,215,255,.16) 0%, rgba(180,215,255,.04) 40%, transparent 64%);
+  --lg-shadow: 0 1px 1px rgba(0,0,0,.3), 0 16px 40px rgba(0,0,0,.45);
+}
+
+.panel, .feed, .visitor, .person, .cta, .skillcard,
+.quickfacts span, .certrow span, .suggestions button, .turn.you .text, #composer {
+  position: relative;
+  background: var(--lg-fill);
+  backdrop-filter: var(--lg-blur);
+  -webkit-backdrop-filter: var(--lg-blur);
+  border: 1px solid var(--lg-border);
+  box-shadow: var(--lg-shadow);
+}
+#composer, .turn.you .text, .cta { background: var(--lg-fill-strong); }
+
+/* The specular sheen sits above the fill but below the content. */
+.panel::before, .person::before, .cta::before, .skillcard::before, #composer::before {
+  content: ""; position: absolute; inset: 0; border-radius: inherit;
+  background: var(--lg-spec); pointer-events: none; opacity: .9;
+}
+.panel > *, .person > *, .cta > *, .skillcard > *, #composer > * { position: relative; z-index: 1; }
+
+/* Radii on the iOS scale. */
+.panel, .person, .skillcard { border-radius: var(--r-lg); }
+.cta { border-radius: var(--r-lg); }
+#composer { border-radius: var(--r-lg); }
+
+/* ================= rail tiles ================= */
+
+.tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.tile {
+  display: flex; flex-direction: column; gap: 1px; padding: 10px 12px;
+  border-radius: var(--r-sm); background: var(--lg-fill-strong);
+  border: 1px solid var(--lg-border);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .7);
+}
+.tile b { font-size: 12px; font-weight: 640; letter-spacing: -.01em; }
+.tile i { font: 400 10.5px/1.3 var(--mono); font-style: normal; color: var(--ink-3); }
+
+.live-rows { display: flex; flex-direction: column; gap: 8px; }
+.live-rows div { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+.live-rows .k { font-size: 11.5px; color: var(--ink-3); }
+.live-rows .v { font: 400 11.5px/1 var(--mono); color: var(--ink); }
+.live-rows .v.ok { color: var(--ok); }
+
+/* The veil painted a solid gradient the width of the column, which showed as a
+   visible rectangle over the scene in dark mode. Blur and mask alone. */
+.dock::before { background: none; }
+
+/* 10px was below comfortable for the rail labels. */
+.panel-label { font-size: 11px; }
+
+/* The dock veil was painting a solid gradient the width of the column, which
+   showed as a visible rectangle over the scene, obvious in dark. Blur and
+   mask alone achieve the separation without drawing an edge. */
+.dock::before { background: none; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+
+/* 10px was below comfortable for the rail labels. */
+.panel-label { font-size: 10.5px; letter-spacing: .14em; }
+
+/* ================= set answers as prose ================= */
+
+/*
+  Answers arrive with paragraphs and lists. Rendered as pre-wrapped plain text
+  they collapsed into a single slab, so the structure is now real markup and the
+  whitespace rule has to step aside for it.
+*/
+.turn.twin .text { white-space: normal; }
+.turn.twin .text > * + * { margin-top: 1em; }
+.turn.twin .text ul, .turn.twin .text ol { margin: 0; padding-left: 1.15em; }
+.turn.twin .text li + li { margin-top: .4em; }
+.turn.twin .text li::marker { color: var(--ink-3); }
+.turn.twin .text b { font-weight: 640; }
+
+/* ================= answer status ================= */
+
+.badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+.badge {
+  font: 400 11px/1 var(--mono); color: var(--ink-3);
+  border: 1px solid var(--line); border-radius: 999px; padding: 5px 10px;
+}
+.badge.ok { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 42%, transparent); }
+.badge.warn { color: var(--ink-2); border-color: var(--line-2); }
+.badge.ok::before, .badge.warn::before {
+  content: "●"; font-size: 7px; vertical-align: middle; margin-right: 6px;
+}
+
+/* ================= the visible tool loop ================= */
+
+/*
+  The agent publishes every tool call and result while it runs. Showing them —
+  live, then folded under the answer they produced — is the difference between
+  asserting the execution contract and letting a visitor watch it hold.
+*/
+.steps { list-style: none; margin: 14px 0 0; padding: 0; display: flex; flex-direction: column; gap: 9px; }
+.steps:empty { display: none; }
+.step {
+  display: grid; grid-template-columns: 14px minmax(0, 1fr) auto; gap: 10px;
+  align-items: start; font-family: var(--sans); font-size: 13px;
+}
+.step-mark {
+  width: 7px; height: 7px; margin-top: 6px; border-radius: 50%;
+  background: var(--ink-3); justify-self: center;
+}
+.step[data-status="running"] .step-mark { background: var(--clay); animation: blink 1.3s var(--ease) infinite; }
+.step[data-status="ok"] .step-mark { background: var(--ok); }
+.step[data-status="empty"] .step-mark { background: var(--ink-3); }
+.step[data-status="blocked"] .step-mark,
+.step[data-status="timeout"] .step-mark,
+.step[data-status="failed"] .step-mark { background: transparent; box-shadow: inset 0 0 0 1.5px var(--ink-3); }
+.step-body { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.step-phrase { color: var(--ink-2); }
+.step-summary { font-size: 12px; color: var(--ink-3); line-height: 1.5; }
+.step-links { display: flex; flex-wrap: wrap; gap: 8px; }
+.step-links a { font: 400 11px/1 var(--mono); color: var(--clay); text-decoration: none; }
+.step-links a:hover { text-decoration: underline; }
+.step-meta { font: 400 11px/1.5 var(--mono); color: var(--ink-3); white-space: nowrap; }
+
+/* Live steps sit under the waiting line inside the pending bubble. */
+.waiting + .steps.live { margin-top: 16px; }
+
+/* A compact run graph makes the orchestration legible without turning the
+   answer into a developer console. It uses translucent paint rather than a
+   second backdrop blur, preserving the glass depth without adding scroll cost. */
+.agent-live,
+.run-overview {
+  margin-top: 14px;
+  padding: 12px 13px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, .48), transparent), var(--lg-fill);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .58);
+}
+html[data-theme="dark"] .agent-live,
+html[data-theme="dark"] .run-overview {
+  background: linear-gradient(135deg, rgba(255, 255, 255, .045), transparent), var(--lg-fill);
+}
+.agent-live[hidden] { display: none; }
+.agent-live-goal,
+.run-goal {
+  display: block;
+  color: var(--ink-2);
+  font-size: 12.5px;
+  font-weight: 620;
+}
+.phase-track {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 7px;
+  margin: 12px 0 0;
+  padding: 0;
+}
+.phase {
+  min-width: 0;
+  padding: 9px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--paper) 78%, transparent);
+}
+.phase-mark {
+  display: block;
+  width: 7px;
+  height: 7px;
+  margin-bottom: 8px;
+  border-radius: 50%;
+  background: var(--ink-3);
+}
+.phase[data-status="running"] { border-color: color-mix(in srgb, var(--clay) 48%, var(--line)); }
+.phase[data-status="running"] .phase-mark { background: var(--clay); animation: blink 1.3s var(--ease) infinite; }
+.phase[data-status="completed"] .phase-mark { background: var(--ok); }
+.phase[data-status="skipped"] { opacity: .62; }
+.phase[data-status="blocked"] .phase-mark {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--ink-3);
+}
+.phase-copy { display: block; min-width: 0; }
+.phase-copy b {
+  display: block;
+  color: var(--ink-2);
+  font-size: 10.5px;
+  font-weight: 620;
+  line-height: 1.35;
+}
+.phase-copy small {
+  display: block;
+  margin-top: 5px;
+  color: var(--ink-3);
+  font-size: 9.5px;
+  line-height: 1.4;
+}
+.agent-run > summary { color: var(--ink-2); font-weight: 600; }
+.run-overview { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
+.run-metrics {
+  color: var(--ink-3);
+  font: 400 9.5px/1.5 var(--mono);
+  text-align: right;
+}
+.agent-run .phase-track { margin-top: 9px; }
+.run-tools { margin-top: 15px; padding-top: 13px; border-top: 1px solid var(--line); }
+.run-tools-label {
+  color: var(--ink-3);
+  font: 600 9px/1 var(--mono);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 620px) {
+  .phase-track { grid-template-columns: 1fr; }
+  .phase { display: grid; grid-template-columns: 8px minmax(0, 1fr); gap: 9px; }
+  .phase-mark { margin: 4px 0 0; }
+  .run-overview { display: block; }
+  .run-metrics { display: block; margin-top: 7px; text-align: left; }
+}
+
+.trace-panel { margin-top: 16px; border-top: 1px solid var(--line); padding-top: 12px; max-width: 62ch; }
+.trace-panel summary {
+  cursor: pointer; list-style: none; font-family: var(--sans);
+  font-size: 12.5px; color: var(--ink-3);
+  display: flex; align-items: center; gap: 8px;
+}
+.trace-panel summary::-webkit-details-marker { display: none; }
+.trace-panel summary::before { content: "▸"; color: var(--clay); font-size: 10px; transition: transform .18s var(--ease); }
+.trace-panel[open] summary::before { transform: rotate(90deg); }
+.trace-panel summary:hover { color: var(--ink-2); }
+
+/* An answer now carries a status badge, its citations and a provenance panel
+   beneath the prose, so the thread needs more room to clear the sticky dock
+   than the plain text it was measured against. */
+.thread { padding-bottom: 310px; }
+
+/* ================= dock controls ================= */
+
+/*
+  Scoped to a container, not to the note itself. The published shell writes the
+  note as a single <p class="dock-note"> with the model name in a span inside
+  it, so a flex row with space-between took that span for a flex item and threw
+  it to the far left with the sentence pinned to the right.
+*/
+div.dock-note { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.dock-note { margin-top: 14px; }
+.dock-note p { font-size: 11.5px; color: var(--ink-3); }
+
+/*
+  A closing line inside a rail panel had no rule of its own — only `.panel.note
+  p` existed, and these panels do not carry .note — so it inherited `p { margin:
+  0 }` and collided with the bottom of the list above it, reading as a sentence
+  that had come loose.
+*/
+.panel > p { font-size: 12px; line-height: 1.55; color: var(--ink-3); margin-top: 12px; }
+.panel > .pipeline + p,
+.panel > .toollist + p { padding-top: 12px; border-top: 1px solid var(--line); }
+/* margin-left keeps the control at the right edge even when the note wraps it
+   onto a line of its own. */
+.dock-note .linkish { font-size: 11.5px; color: var(--ink-3); white-space: nowrap; margin-left: auto; }
+.dock-note .linkish:hover { color: var(--clay); }
+.dock-note .linkish[disabled] { opacity: .5; cursor: progress; }
+
+/* While an answer is in flight the send control stops it, so it must read as a
+   stop rather than a disabled send. */
+.send[data-mode="stop"] svg { display: none; }
+.send[data-mode="stop"]::after {
+  content: ""; width: 10px; height: 10px; border-radius: 3px; background: currentColor;
+}
+
+/* ================= job-description fit ================= */
+
+.fit-head { display: flex; align-items: center; gap: 18px; margin: 22px 0 26px; }
+.fit-meter {
+  flex: none; width: 84px; height: 84px; border-radius: 50%;
+  display: grid; place-content: center; text-align: center;
+  background:
+    radial-gradient(closest-side, var(--paper) 74%, transparent 75%),
+    conic-gradient(var(--clay) calc(var(--pct) * 1%), var(--line) 0);
+}
+.fit-meter strong { font-size: 19px; font-weight: 600; letter-spacing: -.02em; }
+.fit-summary { font-size: 14px; color: var(--ink-2); }
+
+.fit-group { margin-bottom: 26px; }
+.fit-group h3 { font: 400 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); margin: 0 0 12px; }
+.fit-group h3 span { color: var(--clay); }
+.fit-row { border-left: 2px solid var(--line-2); padding: 2px 0 2px 14px; margin-bottom: 14px; }
+.fit-row.ok { border-left-color: var(--ok); }
+.fit-row strong { display: block; font-size: 14px; font-weight: 550; }
+.fit-row p { font-size: 13px; color: var(--ink-2); margin-top: 5px; }
+.fit-row .cite { display: inline-block; margin-top: 8px; }
+.fit-row.gap strong { color: var(--ink-2); }
+.fit-empty, .fit-caveat { font-size: 13px; color: var(--ink-3); }
+.fit-caveat { border-top: 1px solid var(--line); padding-top: 16px; }
+
+@media (max-width: 520px) {
+  .thread { padding-bottom: 270px; }
+  .dock-note { gap: 8px; }
+  .step { grid-template-columns: 14px minmax(0, 1fr); }
+  .step-meta { grid-column: 2; }
+  .opportunity-foot { align-items: flex-start; flex-direction: column; }
+  .opportunity-foot .btn { width: 100%; text-align: center; }
+}
+
+/* =====================================================================
+   SURFACES — one system, replacing six
+
+   The sections above accumulated as "glass pass", "surfaces over solid
+   ground", "chat legibility fixes", "more glass" and "liquid glass", each
+   re-answering the same question for the same elements. That is why the
+   composer was made opaque for legibility and then handed a translucent
+   fill again two sections later. Everything a surface needs is decided
+   here, once, and this is the last word in the file.
+
+   Three tiers, and the rule that picks between them:
+
+     glass       something floats over the sky and nothing important is
+                 behind it — rails, pills, chips, cards in the hero
+     glass-heavy the visitor's own words scroll behind it, so it has to be
+                 unreadable through — the header, the composer, its veil,
+                 sheets, the feed
+     solid       it sits on an opaque band, where translucency renders as
+                 nothing at all — skill cards, the closing panel, repos
+
+   The heavy tier is not opaque. A 0.86 fill under a 30px blur turns the
+   text behind it into a soft wash of its own colour, which is what makes
+   iOS glass read as glass rather than as frosted plastic — and what a
+   0.46 fill under a 20px blur never did, because it left the words legible.
+   ===================================================================== */
+
+:root {
+  --g-blur: blur(30px) saturate(180%);
+  --g-blur-soft: blur(18px) saturate(150%);
+  --g-fill: rgba(246, 251, 255, .82);
+  --g-fill-heavy: rgba(246, 251, 255, .68);
+  --g-fill-bar: rgba(246, 251, 255, .78);
+  --g-edge: rgba(255, 255, 255, .68);
+  --g-spec: linear-gradient(152deg, rgba(255, 255, 255, .85), rgba(255, 255, 255, .12) 40%, transparent 66%);
+  --g-shadow: 0 1px 2px rgba(20, 70, 140, .05), 0 10px 28px rgba(20, 70, 140, .10);
+  --g-shadow-lift: 0 2px 5px rgba(20, 70, 140, .07), 0 20px 46px rgba(20, 70, 140, .16);
+}
+html[data-theme="dark"] {
+  --g-fill: rgba(22, 40, 62, .82);
+  --g-fill-heavy: rgba(11, 22, 36, .72);
+  --g-fill-bar: rgba(8, 16, 27, .82);
+  --g-edge: rgba(150, 195, 245, .18);
+  --g-spec: linear-gradient(152deg, rgba(180, 215, 255, .16), rgba(180, 215, 255, .03) 42%, transparent 68%);
+  --g-shadow: 0 1px 2px rgba(0, 0, 0, .34), 0 12px 32px rgba(0, 0, 0, .42);
+  --g-shadow-lift: 0 2px 6px rgba(0, 0, 0, .4), 0 24px 56px rgba(0, 0, 0, .55);
+}
+
+/* --- the two glass tiers ------------------------------------------- */
+
+.panel, .person, .visitor, .feed, .tile,
+.suggestions button, .quickfacts span, .cite, .turn-actions button,
+.bar, .bar.solid, #composer, .turn.you .text,
+.over-panel, .modal-card, .toast {
+  backdrop-filter: var(--g-blur);
+  -webkit-backdrop-filter: var(--g-blur);
+  border: 1px solid var(--g-edge);
+  box-shadow: var(--g-shadow);
+}
+
+.panel, .person, .visitor, .tile,
+.suggestions button, .quickfacts span, .cite, .turn-actions button {
+  background: var(--g-fill);
+}
+
+/* Anything the conversation scrolls behind. */
+.bar.solid, #composer, .turn.you .text, .feed,
+.over-panel, .modal-card {
+  background: var(--g-fill-heavy);
+}
+
+/* Chips and pills are small and sit over quiet ground; a lighter blur keeps
+   them from looking like cut-outs. */
+.suggestions button, .quickfacts span, .cite, .turn-actions button, .tile {
+  backdrop-filter: var(--g-blur-soft);
+  -webkit-backdrop-filter: var(--g-blur-soft);
+}
+
+/* The specular sheen along the top-left edge is the tell of the material.
+   It sits above the fill and below the content. */
+.panel::before, .person::before, #composer::before,
+.over-panel::before, .modal-card::before, .feed::before {
+  content: ""; position: absolute; inset: 0; border-radius: inherit;
+  background: var(--g-spec); pointer-events: none; opacity: .9;
+}
+.panel > *, .person > *, #composer > *, .modal-card > *, .feed > * {
+  position: relative; z-index: 1;
+}
+
+/* The radii iOS uses: generous, and larger on the bigger surface. */
+.panel, .person, .feed { border-radius: 20px; }
+#composer { border-radius: 24px; }
+.modal-card { border-radius: 26px; }
+.tile { border-radius: 14px; }
+.turn.you .text { border-radius: 20px 20px 6px 20px; }
+
+/* --- the header ----------------------------------------------------- */
+
+/*
+  Glass over the sky is the point of the design. The same bar over scrolling
+  serif body copy sliced headings in half and smeared the line beneath them,
+  because a 0.46 fill hides nothing. At the top of the page it stays light;
+  the moment the page moves it takes the heavy tier — still glass, now
+  opaque enough that what passes under it is a wash rather than words.
+*/
+/*
+  The heavy fill is the default and the light one is opted into only while the
+  page is still at the top. The other way round, a header that needs JavaScript
+  to become readable is a header that is unreadable whenever that script does
+  not run — which is exactly what happened when the class that sets it was left
+  behind in a port.
+*/
+.bar { background: var(--g-fill-bar); border-bottom: 1px solid transparent; }
+html.reveals .bar:not(.solid) { background: var(--g-fill); }
+/* Heavier than the general heavy tier: a navigation bar has a whole page
+   travelling under it, and at 0.86 body copy was still legible through it. iOS
+   takes its own bars close to opaque for the same reason — the colour behind
+   still bleeds, the words do not. */
+.bar.solid {
+  background: var(--g-fill-bar);
+  border-bottom-color: var(--g-edge);
+  box-shadow: var(--g-shadow);
+}
+
+/* --- ground --------------------------------------------------------- */
+
+/*
+  The whole page below the hero was flat white, and that is the real answer to
+  "why is there white space at the bottom": there is no hole in the layout — the
+  largest empty run anywhere on the page is 108px — the lower two thirds simply
+  had nothing in them but small grey text on paper.
+
+  It is also why glass stopped at the fold. Glass is not a colour, it is a
+  behaviour: it refracts what is behind it, and behind a band there was nothing
+  to refract. So the atmosphere continues past the hero as a page-bound wash of
+  soft colour, and every surface below can be the same
+  material as every surface above.
+*/
+.bands {
+  background:
+    radial-gradient(68% 42% at 8% 6%, rgba(120, 180, 255, .20), transparent 62%),
+    radial-gradient(56% 38% at 94% 26%, rgba(150, 205, 255, .17), transparent 64%),
+    radial-gradient(76% 46% at 22% 58%, rgba(108, 168, 240, .16), transparent 66%),
+    radial-gradient(58% 38% at 88% 84%, rgba(140, 195, 255, .17), transparent 64%),
+    var(--paper);
+  background-attachment: scroll;
+  /* Both spellings, because the reset has to reach Safari too: clearing
+     only the unprefixed property leaves the -webkit- blur applied there. */
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+html[data-theme="dark"] .bands {
+  background:
+    radial-gradient(68% 42% at 8% 6%, rgba(60, 120, 210, .17), transparent 62%),
+    radial-gradient(56% 38% at 94% 26%, rgba(80, 140, 230, .14), transparent 64%),
+    radial-gradient(76% 46% at 22% 58%, rgba(50, 110, 200, .15), transparent 66%),
+    radial-gradient(58% 38% at 88% 84%, rgba(70, 130, 220, .14), transparent 64%),
+    var(--paper);
+  background-attachment: scroll;
+}
+
+/* Now that the ground has colour in it, the surfaces standing on it are the
+   same material as the ones over the sky. */
+.skillcard, .cta, .card, .certrow span, .faq, .edu {
+  background: var(--g-fill);
+  backdrop-filter: var(--g-blur);
+  -webkit-backdrop-filter: var(--g-blur);
+  border: 1px solid var(--g-edge);
+  box-shadow: var(--g-shadow);
+}
+.skillcard, .card { border-radius: 20px; }
+/* Grid rows stretch to their tallest card, so a short list left a pane of empty
+   glass under it. Cards size to their own content instead. */
+.skillgrid { align-items: start; }
+.cta { border-radius: 30px; }
+.faq, .edu { border-radius: 22px; padding: 6px 26px; }
+.skillcard::before, .cta::before, .faq::before {
+  content: ""; position: absolute; inset: 0; border-radius: inherit;
+  background: var(--g-spec); pointer-events: none; opacity: .75;
+}
+.skillcard, .cta, .faq { position: relative; }
+.skillcard > *, .cta > *, .faq > * { position: relative; z-index: 1; }
+.faq details:first-of-type { border-top: 0; }
+.edu { padding: 22px 26px; margin-top: 18px; border-top: 1px solid var(--g-edge); }
+
+/* --- overlays ------------------------------------------------------- */
+
+.over-panel { border-left: 1px solid var(--g-edge); border-radius: 26px 0 0 26px; }
+.over-scrim { backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
+.modal { backdrop-filter: blur(14px) saturate(140%); -webkit-backdrop-filter: blur(14px) saturate(140%); }
+.toast {
+  background: color-mix(in srgb, var(--ink) 88%, transparent);
+  color: var(--paper); border-color: transparent;
+}
+
+/* Browsers without backdrop-filter get opaque surfaces rather than a page of
+   washed-out ghosts. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .panel, .person, .visitor, .tile, .suggestions button,
+  .quickfacts span, .cite, .turn-actions button { background: var(--paper-2); }
+  .bar, .bar.solid, #composer, .turn.you .text, .feed,
+  .over-panel, .modal-card { background: var(--paper); }
+}
+
+/* =====================================================================
+   THE DOCK
+   ===================================================================== */
+
+/*
+  The veil under the composer had been reduced to a blur with no fill, because
+  an opaque one painted a visible rectangle across the scene. The cost was that
+  it stopped covering anything: on a phone the answer ran legibly underneath
+  the composer and between the suggestion pills, which is the single thing that
+  made the page look broken.
+
+  Every requirement holds at once. It is heavy glass, so what passes under it
+  dissolves; it fades out on each open side, so it has no edge to read as a
+  rectangle; and it exists only once there is a conversation to cover, so the
+  opening screen still shows the sky exactly as designed.
+*/
+.thread:not(:empty) ~ .dock::before {
+  left: 50%; right: auto; width: 100vw; transform: translateX(-50%);
+  background: var(--g-fill-heavy);
+  backdrop-filter: var(--g-blur);
+  -webkit-backdrop-filter: var(--g-blur);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 28px);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 28px);
+}
+
+/* Full width is right where there are no rails. Once they appear, a veil across
+   the whole viewport parks a permanent band over the bottom of the "Jump to"
+   panel, so it narrows to the conversation column plus a bleed and fades on
+   three sides. */
+@media (min-width: 901px) {
+  .thread:not(:empty) ~ .dock::before {
+    /* The bleed has to stay inside the deck's own padding, which is
+       clamp(16px, 3vw, 28px) and therefore never less than 27px at this
+       breakpoint. At 44px the veil hung 16px past the right edge of a 1080px
+       viewport and put the document into horizontal overflow. */
+    left: -24px; right: -24px; width: auto; transform: none;
+    mask-image:
+      linear-gradient(to bottom, transparent 0, #000 28px),
+      linear-gradient(to right, transparent 0, #000 34px,
+                      #000 calc(100% - 34px), transparent 100%);
+    -webkit-mask-image:
+      linear-gradient(to bottom, transparent 0, #000 28px),
+      linear-gradient(to right, transparent 0, #000 34px,
+                      #000 calc(100% - 34px), transparent 100%);
+    mask-composite: intersect;
+    -webkit-mask-composite: source-in;
+  }
+}
+
+#composer:focus-within { border-color: var(--clay); box-shadow: var(--g-shadow-lift), 0 0 0 4px var(--clay-soft); }
+.suggestions button:hover { border-color: var(--clay); color: var(--clay); box-shadow: var(--g-shadow-lift); }
+
+/*
+  A non-wrapping row of pills is as wide as the pills, and that min-content
+  width propagates up: the conversation column inflated past the viewport and
+  every line of the answer was clipped. `max-width: none` on the deck's copy of
+  the hero is what let it happen — clamping the item to its own grid track is
+  what stops it. (min-width: 0 does not: the track is definite, so the item is
+  not being sized by its automatic minimum in the first place.)
+*/
+.deck .ask-hero { max-width: 100%; }
+
+/* Four suggestions stack into four rows on a phone, which drove the dock up
+   over half the screen. One scrolling row keeps it to the composer's height. */
+@media (max-width: 620px) {
+  .suggestions {
+    flex-wrap: nowrap; overflow-x: auto;
+    scrollbar-width: none; -ms-overflow-style: none;
+    margin-inline: -4px; padding: 2px 4px;
+  }
+  .suggestions::-webkit-scrollbar { display: none; }
+  .suggestions button { flex: none; }
+}
+
+/*
+  The scene is a fixed 100vh block, so the ridges stopped dead against the paper
+  below in a hard line the full width of the page — the moment where the design
+  visibly ran out. It dissolves instead.
+*/
+.scene::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0;
+  height: 160px; pointer-events: none;
+  background: linear-gradient(to bottom, transparent, var(--paper));
+}
+
+/* =====================================================================
+   ACTIVITY
+   ===================================================================== */
+
+/*
+  The feed sat in the normal flow above main, so opening it shoved the entire
+  page down by its height and it appeared nowhere near the button that opened
+  it. It belongs to the bell: a panel hanging under it, over the page.
+*/
+.feed-wrap {
+  position: fixed; z-index: 45;
+  top: 62px; right: clamp(12px, 4vw, 34px); left: auto;
+  width: min(370px, calc(100vw - 24px));
+  max-width: none; margin: 0; padding: 0;
+}
+.feed { max-height: min(60vh, 460px); overflow-y: auto; }
+.feed-empty { color: var(--ink-3); font-size: 12.5px; line-height: 1.5; }
+/* The moment a real entry is prepended, the placeholder is no longer alone. */
+.feed-empty:not(:only-child) { display: none; }
+
+/* =====================================================================
+   RHYTHM — and the empty screen at the bottom
+   ===================================================================== */
+
+/*
+  The thread carried 310px of padding so the last answer could "scroll clear of
+  the sticky dock". It never needed to: the dock's flow position is after the
+  thread, so it releases from the viewport bottom exactly when the thread ends
+  and the final line is already above it. All the padding bought was a dead
+  screen between the last answer and the page below — roughly 590px of nothing,
+  which is the white space at the bottom of the page.
+
+  What the dock genuinely obscures is a turn arriving while it is still pinned.
+  That is scrollIntoView's problem, and scroll-margin-bottom is its answer.
+*/
+.thread { padding-bottom: 28px; }
+.turn { scroll-margin-bottom: 280px; }
+.ask-hero { padding-bottom: 64px; }
+
+/* Every nav and "Jump to" link landed its section's kicker underneath the
+   header, so each jump arrived on a decapitated heading. */
+.band, .ask-hero { scroll-margin-top: 88px; }
+
+/*
+  The bands were 940px wide but their contents were not: a date column plus
+  prose capped at 64ch filled about 640px, so every section sat left of centre
+  with a dead third down the right. And 108px of padding on each of six bands
+  made a 5,800px page out of about three screens.
+*/
+.band { max-width: 830px; padding-top: clamp(56px, 7vh, 84px); }
+
+/*
+  On a wide screen an 830px column in a 1440px window is a strip of text with
+  300px of nothing either side of it, and the section headings left a further
+  dead third inside that. Giving the heading its own column beside the content
+  uses the width the window actually has, and holding it there while its section
+  scrolls past means you always know which section you are in.
+
+  #cta has no heading to put in the first column, so it stays a single block.
+*/
+@media (min-width: 1080px) {
+  .band:not(#cta) {
+    max-width: 1160px;
+    display: grid;
+    grid-template-columns: 244px minmax(0, 1fr);
+    gap: 26px 60px;
+    align-items: start;
+  }
+  .band > .band-head { grid-column: 1; position: sticky; top: 100px; max-width: none; }
+  .band > .band-head h2 { font-size: clamp(21px, 1.7vw, 26px); margin-top: 12px; }
+  .band > :not(.band-head) { grid-column: 2; margin-top: 0; }
+  .timeline li:first-child { border-top: 0; padding-top: 0; }
+  .project:first-of-type { border-top: 0; padding-top: 0; }
+}
+.foot { margin-top: clamp(56px, 8vh, 90px); }
+.timeline { margin-top: 32px; }
+.skillgrid, .projects, .cards { margin-top: 32px; }
+.faq { margin-top: 28px; }
+
+/*
+  The repository grid drew its hairlines by showing a coloured container through
+  1px gaps. Ten repositories in a three-column grid leaves two empty cells, and
+  those rendered as solid blocks of that colour. Outlined cards have no empty
+  cell to expose.
+*/
+.cards {
+  background: none; border: 0; border-radius: 0;
+  gap: 10px; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+}
+/*
+  Live descriptions run to four or five lines in a 254px column, so cards came
+  out at wildly different heights and the grid read as rubble. Clamping the
+  description and holding the topics to a single row makes every card the same
+  shape, which is the whole point of a card.
+*/
+.card {
+  border-radius: 16px; padding: 20px;
+  display: flex; flex-direction: column; gap: 9px;
+}
+.card:hover { border-color: var(--line-2); }
+.card p {
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+  overflow: hidden; margin-top: 0;
+}
+.card .topics { flex-wrap: nowrap; overflow: hidden; margin-top: auto; }
+.card .topics span { flex: none; }
+.facts { display: flex; gap: 10px; margin-top: 12px; }
+.facts span { font: 400 11.5px/1 var(--mono); color: var(--ink-3); }
+/* Without live metadata a card is a name and a link, so it should not hold the
+   height — or the grid — of one that has a description. */
+.cards.bare { grid-template-columns: repeat(auto-fill, minmax(178px, 1fr)); gap: 8px; }
+.cards.bare .card { padding: 13px 17px; border-radius: 14px; }
+.cards.bare .card h3 { font-size: 14px; }
+.work-note { font-size: 13px; color: var(--ink-3); margin-top: 20px; max-width: 60ch; }
+
+/* =====================================================================
+   LIQUID GLASS — the material, not a colour
+
+   iOS 26 glass is four things at once, and leaving any one out is what
+   makes web imitations look like frosted plastic: a heavy blur with the
+   saturation lifted so colour bleeds through, a rim of light along the
+   top edge where the surface catches the sky, a specular sweep across
+   the face, and a body that responds when you touch it. The surfaces
+   below already had the first. They now have all four.
+   ===================================================================== */
+
+:root {
+  --lq-rim: inset 0 1px 0 rgba(255, 255, 255, .92), inset 0 0 0 .5px rgba(255, 255, 255, .45);
+  --lq-sweep: linear-gradient(148deg, rgba(255,255,255,.9) 0%, rgba(255,255,255,.35) 26%, rgba(255,255,255,0) 52%);
+  --lq-lift: 0 1px 2px rgba(20, 70, 140, .06), 0 12px 30px rgba(20, 70, 140, .13);
+  --lq-lift-hi: 0 2px 6px rgba(20, 70, 140, .10), 0 26px 56px rgba(20, 70, 140, .22);
+  --lq-spring: cubic-bezier(.2, .9, .25, 1.08);
+}
+html[data-theme="dark"] {
+  --lq-rim: inset 0 1px 0 rgba(180, 218, 255, .22), inset 0 0 0 .5px rgba(150, 195, 245, .14);
+  --lq-sweep: linear-gradient(148deg, rgba(190,225,255,.20) 0%, rgba(190,225,255,.07) 28%, rgba(190,225,255,0) 54%);
+  --lq-lift: 0 1px 2px rgba(0, 0, 0, .38), 0 14px 34px rgba(0, 0, 0, .46);
+  --lq-lift-hi: 0 3px 8px rgba(0, 0, 0, .45), 0 28px 62px rgba(0, 0, 0, .6);
+}
+
+/* The rim is what reads as an edge catching light. */
+.panel, .person, .visitor, .feed, .tile, .card, .skillcard, .cta,
+.suggestions button, .quickfacts span, #composer, .turn.you .text,
+.over-panel, .modal-card {
+  box-shadow: var(--lq-rim), var(--lq-lift);
+}
+
+/* The sweep sits above the fill and below the content, and follows the
+   corner radius rather than sitting in a rectangle behind it. */
+.panel::before, .person::before, .tile::before, .card::before,
+.skillcard::before, .cta::before, #composer::before, .modal-card::before {
+  content: ""; position: absolute; inset: 0; border-radius: inherit;
+  background: var(--lq-sweep); pointer-events: none; opacity: .85;
+}
+.tile, .card { position: relative; }
+.tile > *, .card > * { position: relative; z-index: 1; }
+
+/* ---- the stack tiles are buttons now, so they behave like buttons ---- */
+
+.tile {
+  appearance: none; font: inherit; text-align: left; cursor: pointer;
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 11px 12px; border-radius: 15px;
+  background: var(--g-fill-heavy);
+  backdrop-filter: var(--g-blur-soft); -webkit-backdrop-filter: var(--g-blur-soft);
+  border: 1px solid var(--g-edge);
+  transition: transform .22s var(--lq-spring), box-shadow .22s var(--ease),
+              background .22s var(--ease);
+}
+.tile b { font-size: 12.5px; font-weight: 650; letter-spacing: -.01em; color: var(--ink); }
+.tile i { font: 400 10.5px/1.35 var(--mono); font-style: normal; color: var(--ink-3); }
+.tile:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--lq-rim), var(--lq-lift-hi);
+  border-color: color-mix(in srgb, var(--clay) 45%, var(--g-edge));
+}
+.tile:hover b { color: var(--clay); }
+/* Glass compresses under a finger rather than just changing colour. */
+.tile:active { transform: translateY(0) scale(.975); box-shadow: var(--lq-rim), var(--lq-lift); }
+.tile:focus-visible { outline: 2px solid var(--clay); outline-offset: 2px; }
+
+/* The same response on every other glass control. */
+.suggestions button, .card, .person {
+  transition: transform .22s var(--lq-spring), box-shadow .22s var(--ease),
+              border-color .18s var(--ease), color .18s var(--ease);
+}
+.suggestions button:hover, .card:hover { transform: translateY(-2px); box-shadow: var(--lq-rim), var(--lq-lift-hi); }
+.suggestions button:active { transform: translateY(0) scale(.97); }
+
+/* The composer is the focal artefact: it carries the deepest glass on the
+   page and lifts when it takes focus. */
+#composer {
+  backdrop-filter: blur(36px) saturate(190%); -webkit-backdrop-filter: blur(36px) saturate(190%);
+  transition: box-shadow .25s var(--ease), border-color .2s var(--ease), transform .25s var(--lq-spring);
+}
+#composer:focus-within { transform: translateY(-1px); box-shadow: var(--lq-rim), var(--lq-lift-hi), 0 0 0 4px var(--clay-soft); }
+
+@media (prefers-reduced-motion: reduce) {
+  .tile, .suggestions button, .card, .person, #composer { transition: none; }
+  .tile:hover, .suggestions button:hover, .card:hover, #composer:focus-within { transform: none; }
+}
+
+/* =====================================================================
+   CHAT SURFACE CONTRACT
+
+   The conversation is the product. Its controls use one liquid-glass recipe,
+   and phones keep the dock in normal flow so no answer can ever be painted
+   underneath the composer or erased by a white veil.
+   ===================================================================== */
+
+#composer,
+.turn.you .text,
+.modal-card {
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, .28), rgba(255, 255, 255, .04) 58%),
+    var(--g-fill-heavy);
+}
+
+.modal {
+  background: rgba(14, 30, 48, .28);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+}
+
+.modal-card input,
+.jd-form textarea,
+.retrieval-form input {
+  background: color-mix(in srgb, var(--g-fill-heavy) 84%, transparent);
+  backdrop-filter: var(--g-blur-soft);
+  -webkit-backdrop-filter: var(--g-blur-soft);
+  border-color: var(--g-edge);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .55);
+}
+
+.send {
+  background: linear-gradient(155deg, #2f8df0, #0b5fc4 72%);
+  border-radius: 14px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .34), 0 8px 20px rgba(18, 102, 194, .24);
+}
+.send:hover { background: linear-gradient(155deg, #3998fa, #0964ce 72%); }
+
+.waiting { flex-wrap: wrap; }
+.waiting-label { color: var(--ink-2); }
+#composer[aria-busy="true"] { border-color: color-mix(in srgb, var(--clay) 58%, var(--g-edge)); }
+
+@media (max-width: 700px) {
+  /* Sticky bottom glass is attractive only until it covers the answer. In a
+     narrow viewport the composer follows the thread in flow, so every line is
+     readable and the next action remains immediately after the response. */
+  body.has-thread .dock {
+    position: relative;
+    bottom: auto;
+    margin-top: 22px;
+    padding: 0 0 12px;
+  }
+  body.has-thread .dock::before,
+  .thread:not(:empty) ~ .dock::before {
+    display: none;
+  }
+  .thread { padding-bottom: 0; }
+  .turn { scroll-margin-top: calc(var(--bar-h) + 14px); scroll-margin-bottom: 20px; }
+  #composer { border-radius: 22px; }
+  .modal-card { padding: 26px 22px; border-radius: 28px; }
+}
+
+/* =====================================================================
+   MEASURED DEFECTS
+
+   Found by walking the rendered tree rather than by eye: every element
+   whose content is cut off by its own box, and every run of text whose
+   contrast against what is actually behind it falls under WCAG AA.
+   ===================================================================== */
+
+/*
+  Holding the topic row to one line clipped it instead of fitting it —
+  up to 248px of tag was being hidden, cutting labels mid-word, which is
+  worse than the uneven card heights it was meant to cure. The clamped
+  description already does most of that work; the tags wrap.
+*/
+.card .topics { flex-wrap: wrap; overflow: visible; }
+
+/*
+  Small links sat at 19-21px tall. Anything that is a tap target wants
+  24px of height before a finger is involved, and the extra comes from
+  padding so nothing moves.
+*/
+.rail-links a, .rail-links button, .foot-links a, .scroll-cue {
+  display: inline-flex; align-items: center; min-height: 24px;
+}
+
+/* An install command is the one string on the page a reader retypes by hand,
+   and at --ink-3 on the dark surface it measured 4.13:1, under AA. */
+html[data-theme="dark"] .mcp-install { color: var(--ink-2); }
+
+/* =====================================================================
+   CLOUD INFRASTRUCTURE SYSTEM
+
+   The visual language follows an architecture diagram instead of generic
+   weather: connected runtimes, data, tools and traces. Everything is static
+   HTML/CSS/SVG so the richer scene does not add a JavaScript or image cost.
+   ===================================================================== */
+
+:root {
+  --infra-line: rgba(40, 118, 196, .27);
+  --infra-line-soft: rgba(40, 118, 196, .09);
+  --infra-fill: rgba(246, 251, 255, .66);
+  --infra-edge: rgba(93, 157, 221, .27);
+  --infra-orange: #e98a17;
+  --infra-blue: #277dcc;
+}
+html[data-theme="dark"] {
+  --infra-line: rgba(101, 177, 246, .28);
+  --infra-line-soft: rgba(101, 177, 246, .075);
+  --infra-fill: rgba(13, 31, 50, .72);
+  --infra-edge: rgba(119, 190, 252, .18);
+  --infra-orange: #ffad42;
+  --infra-blue: #71b8f6;
+}
+
+.infra-sky {
+  position: absolute; top: 7%; left: 2%; right: 2%; height: min(46vh, 430px);
+  opacity: .78;
+}
+.infra-links { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.infra-link {
+  fill: none; stroke: var(--infra-line); stroke-width: 1.35;
+  stroke-linecap: round; stroke-dasharray: 4 9;
+  animation: infra-flow 22s linear infinite;
+}
+.infra-link.l2 { animation-duration: 28s; animation-direction: reverse; }
+.infra-link.l3 { animation-duration: 25s; }
+.infra-link.l4 { animation-duration: 31s; animation-direction: reverse; }
+.infra-packet { fill: var(--infra-orange); opacity: .72; }
+
+.infra-component {
+  position: absolute; min-width: 124px; display: flex; align-items: center; gap: 9px;
+  padding: 9px 11px; border: 1px solid var(--infra-edge); border-radius: 15px;
+  color: var(--infra-blue);
+  background: linear-gradient(145deg, rgba(255,255,255,.5), rgba(255,255,255,.07)), var(--infra-fill);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.72), 0 12px 30px rgba(29, 92, 155, .1);
+  animation: infra-float 9s ease-in-out infinite;
+}
+html[data-theme="dark"] .infra-component {
+  background: linear-gradient(145deg, rgba(150,205,255,.1), transparent 58%), var(--infra-fill);
+  box-shadow: inset 0 1px 0 rgba(180,220,255,.12), 0 14px 34px rgba(0,0,0,.25);
+}
+.infra-component::after {
+  content: ""; position: absolute; top: 8px; right: 8px; width: 4px; height: 4px;
+  border-radius: 50%; background: var(--infra-orange); box-shadow: 0 0 0 3px color-mix(in srgb, var(--infra-orange) 17%, transparent);
+}
+.infra-component svg { width: 24px; height: 24px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.45; stroke-linecap: round; stroke-linejoin: round; }
+.infra-component span { display: flex; flex-direction: column; gap: 2px; }
+.infra-component b { color: var(--ink); font: 600 10.5px/1.1 var(--mono); letter-spacing: .04em; text-transform: uppercase; }
+.infra-component small { color: var(--ink-3); font: 400 9.5px/1.2 var(--mono); white-space: nowrap; }
+.edge-node { left: 1.5%; top: 12%; animation-delay: -2s; }
+.api-node { left: 20%; top: 4%; animation-delay: -6s; }
+.agent-node { left: 45%; top: 5%; animation-delay: -4s; }
+.data-node { right: 21%; top: 50%; animation-delay: -8s; }
+.tools-node { right: 1.5%; top: 13%; animation-delay: -1s; }
+.trace-node { right: 7%; top: 75%; animation-delay: -5s; }
+
+@keyframes infra-flow { to { stroke-dashoffset: -130; } }
+@keyframes infra-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+
+/* The live panel is a real miniature topology, not another table of labels. */
+.runtime-map { display: grid; grid-template-columns: auto 1fr auto 1fr auto 1fr auto; align-items: center; gap: 4px; margin-top: 16px; }
+.runtime-map span { min-width: 34px; display: grid; justify-items: center; gap: 5px; }
+.runtime-map span i {
+  position: relative; width: 25px; height: 25px; border: 1px solid var(--infra-edge); border-radius: 8px;
+  background: linear-gradient(145deg, rgba(255,255,255,.46), transparent), var(--infra-fill);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.65);
+}
+.runtime-map span i::before, .runtime-map span i::after { content: ""; position: absolute; }
+.runtime-map span i::before { inset: 7px 5px; border: 1.5px solid var(--infra-blue); border-radius: 3px; }
+.runtime-map span i::after { width: 3px; height: 3px; right: 3px; top: 3px; border-radius: 50%; background: var(--infra-orange); }
+.runtime-map .runtime-edge::before { border-radius: 50%; }
+.runtime-map .runtime-agent::before { inset: 6px; border-radius: 50% 50% 4px 4px; }
+.runtime-map .runtime-tools::before { inset: 6px 4px; border-radius: 5px; border-style: dashed; }
+.runtime-map b { font: 500 8.5px/1 var(--mono); color: var(--ink-3); text-transform: uppercase; }
+.runtime-map em { height: 1px; background: var(--infra-line); position: relative; }
+.runtime-map em::after { content: ""; position: absolute; right: -1px; top: -2px; border-left: 4px solid var(--infra-line); border-block: 2px solid transparent; }
+.runtime-caption { margin-top: 9px; color: var(--ink-3); font: 400 8.5px/1.45 var(--mono); text-align: center; }
+
+/* A faint control-plane grid and section bus carry the architecture language
+   below the first screen without competing with the CV content. */
+.bands {
+  background-image:
+    linear-gradient(var(--infra-line-soft) 1px, transparent 1px),
+    linear-gradient(90deg, var(--infra-line-soft) 1px, transparent 1px),
+    radial-gradient(circle at 86% 12%, color-mix(in srgb, var(--clay-soft) 45%, transparent), transparent 30%);
+  background-size: 34px 34px, 34px 34px, 100% 100%;
+}
+.band { position: relative; }
+.band:not(#cta)::before {
+  content: ""; position: absolute; left: 2px; top: 78px; bottom: -46px; width: 1px;
+  background: linear-gradient(var(--infra-line), color-mix(in srgb, var(--infra-line) 25%, transparent));
+}
+.band[data-system]::after {
+  content: attr(data-system); position: absolute; top: 64px; right: clamp(16px, 4vw, 44px);
+  padding: 7px 11px 7px 25px; border: 1px solid var(--infra-edge); border-radius: 999px;
+  background: var(--infra-fill); color: var(--ink-3);
+  font: 500 9px/1 var(--mono); letter-spacing: .09em; text-transform: uppercase;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.68);
+}
+.band[data-system] .band-head::after {
+  content: ""; position: absolute; left: -5px; top: 8px; width: 7px; height: 7px;
+  border: 2px solid var(--paper); border-radius: 50%; background: var(--infra-orange);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--infra-orange) 14%, transparent);
+}
+.band-head { position: relative; }
+
+/* Cards now read as deployable components: status LED, top bus and rack edge. */
+.skillcard, .card, .project, .retrieval, .mcp, .faq, .edu { position: relative; }
+.skillcard::after, .card::after {
+  content: ""; position: absolute; top: 13px; right: 14px; width: 5px; height: 5px;
+  border-radius: 50%; background: var(--infra-orange);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--infra-orange) 13%, transparent);
+}
+.skillcard h3::before, .card h3::before {
+  content: ""; display: inline-block; width: 13px; height: 8px; margin-right: 7px;
+  border: 1px solid var(--infra-edge); border-radius: 2px;
+  background: linear-gradient(90deg, var(--infra-blue) 0 2px, transparent 2px 5px, var(--infra-blue) 5px 7px, transparent 7px);
+  opacity: .8;
+}
+.project { padding-left: 23px; }
+.project::before {
+  content: ""; position: absolute; left: 0; top: 30px; width: 7px; height: 31px;
+  border: 1px solid var(--infra-edge); border-radius: 3px;
+  background:
+    radial-gradient(circle at 50% 6px, var(--infra-orange) 0 1.5px, transparent 2px),
+    radial-gradient(circle at 50% 15px, var(--infra-blue) 0 1.5px, transparent 2px),
+    radial-gradient(circle at 50% 24px, var(--infra-blue) 0 1.5px, transparent 2px),
+    var(--infra-fill);
+}
+.retrieval::after, .mcp::after, .faq::after, .edu::after {
+  content: "system online"; position: absolute; top: 13px; right: 15px;
+  color: var(--ok); font: 500 8.5px/1 var(--mono); letter-spacing: .06em; text-transform: uppercase;
+}
+
+.foot { max-width: 1040px; }
+.foot-runtime {
+  display: inline-flex; align-items: center; gap: 6px; padding: 7px 10px;
+  border: 1px solid var(--infra-edge); border-radius: 999px; background: var(--infra-fill);
+}
+.foot-runtime i { width: 6px; height: 6px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 13%, transparent); }
+.foot-runtime span { font: 500 9px/1 var(--mono); color: var(--ink-2); text-transform: uppercase; }
+.foot-runtime b { color: var(--infra-line); font: 400 10px/1 var(--mono); }
+
+@media (max-width: 900px) {
+  .infra-sky { top: 8%; left: 0; right: 0; opacity: .58; }
+  .infra-component { min-width: 0; padding: 7px; border-radius: 11px; }
+  .infra-component span { display: none; }
+  .infra-component svg { width: 20px; height: 20px; }
+  .agent-node { left: 47%; top: 2%; }
+  .trace-node { right: 3%; top: 67%; }
+  .band[data-system]::after { top: 48px; right: 16px; }
+  .band:not(#cta)::before, .band[data-system] .band-head::after { display: none; }
+}
+
+@media (max-width: 700px) {
+  .infra-sky { height: 31vh; opacity: .5; }
+  .infra-links { opacity: .78; }
+  /* Keep the mobile topology above the heading. Lower nodes sat directly on
+     the two-line introduction at 355px and made the diagram harder to read. */
+  .api-node, .data-node { display: none; }
+  .agent-node { left: 46%; top: 10%; }
+  .trace-node { display: none; }
+  .band[data-system]::after {
+    position: relative; display: inline-flex; top: auto; right: auto; margin: 0 0 16px;
+  }
+  .retrieval::after, .mcp::after, .faq::after, .edu::after { display: none; }
+  .foot-runtime { order: 3; width: 100%; justify-content: center; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .infra-link, .infra-component { animation: none; }
+}
+
+/* =====================================================================
+   UI REPAIR CONTRACT
+
+   Decorative architecture must live in layout, never over it. This final
+   layer keeps the infrastructure motif quiet below the fold and gives every
+   glass surface the same material recipe.
+   ===================================================================== */
+
+/* The old attr() badge was positioned against the whole section, which put it
+   after the content on phones. The badge now lives beside its own heading. */
+.band[data-system]::after, .band[data-system] .band-head::after { display: none; }
+.system-chip {
+  display: inline-flex; align-items: center; gap: 7px; margin-left: 12px;
+  padding: 6px 9px; border: 1px solid var(--infra-edge); border-radius: 999px;
+  background: color-mix(in srgb, var(--g-fill-heavy) 78%, transparent); color: var(--ink-3);
+  font: 500 8px/1 var(--mono); letter-spacing: .09em; text-transform: uppercase;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .55);
+  vertical-align: middle;
+}
+.system-chip::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--infra-orange); }
+.cta > .system-chip { margin: 0 0 14px; }
+
+/* One quiet circuit grid carries the cloud/server language through the site;
+   it is intentionally larger and lower-contrast than the previous graph paper. */
+.bands {
+  background-color: color-mix(in srgb, var(--paper) 94%, transparent);
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--infra-line-soft) 34%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--infra-line-soft) 34%, transparent) 1px, transparent 1px),
+    radial-gradient(circle at 88% 8%, color-mix(in srgb, var(--clay-soft) 24%, transparent), transparent 24%);
+  background-size: 58px 58px, 58px 58px, 100% 100%;
+}
+
+/* A single iOS-like material recipe. The composer stays nearly opaque because
+   answer text must never show through the input and look like a white-box bug. */
+:is(.panel, .skillcard, .card, .retrieval, .mcp, .faq, .edu, .cta) {
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, .4), transparent 46%),
+    var(--g-fill);
+  border-color: var(--g-edge);
+  -webkit-backdrop-filter: blur(22px) saturate(1.45);
+  backdrop-filter: blur(22px) saturate(1.45);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .72), var(--g-shadow);
+}
+html[data-theme="dark"] :is(.panel, .skillcard, .card, .retrieval, .mcp, .faq, .edu, .cta) {
+  background: linear-gradient(145deg, rgba(123, 186, 244, .09), transparent 48%), var(--g-fill);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .07), var(--g-shadow);
+}
+#composer {
+  min-width: 0; max-width: 100%;
+  background: color-mix(in srgb, var(--paper) 96%, var(--sky-top) 4%);
+  border-color: color-mix(in srgb, var(--line-2) 80%, white 20%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .85), 0 20px 52px -28px rgba(24, 54, 92, .5);
+}
+html[data-theme="dark"] #composer {
+  background: color-mix(in srgb, var(--paper) 93%, var(--sky-top) 7%);
+  border-color: var(--line-2);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06), 0 22px 52px -28px rgba(0, 0, 0, .8);
+}
+.dock, .suggestions { min-width: 0; max-width: 100%; }
+body.has-thread .suggestions, body.has-thread .dock-note { display: none; }
+
+@media (max-width: 700px) {
+  .suggestions {
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px;
+    margin: 10px 0 0; padding: 0; overflow: visible;
+  }
+  .suggestions button {
+    min-width: 0; min-height: 46px; padding: 7px 9px; white-space: normal;
+    font-size: 10.5px; line-height: 1.25; text-align: left;
+  }
+  .band { padding-top: 56px; }
+  .system-chip { margin-left: 8px; padding: 5px 8px; font-size: 7.5px; }
+  .bands { background-size: 52px 52px, 52px 52px, 100% 100%; }
+
+  /* A bottom-sticky element placed after a long answer cannot become visible
+     until its normal position enters the viewport. During a conversation the
+     phone composer is therefore fixed, compact and always reachable. */
+  body.has-thread .dock {
+    position: fixed; z-index: 36; inset-inline: 12px;
+    bottom: 0; margin: 0; padding: 12px 0 max(12px, env(safe-area-inset-bottom));
+  }
+  body.has-thread .dock::before {
+    inset-inline: -12px; top: -48px; bottom: -10px;
+    background: linear-gradient(to top, var(--paper) 54%, color-mix(in srgb, var(--paper) 88%, transparent) 78%, transparent);
+  }
+  body.has-thread .thread { padding-bottom: 118px; }
+}
+
+@media (max-width: 380px) {
+  .system-chip { margin: 8px 0 0; }
+  .band-head h2 { margin-top: 12px; }
+  .suggestions button:nth-child(n + 3) { display: none; }
+}
+
+/* =====================================================================
+   CLAWD + CLOUD ARCHITECTURE
+
+   One mascot belongs in the top-left corner; it is not a product toolbar.
+   The AWS-style diagram is painted behind the UI and loses detail before the
+   viewport loses space, so architecture can never sit on top of the chat.
+   ===================================================================== */
+
+.bar { padding-left: clamp(16px, 5vw, 40px); }
+.bar-left .face { display: none; }
+/* Clawd rises above the composer, so the dock reserves the same amount of
+   vertical space instead of letting the sprite walk through the intro copy. */
+.dock { margin-top: 32px; }
+.clawd-float {
+  position: absolute; z-index: 7; left: 12px; top: -26px;
+  --clawd-travel: calc(100cqw - 82px);
+  width: 58px; height: 32px; display: grid; place-items: center;
+  pointer-events: none; isolation: isolate; contain: layout paint style;
+  will-change: transform;
+  animation: clawd-track 10s cubic-bezier(.45, 0, .55, 1) infinite;
+}
+/* Claude Code's own mascot is a terminal-glyph sprite. Terminal cells are
+   roughly twice as tall as they are wide, so the SVG intentionally fills this
+   box instead of preserving square-coordinate aspect. That keeps Clawd's
+   original chunky silhouette instead of flattening it into a thin strip. */
+.clawd-float svg {
+  width: 58px; height: 32px; overflow: visible;
+  transform: translateY(1px); transform-origin: center;
+  animation: clawd-hop 5.6s steps(1, end) infinite;
+}
+.clawd-pose { opacity: 0; }
+.clawd-pixels { fill: #d97757; }
+.clawd-eye-pixels { fill: #000; }
+.clawd-default { opacity: 1; animation: clawd-default 5.6s steps(1, end) infinite; }
+.clawd-look-right { animation: clawd-look-right 5.6s steps(1, end) infinite; }
+.clawd-look-left { animation: clawd-look-left 5.6s steps(1, end) infinite; }
+.clawd-arms-up { animation: clawd-arms-up 5.6s steps(1, end) infinite; }
+
+@keyframes clawd-default { 0%, 58%, 92%, 100% { opacity: 1; } 59%, 91% { opacity: 0; } }
+@keyframes clawd-look-right { 0%, 58%, 69%, 100% { opacity: 0; } 59%, 68% { opacity: 1; } }
+@keyframes clawd-look-left { 0%, 68%, 80%, 100% { opacity: 0; } 69%, 79% { opacity: 1; } }
+@keyframes clawd-arms-up { 0%, 79%, 92%, 100% { opacity: 0; } 80%, 91% { opacity: 1; } }
+@keyframes clawd-hop { 0%, 79%, 100% { transform: translateY(1px); } 80%, 91% { transform: translateY(-1px); } }
+@keyframes clawd-track {
+  0%, 8%, 100% { transform: translate3d(0, 0, 0); }
+  44%, 56% { transform: translate3d(var(--clawd-travel), 0, 0); }
+  48%, 52% { transform: translate3d(var(--clawd-travel), -3px, 0); }
+}
+
+/* A compact desktop stage: roughly seven percent smaller than the former
+   three-column deck, while keeping mobile touch targets unchanged. */
+@media (min-width: 1280px) {
+  .deck {
+    grid-template-columns: 230px minmax(0, 720px) 230px;
+    gap: 20px; max-width: 1260px; padding-inline: 20px;
+  }
+  .ask-hero h1 { font-size: clamp(44px, 6.1vw, 98px); }
+  .hero-lead { font-size: clamp(18px, 1.35vw, 24px); }
+  .hero-sub { font-size: clamp(14px, .92vw, 16px); }
+  .panel { padding: 14px; }
+  #composer { padding: 12px 12px 12px 19px; }
+  #composer textarea { font-size: clamp(16.5px, 1vw, 18.5px); }
+  .send { width: 38px; height: 38px; }
+}
+
+/* Continue the cloud language after the first screen without returning to a
+   noisy blueprint grid. The SVG pattern is a cloud outline plus server racks. */
+.bands {
+  background-color: color-mix(in srgb, var(--paper) 94%, transparent);
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='720' height='520' viewBox='0 0 720 520'%3E%3Cg fill='none' stroke='%23558fc6' stroke-opacity='.095' stroke-width='1'%3E%3Cpath d='M72 135c-35 0-52-24-44-49 7-22 29-34 53-28 11-29 42-47 75-39 27 6 45 28 47 53 31-5 58 13 63 39 5 29-18 54-53 54H72Z'/%3E%3Crect x='505' y='328' width='118' height='82' rx='13'/%3E%3Cpath d='M520 346h88M520 365h88M520 384h88M532 346v.1M532 365v.1M532 384v.1M206 165v48h297v115' stroke-dasharray='4 8'/%3E%3C/g%3E%3C/svg%3E"),
+    linear-gradient(color-mix(in srgb, var(--infra-line-soft) 20%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--infra-line-soft) 20%, transparent) 1px, transparent 1px);
+  background-size: 720px 520px, 72px 72px, 72px 72px;
+}
+
+@media (max-width: 520px) {
+  .bar { padding-left: 16px; }
+  .clawd-float { top: -21px; --clawd-travel: calc(100cqw - 68px); width: 44px; height: 25px; }
+  .clawd-float svg { width: 44px; height: 25px; }
+  .bands { background-size: 520px 376px, 58px 58px, 58px 58px; }
+}
+
+/* =====================================================================
+   RENDERING BUDGET
+
+   The material still reads as glass through translucent fills, bright rims
+   and depth shadows. Real backdrop sampling is reserved for the few large
+   surfaces that benefit from it; applying it to every nested chip and every
+   off-screen card forces the browser to rebuild dozens of blur layers while
+   scrolling or animating the mascot.
+   ===================================================================== */
+
+:root {
+  --g-blur: blur(14px) saturate(150%);
+  --g-blur-soft: none;
+}
+
+.bar, .panel, .person, .visitor, .feed,
+#composer, .over-panel, .modal-card, .toast {
+  -webkit-backdrop-filter: var(--g-blur);
+  backdrop-filter: var(--g-blur);
+}
+
+.tile, .suggestions button, .quickfacts span, .cite, .turn-actions button,
+.certrow span, .modal-card input, .jd-form textarea, .retrieval-form input,
+.skillcard, .card, .retrieval, .mcp, .faq, .edu, .cta {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.dock::before, body.has-thread .dock::before,
+.thread:not(:empty) ~ .dock::before {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* Skip layout and paint for whole CV sections until they approach the
+   viewport. The remembered intrinsic size keeps anchor positions stable. */
+.band {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 760px;
+}
+
+/* The cue introduces the page and then stops; it does not need a permanent
+   compositor layer after the visitor has seen it. */
+.scroll-cue svg { animation-iteration-count: 3; }
+
+@media (prefers-reduced-motion: reduce) {
+  .clawd-float, .clawd-float svg, .clawd-pose { animation: none; }
+  .clawd-default { opacity: 1; }
+  .clawd-look-right, .clawd-look-left, .clawd-arms-up { opacity: 0; }
+}
+
+/* =====================================================================
+   PREMIUM DEPTH SYSTEM
+
+   The portfolio below the twin now reads as a sequence of product surfaces,
+   not a long document laid over a repeated illustration. Each chapter gets a
+   quiet spectral accent, one elevated shell and denser bento content. The
+   material is intentionally paint-only: no off-screen blur layers, fixed
+   backgrounds or continuously animated decoration are added here.
+   ===================================================================== */
+
+:root {
+  --depth-canvas: #edf4fb;
+  /* The veil the narrative bands lay over the aurora. Opaque enough that a
+     drifting blob never moves under a paragraph and changes its contrast,
+     translucent enough that the colour still reaches the glass cards. */
+  --depth-veil: rgba(233, 241, 252, .72);
+  --depth-surface: rgba(255, 255, 255, .62);
+  --depth-surface-strong: rgba(255, 255, 255, .82);
+  --depth-edge: rgba(68, 125, 186, .18);
+  --depth-edge-strong: rgba(55, 126, 202, .28);
+  --depth-shadow: 0 30px 90px -52px rgba(20, 67, 116, .42), 0 8px 28px -20px rgba(20, 67, 116, .2);
+  --section-accent: 29, 132, 225;
+}
+
+html[data-theme="dark"] {
+  --depth-canvas: #07111d;
+  --depth-veil: rgba(7, 17, 32, .74);
+  --depth-surface: rgba(13, 30, 48, .66);
+  --depth-surface-strong: rgba(16, 36, 57, .84);
+  --depth-edge: rgba(112, 177, 238, .17);
+  --depth-edge-strong: rgba(112, 177, 238, .28);
+  --depth-shadow: 0 34px 100px -48px rgba(0, 0, 0, .82), 0 10px 34px -22px rgba(0, 0, 0, .72);
+}
+
+html.reveals .reveal {
+  transform: translateY(10px);
+  transition-duration: .42s;
+}
+
+.bands {
+  counter-reset: chapter;
+  isolation: isolate;
+  overflow: clip;
+  padding: clamp(22px, 3vw, 44px) 0 clamp(76px, 10vw, 138px);
+  background:
+    radial-gradient(ellipse 62% 20% at 2% 7%, rgba(51, 167, 239, .16), transparent 68%),
+    radial-gradient(ellipse 54% 18% at 100% 33%, rgba(116, 94, 240, .13), transparent 70%),
+    radial-gradient(ellipse 58% 16% at 4% 63%, rgba(35, 177, 208, .12), transparent 72%),
+    radial-gradient(ellipse 50% 15% at 96% 90%, rgba(64, 214, 224, .1), transparent 72%),
+    linear-gradient(180deg, transparent 0, var(--depth-veil) 9%, var(--depth-veil) 92%, transparent 100%);
+  background-size: auto;
+  /* Still none, and for the original reason: this element is the height of the
+     whole document, and frosting it means the compositor blurs a surface taller
+     than the page on every scroll. The cards inside carry the real glass; this
+     is only the veil that keeps the aurora from washing out their contents. */
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.bands::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(circle, rgba(44, 117, 187, .18) .75px, transparent .9px);
+  background-size: 28px 28px;
+  opacity: .24;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 16%, #000 84%, transparent);
+  mask-image: linear-gradient(to right, transparent, #000 16%, #000 84%, transparent);
+}
+
+html[data-theme="dark"] .bands::before { opacity: .19; }
+
+#experience { --section-accent: 25, 142, 231; }
+#skills { --section-accent: 92, 93, 238; }
+#projects { --section-accent: 9, 160, 177; }
+#ai-systems { --section-accent: 32, 126, 225; }
+#work { --section-accent: 121, 84, 220; }
+#faq { --section-accent: 234, 125, 51; }
+
+.bands > .band {
+  counter-increment: chapter;
+  width: min(calc(100% - 32px), 1180px);
+  max-width: 1180px;
+  margin: clamp(16px, 2.4vw, 30px) auto 0;
+  padding: clamp(28px, 4vw, 48px);
+  border: 1px solid var(--depth-edge);
+  border-radius: clamp(26px, 3vw, 38px);
+  overflow: clip;
+  background:
+    radial-gradient(circle at 91% 3%, rgba(var(--section-accent), .16), transparent 31%),
+    linear-gradient(145deg, rgba(255, 255, 255, .54), transparent 42%),
+    var(--depth-surface);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .78), var(--depth-shadow);
+}
+
+html[data-theme="dark"] .bands > .band {
+  background:
+    radial-gradient(circle at 91% 3%, rgba(var(--section-accent), .15), transparent 32%),
+    linear-gradient(145deg, rgba(130, 188, 244, .07), transparent 44%),
+    var(--depth-surface);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .07), var(--depth-shadow);
+}
+
+.bands > .band:not(#cta)::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  inset: 0 0 auto;
+  width: auto;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 4%, rgba(var(--section-accent), .7) 26%, rgba(255, 255, 255, .82) 50%, transparent 88%);
+}
+
+.bands > .band[data-system]::after {
+  content: counter(chapter, decimal-leading-zero);
+  display: block;
+  position: absolute;
+  top: -27px;
+  right: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: rgba(var(--section-accent), .085);
+  box-shadow: none;
+  font: 750 clamp(108px, 12vw, 164px)/1 var(--sans);
+  letter-spacing: -.09em;
+  pointer-events: none;
+  text-transform: none;
+}
+
+.band > * { position: relative; z-index: 1; }
+
+.band-head .kicker {
+  color: rgb(var(--section-accent));
+  letter-spacing: .16em;
+}
+
+.band-head h2 {
+  max-width: 19ch;
+  color: var(--ink);
+  text-wrap: balance;
+}
+
+.system-chip {
+  border-color: rgba(var(--section-accent), .24);
+  background: rgba(var(--section-accent), .07);
+  color: color-mix(in srgb, rgb(var(--section-accent)) 76%, var(--ink));
+}
+
+.system-chip::before {
+  background: rgb(var(--section-accent));
+  box-shadow: 0 0 0 4px rgba(var(--section-accent), .1);
+}
+
+.chapter-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px 13px;
+  margin-top: 22px;
+  color: var(--ink-3);
+  font: 500 9px/1.35 var(--mono);
+  letter-spacing: .055em;
+  text-transform: uppercase;
+}
+
+.chapter-meta span { display: inline-flex; align-items: center; gap: 7px; }
+.chapter-meta span::before {
+  content: "";
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(var(--section-accent), .75);
+}
+
+@media (min-width: 1080px) {
+  .bands > .band:not(#cta) {
+    grid-template-columns: 220px minmax(0, 1fr);
+    gap: 34px 42px;
+  }
+
+  .band > .band-head { top: 92px; }
+  .band > .band-head h2 { font-size: clamp(23px, 1.85vw, 29px); }
+}
+
+/* Experience becomes a rack of readable system records instead of divider
+   rows floating in open space. */
+.timeline {
+  display: grid;
+  gap: 10px;
+}
+
+.timeline li,
+.timeline li:first-child {
+  grid-template-columns: 112px minmax(0, 205px) minmax(0, 1fr);
+  gap: 6px 22px;
+  padding: 21px 22px;
+  border: 1px solid var(--depth-edge);
+  border-radius: 20px;
+  background: linear-gradient(140deg, rgba(var(--section-accent), .055), transparent 42%), var(--depth-surface-strong);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .7), 0 15px 36px -30px rgba(20, 67, 116, .55);
+  transition: transform .22s var(--ease), border-color .22s var(--ease), box-shadow .22s var(--ease);
+}
+
+.timeline li:hover {
+  transform: translateY(-2px);
+  border-color: var(--depth-edge-strong);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .7), 0 22px 45px -28px rgba(20, 67, 116, .48);
+}
+
+.timeline .when { color: rgb(var(--section-accent)); }
+.timeline h3 { color: var(--ink); }
+.timeline p { color: var(--ink-2); }
+
+.edu {
+  margin-top: 12px;
+  padding: 22px 24px;
+  border-color: var(--depth-edge);
+  background: linear-gradient(135deg, rgba(var(--section-accent), .06), transparent 50%), var(--depth-surface-strong);
+}
+
+/* Capabilities use a deliberate bento rhythm. The two wide cards are the
+   systems-heavy categories recruiters most often need to scan. */
+.skillgrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.skillcard {
+  min-height: 154px;
+  padding: 23px;
+  border-color: var(--depth-edge);
+  background: linear-gradient(142deg, rgba(var(--section-accent), .08), transparent 48%), var(--depth-surface-strong);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .7), 0 18px 42px -34px rgba(30, 74, 120, .5);
+}
+
+#skills .skillcard:nth-child(3),
+#skills .skillcard:nth-child(6) { grid-column: 1 / -1; }
+
+.skillcard h3 { color: rgb(var(--section-accent)); }
+.skillcard li { background: rgba(var(--section-accent), .055); }
+.skillcard li.soft { background: transparent; }
+
+.stack-strip {
+  padding: 24px;
+  border: 1px solid var(--depth-edge);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, .36);
+}
+
+html[data-theme="dark"] .stack-strip { background: rgba(5, 14, 24, .28); }
+
+/* Selected work is a true card deck on wide screens. */
+.projects {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.project,
+.project:first-of-type {
+  display: block;
+  min-width: 0;
+  padding: 24px;
+  border: 1px solid var(--depth-edge);
+  border-radius: 22px;
+  background: linear-gradient(145deg, rgba(var(--section-accent), .09), transparent 44%), var(--depth-surface-strong);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .72), 0 20px 46px -36px rgba(19, 75, 111, .56);
+  transition: transform .22s var(--ease), border-color .22s var(--ease), box-shadow .22s var(--ease);
+}
+
+.project:hover {
+  transform: translateY(-3px);
+  border-color: var(--depth-edge-strong);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .72), 0 26px 52px -32px rgba(19, 75, 111, .5);
+}
+
+.project::before {
+  content: "";
+  left: 24px;
+  top: 58px;
+  width: 44px;
+  height: 2px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgb(var(--section-accent)), transparent);
+}
+
+.project-year {
+  display: inline-flex;
+  padding: 5px 9px;
+  border: 1px solid rgba(var(--section-accent), .22);
+  border-radius: 999px;
+  background: rgba(var(--section-accent), .07);
+  color: rgb(var(--section-accent));
+}
+
+.project h3 { margin-top: 31px; font-size: 18px; }
+.project p { font-size: 13.5px; line-height: 1.64; }
+.project .stack { gap: 5px; }
+
+/* The live retriever is presented as the working console it is. */
+.retrieval {
+  margin-top: 0;
+  padding: 25px;
+  border: 1px solid var(--depth-edge);
+  border-radius: 25px;
+  background: linear-gradient(145deg, rgba(var(--section-accent), .075), transparent 38%), var(--depth-surface-strong);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .72), 0 22px 56px -40px rgba(20, 67, 116, .62);
+}
+
+.retrieval::before {
+  content: "live retrieval console";
+  display: block;
+  margin-bottom: 23px;
+  color: rgb(var(--section-accent));
+  font: 600 9px/1 var(--mono);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+
+.retrieval::after {
+  top: 26px;
+  right: 25px;
+  padding-left: 12px;
+}
+
+.retrieval-form input,
+.rank,
+.mcp-card {
+  border-color: var(--depth-edge);
+  background: color-mix(in srgb, var(--depth-surface-strong) 94%, rgb(var(--section-accent)) 6%);
+}
+
+.rank { border-radius: 18px; }
+.rank-head { color: rgb(var(--section-accent)); }
+
+.mcp {
+  padding: 25px;
+  border: 1px solid var(--depth-edge);
+  border-radius: 25px;
+  background: var(--depth-surface-strong);
+}
+
+/* Repository and FAQ surfaces keep the same shell recipe and higher contrast. */
+.card {
+  border-color: var(--depth-edge);
+  background: linear-gradient(142deg, rgba(var(--section-accent), .065), transparent 44%), var(--depth-surface-strong);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .68), 0 18px 42px -35px rgba(30, 74, 120, .5);
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  border-color: var(--depth-edge-strong);
+  background: linear-gradient(142deg, rgba(var(--section-accent), .095), transparent 48%), var(--depth-surface-strong);
+}
+
+.faq {
+  margin-top: 0;
+  padding: 8px 25px;
+  border-color: var(--depth-edge);
+  background: var(--depth-surface-strong);
+}
+
+.faq summary { min-height: 64px; align-items: center; }
+.faq summary::after {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border: 1px solid rgba(var(--section-accent), .2);
+  border-radius: 50%;
+  background: rgba(var(--section-accent), .07);
+  color: rgb(var(--section-accent));
+}
+
+/* The final action is the one intentionally high-contrast surface. */
+.bands > #cta {
+  width: min(calc(100% - 32px), 1180px);
+  padding: 0;
+  border: 0;
+  overflow: visible;
+  background: none;
+  box-shadow: none;
+}
+
+#cta::after { display: none; }
+
+.cta {
+  margin: 0;
+  padding: clamp(38px, 6vw, 70px);
+  overflow: hidden;
+  border: 1px solid rgba(137, 200, 255, .34);
+  border-radius: clamp(28px, 3vw, 38px);
+  color: #f4f9ff;
+  background:
+    radial-gradient(circle at 83% 14%, rgba(78, 176, 255, .48), transparent 34%),
+    radial-gradient(circle at 12% 90%, rgba(121, 91, 232, .34), transparent 40%),
+    linear-gradient(132deg, #071a31 0%, #0b315d 52%, #0b4c82 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .2), 0 34px 90px -44px rgba(4, 43, 88, .75);
+}
+
+.cta::before {
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, .19), transparent 36%),
+    radial-gradient(circle, rgba(255, 255, 255, .3) .7px, transparent .85px);
+  background-size: auto, 24px 24px;
+  opacity: .45;
+}
+
+.cta h2 { color: #fff; font-size: clamp(34px, 5vw, 58px); }
+.cta p { color: rgba(226, 240, 255, .8); }
+.cta .system-chip { border-color: rgba(160, 211, 255, .28); background: rgba(255, 255, 255, .09); color: #cde8ff; }
+.cta .btn { background: #f6fbff; color: #0a3156; box-shadow: 0 12px 30px -18px rgba(0, 0, 0, .7); }
+.cta .btn.ghost { border-color: rgba(255, 255, 255, .24); background: rgba(255, 255, 255, .08); color: #edf7ff; }
+
+/* Static depth survives without taxing the scroll path. */
+.timeline li,
+.skillcard,
+.project,
+.card,
+.retrieval,
+.mcp,
+.faq,
+.edu,
+.cta {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+@media (max-width: 1180px) and (min-width: 761px) {
+  .projects { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .project:last-child { grid-column: 1 / -1; }
+}
+
+@media (max-width: 1079px) {
+  .bands > .band { width: min(calc(100% - 28px), 900px); }
+  .chapter-meta { margin-top: 16px; }
+  .timeline li,
+  .timeline li:first-child { grid-template-columns: 120px minmax(0, 1fr); }
+  .timeline .when { grid-column: 1; grid-row: 1; }
+  .timeline h3 { grid-column: 2; grid-row: 1; }
+  .timeline .where { grid-column: 2; grid-row: 2; }
+  .timeline p { grid-column: 1 / -1; grid-row: 3; margin-top: 8px; }
+}
+
+@media (max-width: 760px) {
+  .bands { padding-top: 14px; }
+  .bands > .band {
+    width: calc(100% - 20px);
+    margin-top: 12px;
+    padding: 24px 18px;
+    border-radius: 26px;
+  }
+  .bands > .band[data-system]::after { top: -13px; right: 16px; font-size: 92px; }
+  .system-chip { margin: 9px 0 0 7px; }
+  .band-head h2 { margin-top: 14px; font-size: clamp(26px, 8vw, 35px); }
+  .chapter-meta { gap: 6px 10px; }
+  .timeline li,
+  .timeline li:first-child { display: block; padding: 20px; }
+  .timeline .where { margin: 5px 0 11px; }
+  .timeline h3 { margin-top: 13px; }
+  .skillgrid,
+  .projects { grid-template-columns: 1fr; }
+  #skills .skillcard:nth-child(3),
+  #skills .skillcard:nth-child(6),
+  .project:last-child { grid-column: auto; }
+  .skillcard { min-height: 0; padding: 20px; }
+  .project,
+  .project:first-of-type { padding: 21px; }
+  .project::before { left: 21px; top: 54px; }
+  .retrieval,
+  .mcp { padding: 20px; border-radius: 21px; }
+  .retrieval::after { top: 21px; right: 20px; }
+  .rank-row { grid-template-columns: 1fr; }
+  .faq { padding: 6px 19px; }
+  .bands > #cta { width: calc(100% - 20px); padding: 0; }
+  .cta { padding: 34px 24px; }
+  .cta-row { display: grid; grid-template-columns: 1fr; }
+}
+
+@media (max-width: 390px) {
+  .system-chip { margin-left: 0; }
+  .chapter-meta span:last-child { display: none; }
+  .retrieval::before { max-width: 17ch; line-height: 1.35; }
+}
+
+@media (hover: none) {
+  .timeline li:hover,
+  .project:hover,
+  .card:hover { transform: none; }
+}
+
+
+/* =====================================================================
+   NAV BAR
+   =====================================================================
+
+   Over the hero the bar was a full-width frosted strip 65px tall carrying a
+   logo at one edge and six links at the other, with a third of the viewport
+   of nothing between them. That reads as a heavy empty band rather than as
+   navigation, and it was covering the top of the sky for no purpose.
+
+   So there is no strip over the hero. The links carry their own glass and sit
+   as one control, the bar itself is transparent, and the band only appears
+   once there is page travelling underneath it -- which is the state .solid
+   already existed for.
+   ===================================================================== */
+
+.bar {
+  gap: 12px;
+  padding: 8px clamp(14px, 4vw, 34px);
+}
+
+html .bar:not(.solid) {
+  background: transparent;
+  border-bottom-color: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* One grouped control, not six loose words. */
+.bar-right {
+  gap: 1px;
+  padding: 3px;
+  border-radius: var(--r-pill);
+  background: var(--g-fill);
+  border: 1px solid var(--g-edge);
+  box-shadow: var(--g-shadow);
+  backdrop-filter: var(--g-blur-soft);
+  -webkit-backdrop-filter: var(--g-blur-soft);
+}
+
+.bar-right a, .bar-right .q {
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: var(--r-pill);
+}
+.bar-right a:hover, .bar-right .q:hover {
+  background: color-mix(in srgb, var(--clay) 12%, transparent);
+  color: var(--clay);
+}
+
+/* Scrolled: the strip comes back, because now something is passing under it. */
+.bar.solid .bar-right {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
