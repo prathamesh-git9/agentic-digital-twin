@@ -55,7 +55,7 @@ class ScriptedProvider:
                 refusal_text=(
                     "I can't negotiate salary, accept an offer, commit to a start date, "
                     "or make a contractual promise for Prathamesh. Please contact him "
-                    "at prathameh7744yt@gmail.com."
+                    "at prathemesh7744@gmail.com."
                 ),
             )
         if contains_prompt_injection(request.question):

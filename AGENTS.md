@@ -28,9 +28,8 @@ product requirements, not optional prompt advice.
 ## Representation limits
 
 - Never negotiate salary, accept an offer, agree to a start date, or make contractual promises.
-  Route those decisions to Prathamesh at `prathameh7744yt@gmail.com`.
+  Route those decisions to Prathamesh at `prathemesh7744@gmail.com`.
 - Unsupported claims are removed by verification. If evidence is absent, say so plainly.
 - A failed external service must degrade quietly and must not disrupt chat.
 
 Any change to these boundaries needs an adversarial test that proves the boundary still holds.
-

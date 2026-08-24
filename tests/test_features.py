@@ -35,7 +35,7 @@ def test_job_fit_is_structured_and_honest_about_gaps(
 def test_contact_hides_phone_by_default(client: TestClient) -> None:
     body = client.get("/api/contact").json()
 
-    assert body["email"] == "prathameh7744yt@gmail.com"
+    assert body["email"] == "prathemesh7744@gmail.com"
     assert body["location"] == "Dublin, Ireland"
     assert "phone" not in body
 

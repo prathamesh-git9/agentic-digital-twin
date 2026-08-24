@@ -67,7 +67,7 @@ class Settings(BaseSettings):
 
     linkedin_url: str = "https://www.linkedin.com/in/prathamesh-kalamkar/"
     calendar_url: str = ""
-    from_email: str = "prathameh7744yt@gmail.com"
+    from_email: str = "prathemesh7744@gmail.com"
     from_name: str = "Prathamesh Kalamkar"
     outreach_approval_ttl_seconds: int = Field(default=900, ge=60, le=86_400)
     follow_up_days: int = Field(default=5, ge=1, le=30)

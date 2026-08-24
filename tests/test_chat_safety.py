@@ -58,7 +58,7 @@ def test_contractual_questions_are_deflected_to_real_person(
     body = response.json()
     assert body["refusal"] is True
     assert "can't negotiate salary" in body["answer"]
-    assert "prathameh7744yt@gmail.com" in body["answer"]
+    assert "prathemesh7744@gmail.com" in body["answer"]
     assert "Policy › Representation boundary" in body["sources"]
 
 

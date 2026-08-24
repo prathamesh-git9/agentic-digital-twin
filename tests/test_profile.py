@@ -23,4 +23,4 @@ def test_canonical_profile_preserves_cv_titles_dates_and_metrics() -> None:
     assert any("nearly 50%" in bullet for bullet in engineer["bullets"])
     assert any("about 30%" in bullet for bullet in engineer["bullets"])
     assert any("about 35%" in bullet for bullet in engineer["bullets"])
-    assert profile["person"]["email"] == "prathameh7744yt@gmail.com"
+    assert profile["person"]["email"] == "prathemesh7744@gmail.com"
