@@ -310,7 +310,12 @@ html.reveals .reveal.d2 { transition-delay: .18s; }
 
 /* ---------- ask hero ---------- */
 
-.ask-hero { position: relative; z-index: 2; max-width: 660px; margin: 0 auto; padding: 0 clamp(16px, 5vw, 24px); display: flex; flex-direction: column; justify-content: center; text-align: center; }
+.ask-hero { position: relative; z-index: 2; max-width: 660px; margin: 0 auto; padding: 0 clamp(16px, 5vw, 24px); display: flex; flex-direction: column; justify-content: center; }
+/* Centred: the opening block and the rows of chips under the composer. NOT the
+   thread -- it holds paragraphs, and centred body copy is ragged on both
+   edges and unreadable at length. */
+#intro, .dock-note { text-align: center; }
+.suggestions, .quickfacts { justify-content: center; }
 /* The pill is the one thing that must not stretch to the column. */
 .hero-eyebrow { align-self: center; }
 
@@ -784,8 +789,13 @@ body.has-thread .rail { position: sticky; top: calc(var(--bar-h) + 18px); }
 body.has-thread .quickfacts,
 body.has-thread .scroll-cue { display: none; }
 /* Ridges behind a wall of body copy are just noise, and the transcript needs
-   the contrast more than the page needs the weather. */
-body.has-thread .scene { opacity: .32; }
+   the contrast more than the page needs the weather.
+
+   The drawing has to go with it. The crown of the sky is saturated so the hero
+   can set white display type on it; the moment a conversation starts that type
+   is gone and the screen is answers in dark ink instead, which on a deep blue
+   sky cannot be read at all. */
+body.has-thread .scene, body.has-thread .range { opacity: .32; }
 
 /* ================= scroll cue ================= */
 
@@ -1045,6 +1055,11 @@ body { overflow-x: hidden; }
   max-width: 1900px; margin: 0 auto;
   padding: calc(var(--bar-h) * .4) clamp(16px, 4vw, 80px) 0;
   min-height: calc(100dvh - var(--bar-h));
+  /* The hero scrim is deliberately far wider than the text it sits behind, so
+     it has room to fade out. On a phone that put it past the right edge of the
+     window and the whole document scrolled sideways by 100px. `clip` bounds it
+     without becoming a scroll container, so the sticky composer still sticks. */
+  overflow-x: clip;
 }
 .deck .ask-hero { max-width: 660px; padding-left: 0; padding-right: 0; }
 
@@ -1679,19 +1694,21 @@ html.reveals .bar:not(.solid) .bar-island {
   the deepened blue it read as a bright bar again -- the same complaint the
   capsule was built to answer, in a rounder shape. So at the top of a light
   page the glass takes the sky's own colour and its type goes white, and it
-  hands back to the pale tier the moment the page scrolls under it.
+  hands back to the pale tier the moment the page scrolls under it -- or the
+  moment a conversation starts, which dims the drawing for the transcript's
+  sake and would otherwise leave a dark capsule floating on a pale page.
 */
-html[data-theme="light"].reveals .bar:not(.solid) .bar-island {
+html[data-theme="light"].reveals body:not(.has-thread) .bar:not(.solid) .bar-island {
   background: rgba(6, 28, 54, .30);
   border-color: rgba(255, 255, 255, .26);
 }
-html[data-theme="light"].reveals .bar:not(.solid) .bar-island .name,
-html[data-theme="light"].reveals .bar:not(.solid) .bar-right a,
-html[data-theme="light"].reveals .bar:not(.solid) .bar-right .q {
+html[data-theme="light"].reveals body:not(.has-thread) .bar:not(.solid) .bar-island .name,
+html[data-theme="light"].reveals body:not(.has-thread) .bar:not(.solid) .bar-right a,
+html[data-theme="light"].reveals body:not(.has-thread) .bar:not(.solid) .bar-right .q {
   color: #ffffff;
 }
-html[data-theme="light"].reveals .bar:not(.solid) .name em { color: #bcd9f4; }
-html[data-theme="light"].reveals .bar:not(.solid) .bar-right .q.strong {
+html[data-theme="light"].reveals body:not(.has-thread) .bar:not(.solid) .name em { color: #bcd9f4; }
+html[data-theme="light"].reveals body:not(.has-thread) .bar:not(.solid) .bar-right .q.strong {
   background: #ffffff;
   color: #123c66;
 }
