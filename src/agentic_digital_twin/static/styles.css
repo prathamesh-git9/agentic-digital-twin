@@ -58,7 +58,10 @@
   --sans: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
   --ease: cubic-bezier(.22, .68, .3, 1);
-  --bar-h: 52px;
+  --bar-h: 58px;
+  /* The header capsule never spans the window; this is how wide it is allowed
+     to get before the air on either side of it becomes the layout. */
+  --island-w: 1180px;
   /* One radius scale. There were nineteen distinct values before this,
      which is why neighbouring components never looked related. */
   --r-xs: 6px;
@@ -262,7 +265,11 @@ html[data-theme="light"] .grain { opacity: .14; }
 
 /* ---------- bar ---------- */
 
-.bar { position: sticky; top: 0; z-index: 40; display: flex; align-items: center; gap: 14px; padding: 14px clamp(16px, 5vw, 40px); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
+/* The shell spans the window but is see-through, so it must also be
+   click-through: it lies over the top of the hero, and left solid it would
+   swallow clicks aimed at whatever shows beside the capsule. */
+.bar { position: sticky; top: 0; z-index: 40; padding: 10px clamp(12px, 3vw, 30px) 0; pointer-events: none; }
+.bar-island { pointer-events: auto; display: flex; align-items: center; gap: clamp(18px, 4vw, 52px); width: fit-content; max-width: min(var(--island-w), 100%); margin: 0 auto; padding: 6px 6px 6px 20px; border-radius: var(--r-pill); }
 .bar-left { display: flex; align-items: center; gap: 9px; text-decoration: none; color: inherit; }
 .face { border-radius: 50%; object-fit: cover; }
 .name { font-size: 14px; font-weight: 550; letter-spacing: -.01em; }
@@ -669,11 +676,11 @@ html[data-theme="dark"] {
   --glass-edge: rgba(146, 190, 240, .16);
 }
 
-.bar {
+.bar-island {
   background: var(--glass);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
-  border-bottom: 1px solid var(--glass-edge);
+  border: 1px solid var(--glass-edge);
 }
 
 /* Deliberately not glass. Every other surface here is translucent, so the one
@@ -1478,27 +1485,68 @@ div.dock-note { display: flex; align-items: baseline; justify-content: space-bet
   --g-blur-soft: blur(18px) saturate(150%);
   --g-fill: rgba(246, 251, 255, .82);
   --g-fill-heavy: rgba(246, 251, 255, .68);
-  --g-fill-bar: rgba(246, 251, 255, .78);
+  --g-fill-bar: rgba(248, 252, 255, .66);
   --g-edge: rgba(255, 255, 255, .68);
   --g-spec: linear-gradient(152deg, rgba(255, 255, 255, .85), rgba(255, 255, 255, .12) 40%, transparent 66%);
   --g-shadow: 0 1px 2px rgba(20, 70, 140, .05), 0 10px 28px rgba(20, 70, 140, .10);
   --g-shadow-lift: 0 2px 5px rgba(20, 70, 140, .07), 0 20px 46px rgba(20, 70, 140, .16);
+
+  /* The header capsule carries its own material. It is small enough to afford
+     a stronger blur than the general surfaces (cost scales with the area being
+     re-filtered), and it is the one surface with nothing behind it but sky, so
+     it can sit almost clear until the page starts moving underneath. */
+  --g-blur-bar: blur(21px) saturate(180%);
+  --g-fill-bar-rest: rgba(255, 255, 255, .34);
+  --g-rim: rgba(255, 255, 255, .46);
+  /* The lit hairline just inside the top edge. This is the tell that separates
+     glass from a grey rectangle: real glass gathers light along the edge the
+     light comes from, and a 1px inset highlight reads as that where a border
+     of the same colour reads as a drawn outline. */
+  --g-lip:
+    inset 0 1px 0 rgba(255, 255, 255, .92),
+    inset 0 0 0 .5px rgba(255, 255, 255, .30),
+    inset 0 -1px 0 rgba(255, 255, 255, .22);
+  --g-shadow-rest: 0 2px 10px rgba(20, 70, 140, .06);
+  --g-sheen: rgba(255, 255, 255, .55);
 }
 html[data-theme="dark"] {
   --g-fill: rgba(22, 40, 62, .82);
   --g-fill-heavy: rgba(11, 22, 36, .72);
-  --g-fill-bar: rgba(8, 16, 27, .82);
+  --g-fill-bar: rgba(12, 23, 37, .80);
   --g-edge: rgba(150, 195, 245, .18);
   --g-spec: linear-gradient(152deg, rgba(180, 215, 255, .16), rgba(180, 215, 255, .03) 42%, transparent 68%);
   --g-shadow: 0 1px 2px rgba(0, 0, 0, .34), 0 12px 32px rgba(0, 0, 0, .42);
   --g-shadow-lift: 0 2px 6px rgba(0, 0, 0, .4), 0 24px 56px rgba(0, 0, 0, .55);
+
+  /* On a dark ground the lit edge comes from the sky above rather than from a
+     white light, so the lip is a cool highlight on top and a shadow beneath. */
+  /* Dark glass needs the brightness step that light glass does not. Without
+     it a pale card passing underneath blooms through the tint as a bright
+     patch, because blurring an area of white leaves an area of white.
+
+     It also needs a heavier fill than the light theme — .80 against .66 —
+     which is not symmetry-breaking for its own sake. Measured by sampling the
+     rendered capsule row by row (horizontal variance only, so the sheen's own
+     vertical falloff cancels out), content passing under the dark capsule adds
+     three times the structure it does under the light one at equal alpha: the
+     dark ground is pale text and lit card edges on near-black, so what bleeds
+     through is high contrast, where the light ground is grey on white. */
+  --g-blur-bar: blur(21px) saturate(165%) brightness(.92);
+  --g-fill-bar-rest: rgba(26, 46, 72, .36);
+  --g-rim: rgba(170, 208, 250, .22);
+  --g-lip:
+    inset 0 1px 0 rgba(190, 222, 255, .20),
+    inset 0 0 0 .5px rgba(190, 222, 255, .09),
+    inset 0 -1px 0 rgba(0, 0, 0, .28);
+  --g-shadow-rest: 0 2px 12px rgba(0, 0, 0, .30);
+  --g-sheen: rgba(190, 222, 255, .13);
 }
 
 /* --- the two glass tiers ------------------------------------------- */
 
 .panel, .person, .visitor, .feed, .tile,
 .suggestions button, .quickfacts span, .cite, .turn-actions button,
-.bar, .bar.solid, #composer, .turn.you .text,
+.bar-island, #composer, .turn.you .text,
 .over-panel, .modal-card, .toast {
   backdrop-filter: var(--g-blur);
   -webkit-backdrop-filter: var(--g-blur);
@@ -1512,7 +1560,7 @@ html[data-theme="dark"] {
 }
 
 /* Anything the conversation scrolls behind. */
-.bar.solid, #composer, .turn.you .text, .feed,
+#composer, .turn.you .text, .feed,
 .over-panel, .modal-card {
   background: var(--g-fill-heavy);
 }
@@ -1545,29 +1593,46 @@ html[data-theme="dark"] {
 /* --- the header ----------------------------------------------------- */
 
 /*
-  Glass over the sky is the point of the design. The same bar over scrolling
-  serif body copy sliced headings in half and smeared the line beneath them,
-  because a 0.46 fill hides nothing. At the top of the page it stays light;
-  the moment the page moves it takes the heavy tier — still glass, now
-  opaque enough that what passes under it is a wash rather than words.
+  The header is never a band. It is one floating control: a capsule of glass
+  centred over the page with clear air on all four sides, so the sky it sits
+  over runs to the edges of the window rather than being sliced off by a strip.
+
+  Scrolling does not change its shape, only its material. A full-bleed bar had
+  to go nearly opaque once the page moved under it, because at a 0.46 fill body
+  copy stayed legible through it and collided with the nav labels — and a
+  near-opaque strip that spans the window is a white strip, whatever its blur
+  radius says. A capsule can carry that same fill and still read as glass,
+  because what tells the eye "band" is the full-bleed edge, not the alpha.
 */
-/*
-  The heavy fill is the default and the light one is opted into only while the
-  page is still at the top. The other way round, a header that needs JavaScript
-  to become readable is a header that is unreadable whenever that script does
-  not run — which is exactly what happened when the class that sets it was left
-  behind in a port.
-*/
-.bar { background: var(--g-fill-bar); border-bottom: 1px solid transparent; }
-html.reveals .bar:not(.solid) { background: var(--g-fill); }
-/* Heavier than the general heavy tier: a navigation bar has a whole page
-   travelling under it, and at 0.86 body copy was still legible through it. iOS
-   takes its own bars close to opaque for the same reason — the colour behind
-   still bleeds, the words do not. */
-.bar.solid {
+
+/* The fill is the heavy one by default and the light one is opted into only
+   while the page is still at the top. The other way round, a header that needs
+   JavaScript to become readable is a header that is unreadable whenever that
+   script does not run — which is exactly what happened when the class that
+   sets it was left behind in a port. */
+.bar-island {
   background: var(--g-fill-bar);
-  border-bottom-color: var(--g-edge);
-  box-shadow: var(--g-shadow);
+  border-color: var(--g-rim);
+  box-shadow: var(--g-lip), var(--g-shadow);
+  transition:
+    background .3s var(--ease), border-color .3s var(--ease),
+    box-shadow .3s var(--ease);
+}
+
+/* At rest over the hero the capsule is barely there — enough rim to read as an
+   object, not enough fill to hide the sky behind it. */
+html.reveals .bar:not(.solid) .bar-island {
+  background: var(--g-fill-bar-rest);
+  box-shadow: var(--g-lip), var(--g-shadow-rest);
+}
+
+/* Once the page travels underneath, it takes the fill that turns words into a
+   wash and gains its lift shadow. Only the material changes: the capsule keeps
+   its size and position in both states, so crossing the threshold cannot
+   reflow anything or make the header appear to jump. */
+.bar.solid .bar-island {
+  background: var(--g-fill-bar);
+  box-shadow: var(--g-lip), var(--g-shadow-lift);
 }
 
 /* --- ground --------------------------------------------------------- */
@@ -1646,9 +1711,10 @@ html[data-theme="dark"] .bands {
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .panel, .person, .visitor, .tile, .suggestions button,
   .quickfacts span, .cite, .turn-actions button { background: var(--paper-2); }
-  .bar, .bar.solid, #composer, .turn.you .text, .feed,
+  .bar-island, #composer, .turn.you .text, .feed,
   .over-panel, .modal-card { background: var(--paper); }
 }
+
 
 /* =====================================================================
    THE DOCK
@@ -1743,10 +1809,16 @@ html[data-theme="dark"] .bands {
   The feed sat in the normal flow above main, so opening it shoved the entire
   page down by its height and it appeared nowhere near the button that opened
   it. It belongs to the bell: a panel hanging under it, over the page.
+
+  It hangs from the middle of the header rather than from the right edge of the
+  window. Pinned to the window it read as a notification that had appeared by
+  itself in the corner, because the control that opens it no longer reaches
+  that far — the header is a capsule in the centre now, not a full-width bar.
 */
 .feed-wrap {
   position: fixed; z-index: 45;
-  top: 62px; right: clamp(12px, 4vw, 34px); left: auto;
+  top: calc(var(--bar-h) + 6px);
+  left: 50%; right: auto; transform: translateX(-50%);
   width: min(370px, calc(100vw - 24px));
   max-width: none; margin: 0; padding: 0;
 }
@@ -2316,7 +2388,6 @@ body.has-thread .suggestions, body.has-thread .dock-note { display: none; }
    viewport loses space, so architecture can never sit on top of the chat.
    ===================================================================== */
 
-.bar { padding-left: clamp(16px, 5vw, 40px); }
 .bar-left .face { display: none; }
 /* Clawd rises above the composer, so the dock reserves the same amount of
    vertical space instead of letting the sprite walk through the intro copy. */
@@ -2385,7 +2456,6 @@ body.has-thread .suggestions, body.has-thread .dock-note { display: none; }
 }
 
 @media (max-width: 520px) {
-  .bar { padding-left: 16px; }
   .clawd-float { top: -21px; --clawd-travel: calc(100cqw - 68px); width: 44px; height: 25px; }
   .clawd-float svg { width: 44px; height: 25px; }
   .bands { background-size: 520px 376px, 58px 58px, 58px 58px; }
@@ -2406,10 +2476,20 @@ body.has-thread .suggestions, body.has-thread .dock-note { display: none; }
   --g-blur-soft: none;
 }
 
-.bar, .panel, .person, .visitor, .feed,
+.panel, .person, .visitor, .feed,
 #composer, .over-panel, .modal-card, .toast {
   -webkit-backdrop-filter: var(--g-blur);
   backdrop-filter: var(--g-blur);
+}
+
+/* The capsule is the exception to the clamp above, and shrinking it is what
+   paid for that. A full-bleed bar re-filtered 1440x59 of backdrop on every
+   frame the page moved; the capsule re-filters roughly a third less, so it can
+   carry the 22px blur the rest of the page cannot afford — which matters,
+   because it is the one surface a visitor looks straight at. */
+.bar-island {
+  -webkit-backdrop-filter: var(--g-blur-bar);
+  backdrop-filter: var(--g-blur-bar);
 }
 
 .tile, .suggestions button, .quickfacts span, .cite, .turn-actions button,
@@ -2948,35 +3028,51 @@ html[data-theme="dark"] .stack-strip { background: rgba(5, 14, 24, .28); }
    of nothing between them. That reads as a heavy empty band rather than as
    navigation, and it was covering the top of the sky for no purpose.
 
-   So there is no strip over the hero. The links carry their own glass and sit
-   as one control, the bar itself is transparent, and the band only appears
-   once there is page travelling underneath it -- which is the state .solid
-   already existed for.
+   The first fix made the strip vanish at the top of the page and come back as
+   soon as anything scrolled under it, with the links wearing a pill of their
+   own in between. That solved the hero and left the rest of the site with the
+   original problem: from the first scroll to the footer the header was a
+   near-opaque band sealed to three edges of the window, and no blur radius
+   makes a shape like that read as glass.
+
+   So the strip is gone in both states. The header is one capsule — logo,
+   links and the contact call to action inside a single piece of glass, held
+   away from every edge — and scrolling changes what it is made of, never what
+   shape it is. The nav no longer needs a pill of its own, because it is now
+   sitting inside one.
    ===================================================================== */
 
-.bar {
-  gap: 12px;
-  padding: 8px clamp(14px, 4vw, 34px);
+/* The curvature of the light. A cylinder of glass is brightest along the top
+   and gives that up towards the bottom, and painting that falloff is most of
+   the difference between a capsule that looks like glass and one that looks
+   like a rounded grey box. It is identical in both scroll states, so it costs
+   nothing to animate and never fights the fill transition underneath it. */
+.bar-island { position: relative; }
+.bar-island::before {
+  content: ""; position: absolute; inset: 0; border-radius: inherit;
+  background: linear-gradient(
+    177deg,
+    color-mix(in srgb, var(--g-sheen) 100%, transparent),
+    color-mix(in srgb, var(--g-sheen) 18%, transparent) 46%,
+    transparent 78%);
+  pointer-events: none;
 }
+.bar-island > .bar-left, .bar-island > .bar-right { position: relative; z-index: 1; }
 
-html .bar:not(.solid) {
-  background: transparent;
-  border-bottom-color: transparent;
+/* The shell is geometry and nothing else; every pixel of material is on the
+   capsule. Stated rather than merely left unset, because a background arriving
+   here from any later rule puts the strip straight back. */
+.bar {
+  background: none;
+  border: 0;
   box-shadow: none;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }
 
-/* One grouped control, not six loose words. */
 .bar-right {
+  margin-left: auto;
   gap: 1px;
-  padding: 3px;
-  border-radius: var(--r-pill);
-  background: var(--g-fill);
-  border: 1px solid var(--g-edge);
-  box-shadow: var(--g-shadow);
-  backdrop-filter: var(--g-blur-soft);
-  -webkit-backdrop-filter: var(--g-blur-soft);
 }
 
 .bar-right a, .bar-right .q {
@@ -2989,11 +3085,101 @@ html .bar:not(.solid) {
   color: var(--clay);
 }
 
-/* Scrolled: the strip comes back, because now something is passing under it. */
-.bar.solid .bar-right {
-  background: transparent;
-  border-color: transparent;
-  box-shadow: none;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
+/* One filled cap at the end of the row. A capsule of navigation wants a single
+   place for the eye to stop, and the thing a recruiter is here to do is get in
+   touch — so that is the one control that is a button rather than a word. */
+.bar-right .q.strong {
+  color: var(--clay-ink);
+  background: var(--clay);
+  font-weight: 550;
+  padding: 6px 16px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .26);
+}
+.bar-right .q.strong:hover {
+  color: var(--clay-ink);
+  background: color-mix(in srgb, var(--clay) 88%, #000);
+}
+.bar-right .q.strong .dot { background: var(--clay-ink); }
+
+/* Reading progress rides the lower edge of the capsule rather than ruling a
+   line across the top of the window. Once the header stopped being full-bleed,
+   a 2px full-width rule was the only element left that was, and it read as a
+   stray artefact rather than as an indicator. Inset past the curve at each end
+   so it never crosses the radius. */
+.progress {
+  position: absolute; inset: auto 17px 5px; width: auto; height: 2px;
+  border-radius: 2px; z-index: 2;
+}
+
+/* On a phone the capsule takes the width between the gutters instead of
+   hugging three short labels. Hugging them left a narrow pill with the page
+   sliding past in full view on either side of it, a couple of millimetres from
+   the text it was supposed to be floating over; there is not enough screen at
+   this size for the air to read as air. It is still a capsule held off every
+   edge -- just one whose contents are pushed to its ends. */
+@media (max-width: 620px) {
+  .bar { padding: 8px 10px 0; }
+  .bar-island { width: auto; padding: 5px 5px 5px 16px; gap: 12px; }
+}
+
+
+/* =====================================================================
+   WHEN TRANSLUCENCY IS NOT WANTED
+   =====================================================================
+
+   This page is made almost entirely of glass, so the preference to turn glass
+   off has to be answered properly rather than partially: an opaque surface
+   with a real border, which is the same answer the unsupported-browser case
+   above already gives. Glass with its blur removed but its 34% fill kept is
+   the worst of both -- a pale rectangle with the page showing through it.
+
+   Two conditions in one query, not nested, because
+   `prefers-reduced-transparency` is still thinly implemented; where it never
+   matches, `prefers-contrast` has to work on its own.
+
+   `!important` and a position at the end of the file are both deliberate. The
+   capsule's own fill is set by `.bar.solid .bar-island`, three classes deep,
+   and its filter by the rendering-budget block further down; a plain
+   `.bar-island` rule here loses to both on specificity and would silently do
+   nothing -- which is exactly what the first version of this block did. The
+   reduced-motion query above overrides the page the same way for the same
+   reason.
+   ===================================================================== */
+
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  .panel, .person, .visitor, .tile, .suggestions button,
+  .quickfacts span, .cite, .turn-actions button {
+    background: var(--paper-2) !important;
+  }
+  .bar-island, #composer, .turn.you .text, .feed,
+  .over-panel, .modal-card {
+    background: var(--paper) !important;
+  }
+
+  .bar-island, .panel, .person, .visitor, .feed, .tile,
+  #composer, .over-panel, .modal-card, .toast,
+  .suggestions button, .quickfacts span, .cite, .turn-actions button {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    border-color: var(--line-2) !important;
+  }
+
+  /* The sheen and the lit rim are readings of light through a material. With
+     no material left to read they are just a gradient and a white line. */
+  .bar-island::before, .panel::before, .person::before, #composer::before,
+  .over-panel::before, .modal-card::before, .feed::before { display: none; }
+  .bar-island { box-shadow: var(--g-shadow) !important; }
+}
+
+/* Forced colours replaces the palette outright, so the capsule has to be drawn
+   in system colours or it dissolves into the page it floats over. */
+@media (forced-colors: active) {
+  .bar-island {
+    background: Canvas !important;
+    border: 1px solid CanvasText !important;
+    box-shadow: none !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+  .bar-island::before { display: none; }
 }

@@ -275,3 +275,93 @@ def test_mobile_starters_use_a_bounded_grid_instead_of_a_clipped_scroller() -> N
     )
     assert "body.has-thread .dock" in repair_css
     assert "position: fixed" in repair_css
+
+
+def _blocks_whose_subject_is_the_bar() -> list[tuple[str, str]]:
+    """Every rule that paints `.bar` itself rather than something inside it.
+
+    The subject of a selector is its last compound: in `.bar.solid .bar-island`
+    the subject is the island and the bar is only context, so that rule is free
+    to paint. In `.bar`, `.bar.solid` or `html.reveals .bar:not(.solid)` the
+    subject is the bar, and those are the rules that can put the strip back.
+    """
+
+    stripped = re.sub(r"/\*.*?\*/", "", CSS, flags=re.S)
+    out: list[tuple[str, str]] = []
+    for selectors, body in re.findall(r"([^{}]+)\{([^{}]*)\}", stripped):
+        for selector in selectors.split(","):
+            subject = selector.strip().split()[-1] if selector.strip() else ""
+            if re.fullmatch(r"\.bar(\.[a-z-]+|:not\(\.[a-z-]+\))*", subject):
+                out.append((selector.strip(), body))
+    return out
+
+
+def test_the_header_is_a_capsule_and_never_a_band() -> None:
+    """The bar is a floating control, not a strip sealed to three window edges.
+
+    This has regressed once already. The first attempt at it made the header
+    transparent over the hero and let the full-width band return the moment
+    anything scrolled underneath, which left every screen after the first one
+    with the original problem: a near-opaque strip spanning the window. No blur
+    radius rescues that shape -- what reads as a band is the full-bleed edge,
+    not the alpha -- so the shape is what the test pins.
+
+    `.bar` is therefore allowed to be geometry and nothing else. All of the
+    material lives on `.bar-island`, which hugs its own contents and is centred
+    with air on every side.
+    """
+
+    header = HTML.split('<header class="bar">', maxsplit=1)[1].split(
+        "</header>", maxsplit=1
+    )[0]
+    # One capsule holding the whole header, wordmark and nav inside it.
+    assert header.count('class="bar-island"') == 1
+    island = header.split('class="bar-island"', maxsplit=1)[1]
+    assert 'class="bar-left"' in island and 'class="bar-right"' in island
+
+    # It is a capsule, it hugs its contents, and it is centred.
+    geometry = next(
+        body
+        for selectors, body in re.findall(r"([^{}]+)\{([^{}]*)\}", CSS)
+        if selectors.strip() == ".bar-island" and "width: fit-content" in body
+    )
+    assert "border-radius: var(--r-pill)" in geometry
+    assert "margin: 0 auto" in geometry
+
+    # Both scroll states dress the capsule; neither dresses the bar.
+    assert ".bar.solid .bar-island" in CSS
+    assert "html.reveals .bar:not(.solid) .bar-island" in CSS
+
+    painted: list[str] = []
+    for selector, body in _blocks_whose_subject_is_the_bar():
+        for declaration in body.split(";"):
+            prop, _, value = declaration.partition(":")
+            prop, value = prop.strip(), value.strip()
+            paints = prop in ("background", "background-color", "border-bottom")
+            if paints and value not in ("none", "0"):
+                painted.append(f"{selector} {{ {prop}: {value} }}")
+            if prop.endswith("backdrop-filter") and value != "none":
+                painted.append(f"{selector} {{ {prop}: {value} }}")
+
+    assert not painted, (
+        "the header shell must paint nothing -- these put the full-width strip "
+        "back:\n" + "\n".join(painted)
+    )
+
+
+def test_nothing_in_the_header_spans_the_window() -> None:
+    """The reading-progress line rides the capsule, not the top of the screen.
+
+    It was a fixed 2px rule across the whole viewport, which was invisible next
+    to a full-width bar and became the only full-bleed element on the page once
+    the bar stopped being one -- reading as a stray artefact rather than as an
+    indicator.
+    """
+
+    island = HTML.split('class="bar-island"', maxsplit=1)[1].split("</header>")[0]
+    assert 'id="progress"' in island
+
+    progress = re.findall(r"\.progress\s*\{([^{}]*)\}", CSS)
+    assert progress, "the progress line needs a rule to be checked"
+    assert "position: absolute" in progress[-1]
+    assert "width: auto" in progress[-1]

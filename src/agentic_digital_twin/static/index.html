@@ -50,8 +50,6 @@
   </head>
   <body>
     <a class="skip-link" href="#composer-input">Skip to chat</a>
-    <div class="progress" id="progress" aria-hidden="true"></div>
-
     <!-- Two separate things. .scene is fixed and deliberately plain: it is only
          there so the glass panels further down the page have a tinted ground to
          refract. .range is the picture, and it is anchored to the first screen
@@ -114,23 +112,31 @@
     </div>
     </div>
 
+    <!--
+      The bar is a positioning shell and paints nothing. All of the material
+      lives on .bar-island, so the header is a floating control rather than a
+      strip: the sky it sits over runs on, uninterrupted, to the edges.
+    -->
     <header class="bar">
-      <a class="bar-left" href="/">
-        <!-- 112px WebP: the page renders this at 26 and 56 CSS pixels, so the
-             full-resolution JPEG (ten times the bytes) is kept only for the
-             social card, where a 112px image would be too small. -->
-        <img class="face" src="/static/avatar.webp?v=31" alt="" width="26" height="26">
-        <span class="name">Prathamesh<em>.ai</em></span>
-      </a>
-      <nav class="bar-right">
-        <a href="#experience">Experience</a>
-        <a href="#work">Work</a>
-        <a href="#faq">FAQ</a>
-        <button class="q" id="bell" type="button">Activity<span class="dot" id="bell-dot" hidden></span></button>
-        <button class="q" id="jd-button" type="button">Role fit</button>
-        <button class="q" id="theme-button" type="button" aria-label="Theme">Theme</button>
-        <button class="q strong" id="contact-button" type="button">Contact</button>
-      </nav>
+      <div class="bar-island">
+        <a class="bar-left" href="/">
+          <!-- 112px WebP: the page renders this at 26 and 56 CSS pixels, so the
+               full-resolution JPEG (ten times the bytes) is kept only for the
+               social card, where a 112px image would be too small. -->
+          <img class="face" src="/static/avatar.webp?v=31" alt="" width="26" height="26">
+          <span class="name">Prathamesh<em>.ai</em></span>
+        </a>
+        <nav class="bar-right">
+          <a href="#experience">Experience</a>
+          <a href="#work">Work</a>
+          <a href="#faq">FAQ</a>
+          <button class="q" id="bell" type="button">Activity<span class="dot" id="bell-dot" hidden></span></button>
+          <button class="q" id="jd-button" type="button">Role fit</button>
+          <button class="q" id="theme-button" type="button" aria-label="Theme">Theme</button>
+          <button class="q strong" id="contact-button" type="button">Contact</button>
+        </nav>
+        <div class="progress" id="progress" aria-hidden="true"></div>
+      </div>
     </header>
 
     <div class="feed-wrap"><div class="feed" id="feed" hidden>
