@@ -63,9 +63,11 @@
       <div class="range-sky"></div>
       <div class="dawn"></div>
       <div class="sun"></div>
-      <!-- slice, not none: stretching the drawing to the viewport skews every
-           facet and the light stops agreeing with the sun. -->
-      <svg class="ridges" viewBox="0 0 1440 520" preserveAspectRatio="xMidYMax slice">
+      <!-- Never `none`: stretching the drawing to the viewport skews every facet
+           and the light stops agreeing with the sun. `meet` rather than `slice`
+           because the box now carries the drawing's own ratio, so the two are
+           equivalent — and if that ever drifts, fitting is the safe failure. -->
+      <svg class="ridges" viewBox="0 0 1440 520" preserveAspectRatio="xMidYMax meet">
         <defs>
           <!-- The sun sits low on the right, so every ridge is lit from the
                right and shadowed to the left. One gradient per range is what
@@ -82,6 +84,12 @@
           </linearGradient>
           <linearGradient id="lit4" x1="1" y1="0" x2="0.25" y2="0.9">
             <stop class="s4a" offset="0" /><stop class="s4b" offset="1" />
+          </linearGradient>
+          <!-- The shadow polygons close on a vertical line at the summit's x.
+               Fading the shade out towards that edge stops it reading as a
+               seam down the mountain. -->
+          <linearGradient id="shade" x1="0" y1="0" x2="1" y2="0">
+            <stop class="sh-a" offset="0" /><stop class="sh-b" offset="0.55" /><stop class="sh-c" offset="1" />
           </linearGradient>
         </defs>
 

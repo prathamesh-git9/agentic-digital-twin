@@ -227,7 +227,23 @@ html[data-theme="light"] .grain { opacity: .14; }
   background: radial-gradient(circle, var(--sun-halo) 0 28%, transparent 68%);
 }
 
-.ridges { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: min(40vh, 330px); }
+/*
+  The box carries the drawing's own aspect ratio, so nothing is ever cropped in
+  either direction.
+
+  It used to be a fixed 330px against a 520-unit viewBox, and `slice` scales to
+  cover and crops the overflow — 190 units off the top, which is exactly where
+  the summit is. The tallest peak arrived with its top sawn off flat, snow caps
+  and all. Simply making the box taller fixed the desktop and broke the phone
+  the other way: cover then crops horizontally instead, and 390px of a 1440-unit
+  drawing is a fragment of one mountain shoved into a corner. With the box
+  matching 1440:520 there is no overflow to crop, and the whole skyline scales
+  with the window.
+*/
+.ridges {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  width: 100%; aspect-ratio: 1440 / 520; height: auto;
+}
 
 .r4 > path { fill: url(#lit4); }
 .r3 > path { fill: url(#lit3); }
@@ -241,8 +257,19 @@ html[data-theme="light"] .grain { opacity: .14; }
 .s4a { stop-color: var(--ridge-4-lit); } .s4b { stop-color: var(--ridge-4); }
 
 /* The shaded flanks. Multiply would be truer but costs a blend layer over the
-   whole hero; a flat dark at low alpha is indistinguishable here. */
-.ridge .facet { fill: var(--facet); stroke: none; }
+   whole hero; a flat dark at low alpha is indistinguishable here.
+
+   The fill is a gradient rather than a flat colour because of how the shadow
+   polygon closes: it traces the crest down the sunless side, runs along the
+   base, and then goes straight back up to the summit's x. That closing edge is
+   a vertical line through the middle of the massif, and a flat fill made it a
+   visible seam from the summit to the base. Fading the shadow out towards it
+   turns the same polygon into a terminator, which is what it was always meant
+   to be. */
+.ridge .facet { fill: url(#shade); stroke: none; }
+.sh-a { stop-color: var(--facet); }
+.sh-b { stop-color: var(--facet); stop-opacity: .5; }
+.sh-c { stop-color: var(--facet); stop-opacity: 0; }
 .ridge .snow { fill: var(--snow); stroke: none; }
 
 /* The bases dissolve rather than ending in a wall of fill. Without this the
@@ -260,13 +287,29 @@ html[data-theme="light"] .grain { opacity: .14; }
 .haze {
   position: absolute; left: 0; right: 0; bottom: 0;
   height: min(40vh, 330px);
-  background: linear-gradient(180deg, var(--dawn) 0%, transparent 52%);
+  /*
+    It has to arrive, not start. This began at full `--dawn` on its own top
+    edge, which is a straight line of opaque cream drawn across the entire
+    width of the window at exactly 330px from the bottom. That was invisible
+    while the sky above it was nearly white; against the deepened blue it was
+    the hard horizon-that-isn't cutting the hero in half, and it cut straight
+    through the sun's glow as well.
+  */
+  background: linear-gradient(180deg,
+    transparent 0%,
+    color-mix(in srgb, var(--dawn) 55%, transparent) 26%,
+    var(--dawn) 52%,
+    color-mix(in srgb, var(--dawn) 60%, transparent) 78%,
+    transparent 100%);
   opacity: .62;
 }
 
 @media (max-width: 700px) {
   .sun { right: 10%; bottom: 34%; width: 108px; }
-  .ridges, .haze { height: min(40vh, 300px); }
+  /* The ridges are not in here any more: a fixed height on a narrow screen
+     overrides the drawing's own ratio, and cover then crops the sides away
+     until one mountain fills the corner. The haze still wants its own band. */
+  .haze { height: min(40vh, 300px); }
   .dawn { height: min(48vh, 360px); }
 }
 

@@ -77,7 +77,8 @@ def test_background_is_code_native_and_theme_aware() -> None:
 
     # The landscape is drawn, not downloaded.
     assert HTML.count('class="ridge ') == 4
-    assert HTML.count("<linearGradient") == 4
+    # Four lit ranges, plus the shade terminator.
+    assert HTML.count("<linearGradient") == 5
     scene = _scene()
     assert 'url("data:image/svg+xml' in scene
     assert not re.search(r"url\([^)]*\.(png|jpe?g|webp|gif|svg|woff2?)", scene), (
