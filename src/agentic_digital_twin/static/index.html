@@ -152,43 +152,15 @@
       -->
       <div class="deck">
 
-      <aside class="rail rail-left">
-        <section class="panel identity reveal">
-          <img class="rail-face" src="/static/avatar.webp?v=31" alt="Prathamesh Kalamkar" width="56" height="56" fetchpriority="high">
-          <strong>Prathamesh Kalamkar</strong>
-          <span>Back-end &amp; AI agent engineer</span>
-          <span class="avail"><i></i>Dublin · open to roles</span>
-          <div class="rail-links">
-            <a href="https://www.linkedin.com/in/prathamesh-kalamkar/" target="_blank" rel="noopener noreferrer">LinkedIn ↗</a>
-            <a href="https://github.com/prathamesh-git9" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
-            <button class="linkish" id="rail-contact" type="button">Email ↗</button>
-          </div>
-        </section>
-
-        <!-- Balances the rail against the two panels opposite, and says what the
-             twin actually does rather than repeating facts shown elsewhere. -->
-        <section class="panel note reveal d1">
-          <span class="panel-label">How it answers</span>
-          <ol class="pipeline">
-            <li>Understands the hiring goal</li>
-            <li>Builds the shortest safe plan</li>
-            <li>Chooses only relevant public tools</li>
-            <li>Verifies every claim before answering</li>
-          </ol>
-          <p>Each answer includes the run: plan, evidence, tools used and verification outcome.</p>
-        </section>
-
-      </aside>
-
       <!-- The input is the focal artefact; everything above it is one line. -->
       <section class="ask-hero">
         <!-- Only the opening copy retires once the conversation starts. It must
              not wrap the thread or the composer, or asking a question removes
              the chat from the page. -->
         <div id="intro">
-          <h1 class="reveal">Prathamesh<em>.ai</em></h1>
-          <p class="hero-lead reveal d1">Ask his agentic digital twin anything.</p>
-          <p class="hero-sub reveal d1">Give it a hiring goal. It plans the shortest safe route, retrieves evidence, chooses public tools when needed, and shows its work before answering.</p>
+          <p class="hero-eyebrow reveal"><i></i>Dublin &middot; open to back-end &amp; AI roles</p>
+          <h1 class="reveal">Ask his agentic digital twin what he&rsquo;s built.</h1>
+          <p class="hero-lead reveal d1">It answers hiring questions from his CV and his public code, and cites both &mdash; so you can check every claim.</p>
         </div>
 
         <div class="thread" id="messages" role="log" aria-live="polite"></div>
@@ -253,44 +225,6 @@
           <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M8 3v10M4 9l4 4 4-4" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </a>
       </section>
-
-
-
-      <aside class="rail rail-right">
-        <section class="panel reveal">
-          <span class="panel-label">Ask about any of these</span>
-          <!-- Buttons, not decoration. Each one looked clickable and did
-               nothing; each now puts its own question to the twin, which is
-               eight more ways into the conversation than the page had. -->
-          <div class="tiles">
-            <button type="button" class="tile" data-ask="How does his retrieval actually work?"><b>RAG</b><i>hybrid + RRF</i></button>
-            <button type="button" class="tile" data-ask="What is his experience with MCP?"><b>MCP</b><i>servers</i></button>
-            <button type="button" class="tile" data-ask="How does he handle tool orchestration and failures?"><b>Tools</b><i>function calls</i></button>
-            <button type="button" class="tile" data-ask="What has he built with LangChain?"><b>LangChain</b><i>tool pipelines</i></button>
-            <button type="button" class="tile" data-ask="How does he use LangGraph for durable agent workflows?"><b>LangGraph</b><i>state graphs</i></button>
-            <button type="button" class="tile" data-ask="How does he defend against prompt injection?"><b>Guardrails</b><i>injection</i></button>
-            <button type="button" class="tile" data-ask="What agent systems has he built, and how do they recover?"><b>Agents</b><i>durable</i></button>
-            <button type="button" class="tile" data-ask="How does he keep every claim grounded in a source?"><b>Grounding</b><i>per claim</i></button>
-          </div>
-        </section>
-
-        <section class="panel reveal d1">
-          <span class="panel-label">Live now</span>
-          <div class="live-rows">
-            <div><span class="k">Model</span><span class="v" id="rail-model">…</span></div>
-            <div><span class="k">Grounding</span><span class="v ok">per claim</span></div>
-            <div><span class="k">Repos</span><span class="v" id="rail-repos">10</span></div>
-            <div><span class="k">Sources</span><span class="v">CV + GitHub</span></div>
-          </div>
-          <div class="runtime-map" aria-hidden="true">
-            <span><i class="runtime-edge"></i><b>Edge</b></span><em></em>
-            <span><i class="runtime-api"></i><b>API</b></span><em></em>
-            <span><i class="runtime-agent"></i><b>Agent</b></span><em></em>
-            <span><i class="runtime-tools"></i><b>Tools</b></span>
-          </div>
-          <p class="runtime-caption">goal → plan → tools → evidence → verify</p>
-        </section>
-      </aside>
 
       </div>
 
@@ -441,6 +375,56 @@
           <div class="retrieval-out" id="retrieval-out"></div>
         </div>
 
+        <!--
+          These three came out of the hero rails. They answer "how does this
+          thing work", which is this band's whole subject; above the fold they
+          were three more things competing with the one thing to do.
+        -->
+        <div class="how-grid reveal">
+<section class="panel note reveal">
+          <span class="panel-label">How it answers</span>
+          <ol class="pipeline">
+            <li>Understands the hiring goal</li>
+            <li>Builds the shortest safe plan</li>
+            <li>Chooses only relevant public tools</li>
+            <li>Verifies every claim before answering</li>
+          </ol>
+          <p>Each answer includes the run: plan, evidence, tools used and verification outcome.</p>
+        </section>
+        <section class="panel reveal">
+          <span class="panel-label">Ask about any of these</span>
+          <!-- Buttons, not decoration. Each one looked clickable and did
+               nothing; each now puts its own question to the twin, which is
+               eight more ways into the conversation than the page had. -->
+          <div class="tiles">
+            <button type="button" class="tile" data-ask="How does his retrieval actually work?"><b>RAG</b><i>hybrid + RRF</i></button>
+            <button type="button" class="tile" data-ask="What is his experience with MCP?"><b>MCP</b><i>servers</i></button>
+            <button type="button" class="tile" data-ask="How does he handle tool orchestration and failures?"><b>Tools</b><i>function calls</i></button>
+            <button type="button" class="tile" data-ask="What has he built with LangChain?"><b>LangChain</b><i>tool pipelines</i></button>
+            <button type="button" class="tile" data-ask="How does he use LangGraph for durable agent workflows?"><b>LangGraph</b><i>state graphs</i></button>
+            <button type="button" class="tile" data-ask="How does he defend against prompt injection?"><b>Guardrails</b><i>injection</i></button>
+            <button type="button" class="tile" data-ask="What agent systems has he built, and how do they recover?"><b>Agents</b><i>durable</i></button>
+            <button type="button" class="tile" data-ask="How does he keep every claim grounded in a source?"><b>Grounding</b><i>per claim</i></button>
+          </div>
+        </section>
+        <section class="panel reveal d1">
+          <span class="panel-label">Live now</span>
+          <div class="live-rows">
+            <div><span class="k">Model</span><span class="v" id="rail-model">…</span></div>
+            <div><span class="k">Grounding</span><span class="v ok">per claim</span></div>
+            <div><span class="k">Repos</span><span class="v" id="rail-repos">10</span></div>
+            <div><span class="k">Sources</span><span class="v">CV + GitHub</span></div>
+          </div>
+          <div class="runtime-map" aria-hidden="true">
+            <span><i class="runtime-edge"></i><b>Edge</b></span><em></em>
+            <span><i class="runtime-api"></i><b>API</b></span><em></em>
+            <span><i class="runtime-agent"></i><b>Agent</b></span><em></em>
+            <span><i class="runtime-tools"></i><b>Tools</b></span>
+          </div>
+          <p class="runtime-caption">goal → plan → tools → evidence → verify</p>
+        </section>
+        </div>
+
         <div class="mcp reveal" id="mcp-panel" hidden>
           <div class="band-head"><span class="kicker">Model Context Protocol</span><h3 id="mcp-title">MCP servers</h3></div>
           <p class="mcp-lede" id="mcp-lede"></p>
@@ -480,6 +464,12 @@
           <div class="cta-row">
             <button class="btn" id="cta-ask" type="button">Ask a question</button>
             <button class="btn ghost" id="cta-contact" type="button">Contact him</button>
+          </div>
+          <!-- The profile links used to sit in the hero's identity rail. This is
+               where someone has actually decided to look him up. -->
+          <div class="cta-links">
+            <a href="https://www.linkedin.com/in/prathamesh-kalamkar/" target="_blank" rel="noopener noreferrer">LinkedIn &#8599;</a>
+            <a href="https://github.com/prathamesh-git9" target="_blank" rel="noopener noreferrer">GitHub &#8599;</a>
           </div>
         </div>
       </section>

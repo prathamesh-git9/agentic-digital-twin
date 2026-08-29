@@ -147,7 +147,7 @@ def test_premium_depth_system_shapes_every_portfolio_section() -> None:
 def test_agentic_digital_twin_brand_and_frameworks_are_consistent() -> None:
     public_copy = "\n".join((HTML, APP, WIDGET, GROUNDING, MAIN, CONFIG, README, PACKAGE))
     assert "Agentic Digital Twin" in HTML
-    assert "Ask his agentic digital twin anything." in HTML
+    assert "Ask his agentic digital twin what he&rsquo;s built." in HTML
     assert "ASK AGENTIC DIGITAL TWIN" in WIDGET
     assert "agentic digital twin" in README
     assert "agentic digital twin" in PACKAGE
@@ -237,7 +237,10 @@ def test_clawd_and_cloud_architecture_are_contained_and_lightweight() -> None:
     assert "@keyframes clawd-look-left" in CSS
     assert "@keyframes clawd-track" in CSS
     assert "translate3d(var(--clawd-travel)" in CSS
-    assert "grid-template-columns: 230px minmax(0, 720px) 230px" in CSS
+    # The three-column deck is gone: the hero is one centred column and the
+    # rails' contents moved into the band about how the twin works.
+    assert "grid-template-columns: 230px minmax(0, 720px) 230px" not in CSS
+    assert 'class="rail' not in HTML
     assert HTML.count("<animateMotion") == 0
     assert HTML.count('class="cloud-packet') == 0
     assert "animation: cloud-route" not in CSS
@@ -252,7 +255,10 @@ def test_clawd_and_cloud_architecture_are_contained_and_lightweight() -> None:
     assert ".cloud-backbone" not in CSS
     assert ".aws-zone" not in CSS
     assert 'class="aws-zone' not in HTML
-    assert ".band > .band-head { grid-column: 1; position: sticky;" in CSS
+    # The heading no longer rides beside its section in a sticky column: it
+    # sits above it, centred, at section-heading size.
+    assert ".band > .band-head { grid-column: 1; position: sticky;" not in CSS
+    assert "text-align: center;" in CSS.split("SECTION HEADINGS", 1)[1]
     assert "  .band-head { grid-column: 1; position: sticky;" not in CSS
     assert ".band[data-system]::after" in CSS
     assert ".band[data-system] .band-head::after { display: none; }" in CSS
