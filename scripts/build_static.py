@@ -44,6 +44,58 @@ COPY = (
 COPY_DIRS: tuple[str, ...] = ()
 
 
+def _strip_css_comments(css: str) -> str:
+    """Drop `/* ... */` comments without touching anything inside a string.
+
+    This stylesheet is 29% comments by weight, and those comments are the
+    file's documentation: they record why each surface is built the way it is,
+    and they must stay in the source. A browser has no use for them, so the
+    published copy goes without -- 145 KB becomes 100 KB, and the 38 KB that
+    actually crosses the wire gzipped becomes 20 KB.
+
+    Written as a scanner rather than a regular expression because the file
+    carries `url("data:image/svg+xml,...")` payloads and `content` strings. A
+    naive `/\\*.*?\\*/` would happily open a "comment" inside one of those and
+    delete the rest of the rule with it.
+    """
+
+    out: list[str] = []
+    index = 0
+    quote = ""
+    while index < len(css):
+        char = css[index]
+        if quote:
+            out.append(char)
+            if char == "\\" and index + 1 < len(css):
+                out.append(css[index + 1])
+                index += 2
+                continue
+            if char == quote:
+                quote = ""
+            index += 1
+            continue
+        if char in ("'", '"'):
+            quote = char
+            out.append(char)
+            index += 1
+            continue
+        if css.startswith("/*", index):
+            end = css.find("*/", index + 2)
+            index = len(css) if end == -1 else end + 2
+            continue
+        out.append(char)
+        index += 1
+
+    # Removing a comment leaves behind the blank lines that framed it.
+    kept: list[str] = []
+    for line in "".join(out).split("\n"):
+        line = line.rstrip()
+        if not line.strip() and (not kept or not kept[-1].strip()):
+            continue
+        kept.append(line)
+    return "\n".join(kept).strip() + "\n"
+
+
 def _repo_snapshot(offline: bool) -> list[dict[str, Any]]:
     """Live repository metadata, or an honest placeholder when unreachable."""
     if not offline:
@@ -250,10 +302,18 @@ def build(out: Path, *, offline: bool) -> None:
     print("• assets")
     for name in COPY:
         source = STATIC / name
-        if source.is_file():
-            shutil.copy2(source, out / name)
-        else:
+        if not source.is_file():
             print(f"  missing {name}; skipped")
+            continue
+        if name == "styles.css":
+            authored = source.read_text(encoding="utf-8")
+            shipped = _strip_css_comments(authored)
+            (out / name).write_text(shipped, encoding="utf-8")
+            cut = (len(authored) - len(shipped)) / 1024
+            kept = len(shipped) / 1024
+            print(f"  styles.css {kept:.0f} KB ({cut:.0f} KB of comments cut)")
+        else:
+            shutil.copy2(source, out / name)
     for name in COPY_DIRS:
         source = STATIC / name
         if source.is_dir():
