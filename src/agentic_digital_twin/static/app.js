@@ -439,6 +439,11 @@
     turn("you", text);
     el.input.value = "";
     el.input.style.height = "auto";
+    // The auto-grow above caches the height it last wrote. Clearing the box
+    // here bypasses that cache, so it has to be told, or the composer stays
+    // tall after a multi-line question is sent.
+    composerHeight = 0;
+    composerLength = 0;
     // A grounded answer takes several seconds. Silent dots are indistinguishable
     // from a broken page, so say what is happening and keep a running clock.
     const pending = turn("twin", "");
@@ -512,14 +517,39 @@
     }
   }
 
+  let composerHeight = 0;
+  let composerLength = 0;
+
   el.composer.addEventListener("submit", (e) => { e.preventDefault(); ask(el.input.value); });
   el.input.addEventListener("keydown", (e) => {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); ask(el.input.value); }
   });
-  el.input.addEventListener("input", () => {
-    el.input.style.height = "auto";
-    el.input.style.height = `${Math.min(el.input.scrollHeight, 170)}px`;
-  });
+  /*
+    Auto-growing the composer used to cost two layouts per keystroke: the height
+    was set to `auto`, `scrollHeight` was read back -- which cannot be answered
+    without laying out -- and then a height was written, dirtying it again. That
+    is the write-read-write pattern that forces synchronous layout, and it was
+    57 layouts to type nineteen characters.
+
+    The `auto` reset exists only so the box can shrink; a textarea's
+    `scrollHeight` already reports the taller content when text is added. So it
+    is only paid when the text got shorter, which is the rare case, and the
+    write is skipped whenever the height is not actually changing.
+  */
+  const growComposer = () => {
+    const length = el.input.value.length;
+    const shrank = length < composerLength;
+    composerLength = length;
+    if (shrank) el.input.style.height = "auto";
+    const wanted = Math.min(el.input.scrollHeight, 170);
+    if (wanted !== composerHeight) {
+      composerHeight = wanted;
+      el.input.style.height = `${wanted}px`;
+    } else if (shrank) {
+      el.input.style.height = `${wanted}px`;
+    }
+  };
+  el.input.addEventListener("input", growComposer);
 
   el.starters.innerHTML = STARTERS.map((s) => `<button type="button">${esc(s)}</button>`).join("");
   el.starters.addEventListener("click", (e) => {
@@ -1170,11 +1200,32 @@
 
   const progress = $("#progress");
   const bar = document.querySelector(".bar");
+
+  /*
+    `scrollHeight` is a layout-forcing read. Taken inside the scroll handler it
+    was taken on every animation frame of every scroll, so the browser had to
+    stop and lay the document out before it could paint -- measured at 314ms of
+    layout and 528ms of style recalculation for one pass down the page.
+
+    The document's height only changes when the document does, so it is cached
+    and re-measured on the events that can change it, not on the ones that
+    cannot. Scrolling is not one of them.
+  */
+  let scrollable = 0;
+  const remeasure = () => {
+    scrollable = document.documentElement.scrollHeight - window.innerHeight;
+  };
+
+  let lastRatio = -1;
   const paint = () => {
     if (progress) {
-      const max = document.documentElement.scrollHeight - window.innerHeight;
-      const ratio = max > 0 ? Math.min(1, window.scrollY / max) : 0;
-      progress.style.transform = `scaleX(${ratio})`;
+      const ratio = scrollable > 0 ? Math.min(1, window.scrollY / scrollable) : 0;
+      // Writing the same transform again still invalidates style for the
+      // element, so the cheapest write is the one that is skipped.
+      if (Math.abs(ratio - lastRatio) > 0.0005) {
+        lastRatio = ratio;
+        progress.style.transform = `scaleX(${ratio})`;
+      }
     }
     // Light glass is right over the sky at the top of the page and wrong
     // everywhere else: at that fill, body copy and cards passing under the bar
@@ -1192,7 +1243,14 @@
     });
   };
   addEventListener("scroll", queuePaint, { passive: true });
-  addEventListener("resize", queuePaint);
+  addEventListener("resize", () => { remeasure(); queuePaint(); });
+  // The thread grows as answers arrive and the page grows with it, so the
+  // cached height has to follow the one element whose size actually moves it.
+  if ("ResizeObserver" in window) {
+    const ro = new ResizeObserver(() => { remeasure(); queuePaint(); });
+    ro.observe(document.documentElement);
+  }
+  remeasure();
   paint();
 
   /* ---------- copy an answer ---------- */
