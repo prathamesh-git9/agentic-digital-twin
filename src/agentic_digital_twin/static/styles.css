@@ -38,7 +38,7 @@
      haze between ranges, so one value keeps them agreeing. */
   /* Sky overhead, and the warm band it thins into at the horizon. Cool ranges
      against a warm glow is what makes this read as light rather than shapes. */
-  --sky-high: #23639f;
+  --sky-high: #9ac9ef;
   --dawn: #fbe6cd;
   --dawn-hot: #ffdfae;
   --sun-halo: rgba(255, 208, 146, .5);
@@ -198,11 +198,11 @@ html[data-theme="light"] .grain { opacity: .14; }
 .range-sky {
   position: absolute; inset: 0;
   background: linear-gradient(180deg,
-    color-mix(in srgb, var(--sky-high) 84%, #000) 0%,
-    var(--sky-high) 30%,
-    color-mix(in srgb, var(--sky-high) 94%, transparent) 54%,
-    color-mix(in srgb, var(--sky-high) 40%, transparent) 68%,
-    transparent 82%);
+    color-mix(in srgb, var(--sky-high) 93%, #000) 0%,
+    var(--sky-high) 32%,
+    color-mix(in srgb, var(--sky-high) 92%, transparent) 56%,
+    color-mix(in srgb, var(--sky-high) 40%, transparent) 70%,
+    transparent 84%);
 }
 
 /* The warm band the sun sits in. Sitting under the ridges in paint order, so
@@ -362,30 +362,14 @@ html.reveals .reveal.d2 { transition-delay: .18s; }
 /* The pill is the one thing that must not stretch to the column. */
 .hero-eyebrow { align-self: center; }
 
-/* The opening block sits on the saturated part of the sky in both themes, so
-   its colour comes from the sky rather than from the page's ink tokens. */
-#intro h1 { color: #ffffff; }
-
 /*
-  A scrim, because the sky is a drawing and not a flat fill. The sun's glow
-  reaches up the right-hand side, and measured across the sub-heading it took
-  the last tenth of the line from 4.7:1 down to 3.8:1 -- so the text was legible
-  for four fifths of its width and not for the rest. Deepening the whole sky to
-  cover that would have darkened the entire hero for the sake of one corner.
-  This sits only behind the words, has no edge to see, and holds wherever the
-  sun ends up.
+  The hero is ink on a light sky. It was white on a deep one for a while, which
+  is what the reference does, and that needed both a much darker crown and a
+  scrim behind the words to hold the sun's glow off them. On a light blue sky
+  neither is wanted: dark type has more contrast here than white type ever had
+  there, and a scrim would just be a smudge.
 */
-#intro { position: relative; }
-#intro::before {
-  content: ""; position: absolute; inset: -42% -34%;
-  z-index: -1; pointer-events: none;
-  /* The falloff has to finish well inside the box or the box itself becomes
-     the edge -- which is exactly what the first attempt at this looked like:
-     a dark rectangle sitting on the sky. */
-  background: radial-gradient(ellipse 44% 42% at 50% 50%,
-    rgba(4, 22, 44, .44) 0%, rgba(4, 22, 44, .32) 46%,
-    rgba(4, 22, 44, .10) 74%, transparent 100%);
-}
+#intro h1 { color: var(--ink); }
 /* Large, tight and short-measure: the headline is the design. 0.96 leading and
    a negative tracking are what stop a serif this size reading as loose. */
 .ask-hero h1 { font-size: clamp(40px, 5.6vw, 80px); line-height: .96; letter-spacing: -.0125em; font-weight: 500; text-wrap: balance; }
@@ -394,13 +378,11 @@ html.reveals .reveal.d2 { transition-delay: .18s; }
 .ask-hero h1 em { font-style: normal; color: var(--clay); }
 /* Two lines, not one block: the invitation to type reads first, the qualifier
    second. A single paragraph gave them equal weight and neither landed. */
-.hero-lead { color: #ffffff; font-size: clamp(16px, 1.2vw, 19px); line-height: 1.4; font-weight: 500; letter-spacing: -.02em; margin: 20px auto 0; max-width: 560px; }
+.hero-lead { color: var(--ink-2); font-size: clamp(16px, 1.2vw, 19px); line-height: 1.4; font-weight: 500; letter-spacing: -.02em; margin: 20px auto 0; max-width: 560px; }
 
-/* The availability line the identity rail used to carry. It sits on the
-   brightest part of the sky, so it is a dark pill rather than the page's usual
-   pale glass -- a translucent white chip there is white type on white. */
-.hero-eyebrow { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; letter-spacing: -.005em; color: #ffffff; background: rgba(6, 28, 54, .48); border: 1px solid rgba(255, 255, 255, .26); border-radius: var(--r-pill); padding: 6px 14px 6px 11px; margin-bottom: 22px; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
-.hero-eyebrow i { width: 7px; height: 7px; border-radius: 50%; background: #7ef0bd; flex: none; }
+/* The availability line the identity rail used to carry. */
+.hero-eyebrow { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; letter-spacing: -.005em; color: var(--ink-2); background: var(--g-fill); border: 1px solid var(--g-edge); border-radius: var(--r-pill); padding: 6px 14px 6px 11px; margin-bottom: 22px; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+.hero-eyebrow i { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); flex: none; }
 .hero-sub { color: var(--ink-2); font-size: clamp(14.5px, 1vw, 17px); margin-top: 10px; max-width: 56ch; line-height: 1.6; }
 
 .thread { display: flex; flex-direction: column; gap: 28px; padding: 34px 0 8px; }
@@ -1729,31 +1711,6 @@ html[data-theme="dark"] {
 html.reveals .bar:not(.solid) .bar-island {
   background: var(--g-fill-bar-rest);
   box-shadow: var(--g-lip), var(--g-shadow-rest);
-}
-
-/*
-  Over the sky the capsule is dark, not pale. The light theme's rest fill is a
-  34% white, which was right when the crown of the sky was near-white; against
-  the deepened blue it read as a bright bar again -- the same complaint the
-  capsule was built to answer, in a rounder shape. So at the top of a light
-  page the glass takes the sky's own colour and its type goes white, and it
-  hands back to the pale tier the moment the page scrolls under it -- or the
-  moment a conversation starts, which dims the drawing for the transcript's
-  sake and would otherwise leave a dark capsule floating on a pale page.
-*/
-html[data-theme="light"].reveals body:not(.has-thread) .bar:not(.solid) .bar-island {
-  background: rgba(6, 28, 54, .30);
-  border-color: rgba(255, 255, 255, .26);
-}
-html[data-theme="light"].reveals body:not(.has-thread) .bar:not(.solid) .bar-island .name,
-html[data-theme="light"].reveals body:not(.has-thread) .bar:not(.solid) .bar-right a,
-html[data-theme="light"].reveals body:not(.has-thread) .bar:not(.solid) .bar-right .q {
-  color: #ffffff;
-}
-html[data-theme="light"].reveals body:not(.has-thread) .bar:not(.solid) .name em { color: #bcd9f4; }
-html[data-theme="light"].reveals body:not(.has-thread) .bar:not(.solid) .bar-right .q.strong {
-  background: #ffffff;
-  color: #123c66;
 }
 
 /* Once the page travels underneath, it takes the fill that turns words into a
