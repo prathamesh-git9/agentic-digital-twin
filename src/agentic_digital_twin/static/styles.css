@@ -1821,11 +1821,29 @@ html[data-theme="dark"] .bands {
 */
 .thread:not(:empty) ~ .dock::before {
   left: 50%; right: auto; width: 100vw; transform: translateX(-50%);
-  background: var(--g-fill-heavy);
-  backdrop-filter: var(--g-blur);
-  -webkit-backdrop-filter: var(--g-blur);
-  mask-image: linear-gradient(to bottom, transparent 0, #000 28px);
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 28px);
+  /*
+    A ramp, not a flat fill, and it needs room to be one.
+
+    As a flat `--g-fill-heavy` with a 28px top fade this was a near-white panel
+    with hard sides: on a coloured sky, a white rectangle behind the composer
+    that the answer ran into and greyed out. But a ramp that starts at the old
+    -60px has no room — the composer's top edge is only 76px down, so the fill
+    is still half transparent exactly where the transcript needs to have gone,
+    and the answer stays legible right into the input. The phone veil has had
+    this shape for a while and works because it is short and its ramp is steep.
+
+    So the veil starts 110px higher than the dock and is opaque from the bottom
+    through the composer, then fades out over the ~120px above it. Text is gone
+    before it reaches the input, and the fade is long enough that there is no
+    edge to find. There is no blur to help here: the rendering budget strips
+    `backdrop-filter` from this element, so the fill is doing all of the work.
+  */
+  top: -110px;
+  background: linear-gradient(to top,
+    var(--paper) 0%,
+    var(--paper) 55%,
+    color-mix(in srgb, var(--paper) 62%, transparent) 78%,
+    transparent 100%);
 }
 
 /* Full width is right where there are no rails. Once they appear, a veil across
@@ -1834,21 +1852,24 @@ html[data-theme="dark"] .bands {
    three sides. */
 @media (min-width: 901px) {
   .thread:not(:empty) ~ .dock::before {
-    /* The bleed has to stay inside the deck's own padding, which is
-       clamp(16px, 3vw, 28px) and therefore never less than 27px at this
-       breakpoint. At 44px the veil hung 16px past the right edge of a 1080px
-       viewport and put the document into horizontal overflow. */
-    left: -24px; right: -24px; width: auto; transform: none;
-    mask-image:
-      linear-gradient(to bottom, transparent 0, #000 28px),
-      linear-gradient(to right, transparent 0, #000 34px,
-                      #000 calc(100% - 34px), transparent 100%);
-    -webkit-mask-image:
-      linear-gradient(to bottom, transparent 0, #000 28px),
-      linear-gradient(to right, transparent 0, #000 34px,
-                      #000 calc(100% - 34px), transparent 100%);
-    mask-composite: intersect;
-    -webkit-mask-composite: source-in;
+    /*
+      The side fade and the bleed are one measurement, and getting that wrong
+      is what makes the tail of an answer reappear at the left margin: a 96px
+      fade against a 24px bleed spends its first 72px inside the text column,
+      so the veil is still half transparent where the words are. The bleed is
+      now wider than the fade, which puts the whole fade in the margin and the
+      veil at full strength everywhere text can be.
+
+      The bleed used to be capped at 24px because at 44px it hung past the
+      right edge of a 1080px viewport and put the document into horizontal
+      overflow. The deck clips its own x-axis now, so that is no longer how
+      this fails.
+    */
+    left: -120px; right: -120px; width: auto; transform: none;
+    mask-image: linear-gradient(to right, transparent 0, #000 96px,
+                                #000 calc(100% - 96px), transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, transparent 0, #000 96px,
+                                        #000 calc(100% - 96px), transparent 100%);
   }
 }
 
@@ -2451,9 +2472,32 @@ body.has-thread .suggestions, body.has-thread .dock-note { display: none; }
     position: fixed; z-index: 36; inset-inline: 12px;
     bottom: 0; margin: 0; padding: 12px 0 max(12px, env(safe-area-inset-bottom));
   }
-  body.has-thread .dock::before {
-    inset-inline: -12px; top: -48px; bottom: -10px;
-    background: linear-gradient(to top, var(--paper) 54%, color-mix(in srgb, var(--paper) 88%, transparent) 78%, transparent);
+  /*
+    `display` has to be restored here. The earlier phone block turns the veil
+    off because it puts the composer in flow after the thread, where nothing
+    passes under it — and then this block puts the composer back to fixed
+    without undoing that. The result was a floating composer with the
+    transcript running unveiled straight into it, which is the one thing the
+    veil exists to prevent, and it only ever showed on a phone.
+
+    Both selectors are listed because the `display: none` is on the sibling
+    form, which is a class more specific than the body form and wins against
+    it however late this block comes.
+  */
+  body.has-thread .dock::before,
+  .thread:not(:empty) ~ .dock::before {
+    display: block;
+    /* `inset-inline` alone leaves the base rule's `width: 100vw` and its
+       centring transform in place, which put a viewport-wide veil half a
+       screen to the left and dissolved only the left half of each line. */
+    inset-inline: -12px; width: auto; transform: none;
+    top: -96px; bottom: -10px;
+    mask-image: none; -webkit-mask-image: none;
+    background: linear-gradient(to top,
+      var(--paper) 0%,
+      var(--paper) 58%,
+      color-mix(in srgb, var(--paper) 62%, transparent) 80%,
+      transparent 100%);
   }
   body.has-thread .thread { padding-bottom: 118px; }
 }
