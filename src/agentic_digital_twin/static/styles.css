@@ -380,9 +380,38 @@ html.reveals .reveal.d2 { transition-delay: .18s; }
    second. A single paragraph gave them equal weight and neither landed. */
 .hero-lead { color: var(--ink-2); font-size: clamp(16px, 1.2vw, 19px); line-height: 1.4; font-weight: 500; letter-spacing: -.02em; margin: 20px auto 0; max-width: 560px; }
 
-/* The availability line the identity rail used to carry. */
-.hero-eyebrow { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; letter-spacing: -.005em; color: var(--ink-2); background: var(--g-fill); border: 1px solid var(--g-edge); border-radius: var(--r-pill); padding: 6px 14px 6px 11px; margin-bottom: 22px; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
-.hero-eyebrow i { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); flex: none; }
+/*
+  The availability line the identity rail used to carry.
+
+  It was a pill: a near-white lozenge with a white border and a hard green dot,
+  which on a blue sky is an opaque blob with an invisible outline — a UI chip
+  pasted onto a landscape, and it was doing that eighteen pixels above an 80px
+  serif headline it had no business competing with. It says the same thing the
+  quickfacts row says a screen-inch lower, so it does not need the weight.
+
+  No chrome, and the site's own kicker language instead: the small mono
+  capitals that label every section below. The dot keeps a soft halo so it
+  still reads as a status light rather than a bullet.
+*/
+.hero-eyebrow {
+  display: inline-flex; align-items: center; gap: 9px;
+  font: 400 11px/1 var(--mono); letter-spacing: .15em; text-transform: uppercase;
+  /* Tracked capitals are wide; as a shrink-to-fit flex item it broke "ROLES"
+     onto a line of its own. */
+  white-space: nowrap;
+  /* Full ink, not the muted tone: at 11px this counts as small text and needs
+     4.5:1, and --ink-2 on the sky measured 4.30. Tracking and size keep it
+     quiet without the colour having to. */
+  color: var(--ink);
+  background: none; border: 0; padding: 0;
+  margin-bottom: 26px;
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+.hero-eyebrow i {
+  width: 6px; height: 6px; border-radius: 50%; flex: none;
+  background: var(--ok);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 22%, transparent);
+}
 .hero-sub { color: var(--ink-2); font-size: clamp(14.5px, 1vw, 17px); margin-top: 10px; max-width: 56ch; line-height: 1.6; }
 
 .thread { display: flex; flex-direction: column; gap: 28px; padding: 34px 0 8px; }
