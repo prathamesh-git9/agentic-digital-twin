@@ -921,6 +921,27 @@
 
   /* ---------- theme ---------- */
 
+  const menuButton = $("#menu-button");
+  const navIsland = $(".bar-island");
+  const setMenu = (open) => {
+    navIsland?.classList.toggle("nav-open", open);
+    menuButton?.setAttribute("aria-expanded", String(open));
+    if (menuButton) menuButton.textContent = open ? "Close" : "Menu";
+  };
+  menuButton?.addEventListener("click", () => setMenu(menuButton.getAttribute("aria-expanded") !== "true"));
+  $("#portfolio-nav")?.addEventListener("click", (event) => {
+    if (event.target.closest("a, button")) setMenu(false);
+  });
+  document.addEventListener("click", (event) => {
+    if (!navIsland?.contains(event.target)) setMenu(false);
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && menuButton?.getAttribute("aria-expanded") === "true") {
+      setMenu(false);
+      menuButton.focus();
+    }
+  });
+
   const saved = localStorage.getItem("twin-theme");
   if (saved) document.documentElement.dataset.theme = saved;
   el.themeButton.addEventListener("click", () => {
@@ -951,14 +972,16 @@
     // cards were in flight; the cards themselves size the section now.
     host.style.minHeight = "";
     if (!repos.length) { host.closest(".band")?.remove(); return; }
-    host.innerHTML = repos.map((r) => `
+    host.innerHTML = repos.map((r, index) => `
       <article class="card">
-        <h3><a href="${esc(r.url || r.html_url)}" target="_blank" rel="noopener noreferrer">${esc(r.name)}</a></h3>
+        <div class="repo-topline"><span class="repo-symbol" aria-hidden="true">${index === 0 ? "⌘" : "◇"}</span><span>REPOSITORY / ${String(index + 1).padStart(2, "0")}</span></div>
+        <h3><a href="${esc(r.url || r.html_url)}" target="_blank" rel="noopener noreferrer">${esc(r.name)}<span class="repo-arrow" aria-hidden="true">↗</span></a></h3>
         <p>${esc(r.description || "")}</p>
         ${r.topics?.length
           ? `<div class="topics">${r.topics.slice(0, 5)
               .map((t) => `<span>${esc(t)}</span>`).join("")}</div>`
           : ""}
+        <div class="repo-footer"><span class="repo-language">${esc(r.language || "Public code")}</span><span>${Number.isInteger(r.stars) ? `${r.stars} ${r.stars === 1 ? "star" : "stars"}` : "Source available"}</span></div>
       </article>`).join("");
   }
 

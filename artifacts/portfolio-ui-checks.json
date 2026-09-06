@@ -1,0 +1,37 @@
+[
+  {
+    "width": 360,
+    "chat_turns": 2,
+    "repositories": 10,
+    "overflow": false,
+    "console_errors": []
+  },
+  {
+    "width": 390,
+    "chat_turns": 2,
+    "repositories": 10,
+    "overflow": false,
+    "console_errors": []
+  },
+  {
+    "width": 768,
+    "chat_turns": 2,
+    "repositories": 10,
+    "overflow": false,
+    "console_errors": []
+  },
+  {
+    "width": 1024,
+    "chat_turns": 2,
+    "repositories": 10,
+    "overflow": false,
+    "console_errors": []
+  },
+  {
+    "width": 1440,
+    "chat_turns": 2,
+    "repositories": 10,
+    "overflow": false,
+    "console_errors": []
+  }
+]

@@ -15,7 +15,19 @@ That is the same correctness pattern explored in
 [`agent-runtime`](https://github.com/prathamesh-git9/agent-runtime): a proposal is not an
 authorised effect. Tests assert the boundary directly.
 
-![Prathamesh.ai agentic digital twin interface](artifacts/agentic-digital-twin-linkedin.png)
+![Prathamesh.ai engineering observatory portfolio](artifacts/portfolio-observatory.png)
+
+The portfolio pairs an editorial introduction with an interactive orbital sculpture: its
+three nodes ask the real twin about public code, evidence, and the person behind the work.
+Ten GitHub repositories lead into experience, capabilities, projects, and the retrieval
+explorer. Light and dark themes share the same layout, with keyboard-accessible mobile
+navigation and reduced-motion support.
+
+The visual layer lives in `static/observatory.css`. Instrument Serif and DM Sans are
+self-hosted WOFF2 fonts from [google/fonts](https://github.com/google/fonts), with their
+SIL Open Font Licenses included alongside the assets. The sculpture uses CSS geometry,
+with no canvas loop or WebGL dependency. See the [dark theme](artifacts/portfolio-observatory-dark.png)
+and [mobile layout](artifacts/portfolio-observatory-mobile.png).
 
 ## What carries weight
 

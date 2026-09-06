@@ -160,7 +160,7 @@ def test_agentic_digital_twin_brand_and_frameworks_are_consistent() -> None:
     assert "recruiter-facing AI twin" not in public_copy
     assert "Ask his digital twin" not in public_copy
     assert "Prathamesh Kalamkar's digital twin" not in public_copy
-    assert "app.js?v=60" in HTML
+    assert "app.js?v=61" in HTML
     for framework in ("LangChain", "LangGraph"):
         assert HTML.count(framework) >= 4
         assert framework in PROFILE
