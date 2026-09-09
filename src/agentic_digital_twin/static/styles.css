@@ -3381,3 +3381,15 @@ html[data-theme="dark"] .stack-strip { background: rgba(5, 14, 24, .28); }
   }
   .bar-island::before { display: none; }
 }
+
+/* Chat behavior repairs retain the original landing-page material and geometry.
+   Keep reply headings below navigation and the fade close to the input, where
+   it cannot wash out citations or copy controls in the preceding turn. */
+body.has-thread .turn { scroll-margin-top: calc(var(--bar-h) + 14px); }
+body.has-thread .dock::before,
+body.has-thread .thread:not(:empty) ~ .dock::before { top: -24px; }
+#composer textarea { min-width: 0; }
+@media (max-width: 700px) {
+  body.has-thread .thread { padding-bottom: calc(var(--chat-dock-height, 100px) + 44px); }
+  body.has-thread .turn { scroll-margin-bottom: calc(var(--chat-dock-height, 100px) + 30px); }
+}

@@ -15,19 +15,23 @@ That is the same correctness pattern explored in
 [`agent-runtime`](https://github.com/prathamesh-git9/agent-runtime): a proposal is not an
 authorised effect. Tests assert the boundary directly.
 
-![Prathamesh.ai engineering observatory portfolio](artifacts/portfolio-observatory.png)
+![Prathamesh.ai original interface](artifacts/original-optimized.png)
 
-The portfolio pairs an editorial introduction with an interactive orbital sculpture: its
-three nodes ask the real twin about public code, evidence, and the person behind the work.
-Ten GitHub repositories lead into experience, capabilities, projects, and the retrieval
-explorer. Light and dark themes share the same layout, with keyboard-accessible mobile
-navigation and reduced-motion support.
+The original August 30 interface is restored from `d4d3abc`. Its initial rendering matches
+the original screenshot byte-for-byte at 1440, 768, 390, and 320 pixels. The local retriever
+now caches vector norms and traverses the smaller trigram map, with identical rankings and
+answers across 86 comparison queries. A warmed local benchmark measured 28.3% less query
+time; this is not a page-load speed claim. See the
+[benchmark report](artifacts/original-retrieval-optimization.json) and
+[browser verification](artifacts/original-ui-checks.json).
 
-The visual layer lives in `static/observatory.css`. Instrument Serif and DM Sans are
-self-hosted WOFF2 fonts from [google/fonts](https://github.com/google/fonts), with their
-SIL Open Font Licenses included alongside the assets. The sculpture uses CSS geometry,
-with no canvas loop or WebGL dependency. See the [dark theme](artifacts/portfolio-observatory-dark.png)
-and [mobile layout](artifacts/portfolio-observatory-mobile.png).
+To reproduce the comparison after building the static site, run
+`node scripts/benchmark_static_retrieval.cjs site/data/corpus.json`.
+
+Chat UI regression checks cover reply positioning, draft resizing, IME input, copy
+controls, and focus during delayed replies at four viewport sizes. With Playwright
+installed, run `python scripts/check_chat_ui.py site` after building the static site.
+See the [browser results](artifacts/chat-ui-checks.json).
 
 ## What carries weight
 
@@ -295,7 +299,7 @@ OpenAPI documentation is at `/docs`.
 - [Agentic digital twin interface](artifacts/agentic-digital-twin-linkedin.png)
 - [Research/authority-gate screenshot](artifacts/research-flow.png)
 
-The test suite runs without network access or API keys (`191 passed`). It covers the context
+The test suite runs without network access or API keys (`218 passed`). It covers the context
 authority gate, rich field attribution/no invented profiles, robots/timeouts, email confidence
 and MX, ATS detection/ranking, safe referral/fanout copy, exact-body tokens, DNS refusal,
 global/once-only caps, LinkedIn approval/challenge/caps, mocked Pushover, injection/grounding,

@@ -117,17 +117,23 @@
     return set;
   }
 
-  function cosine(a, b) {
+  function squaredNorm(grams) {
+    let norm = 0;
+    for (const weight of grams.values()) norm += weight * weight;
+    return norm;
+  }
+
+  function cosine(a, b, normA, normB) {
+    if (!normA || !normB) return 0;
     let dot = 0;
-    let normA = 0;
-    let normB = 0;
-    for (const weight of a.values()) normA += weight * weight;
-    for (const [gram, weight] of b) {
-      normB += weight * weight;
-      const other = a.get(gram);
+    // A short question has far fewer trigrams than a CV paragraph. The dot
+    // product is symmetric, so visit only the smaller map. Counts are integers.
+    const smaller = a.size < b.size ? a : b;
+    const larger = a.size < b.size ? b : a;
+    for (const [gram, weight] of smaller) {
+      const other = larger.get(gram);
       if (other) dot += other * weight;
     }
-    if (!normA || !normB) return 0;
     return dot / Math.sqrt(normA * normB);
   }
 
@@ -156,13 +162,17 @@
     for (const [term, count] of documentFrequency) {
       idf.set(term, Math.log(1 + (total - count + 0.5) / (count + 0.5)));
     }
+    // Document vectors do not change between questions. Calculate their norms
+    // once at load time instead of traversing them again on every comparison.
+    const grams = docs.map(trigrams);
     return {
       items,
       frequencies,
       lengths,
       average: average || 1,
       idf,
-      grams: docs.map(trigrams),
+      grams,
+      gramNorms: grams.map(squaredNorm),
     };
   }
 
@@ -174,10 +184,10 @@
     for (let i = 0; i < index.items.length; i += 1) {
       const counts = index.frequencies[i];
       let score = 0;
+      const norm = 1 - b + (b * index.lengths[i]) / index.average;
       for (const term of terms) {
         const frequency = counts.get(term);
         if (!frequency) continue;
-        const norm = 1 - b + (b * index.lengths[i]) / index.average;
         score += (index.idf.get(term) || 0) * ((frequency * (k1 + 1)) / (frequency + k1 * norm));
       }
       if (score > 0) scored.push([i, score]);
@@ -187,9 +197,10 @@
 
   function semantic(index, query) {
     const queryGrams = trigrams(query);
+    const queryNorm = squaredNorm(queryGrams);
     const scored = [];
     for (let i = 0; i < index.items.length; i += 1) {
-      const score = cosine(queryGrams, index.grams[i]);
+      const score = cosine(queryGrams, index.grams[i], queryNorm, index.gramNorms[i]);
       if (score > 0.02) scored.push([i, score]);
     }
     return scored.sort((a, b) => b[1] - a[1]);

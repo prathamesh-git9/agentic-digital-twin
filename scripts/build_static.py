@@ -35,12 +35,6 @@ STATIC = ROOT / "src" / "agentic_digital_twin" / "static"
 SITE_URL = "https://prathamesh-git9.github.io/agentic-digital-twin"
 COPY = (
     "styles.css",
-    "observatory.css",
-    "instrument-serif.woff2",
-    "instrument-serif-italic.woff2",
-    "dm-sans.woff2",
-    "instrument-serif-OFL.txt",
-    "dm-sans-OFL.txt",
     "app.js",
     "twin-local.js",
     "favicon.svg",

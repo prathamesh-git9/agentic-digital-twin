@@ -134,7 +134,7 @@ def test_the_background_cannot_cost_a_frame() -> None:
 
 def test_premium_depth_system_shapes_every_portfolio_section() -> None:
     premium = CSS.split("PREMIUM DEPTH SYSTEM", maxsplit=1)[1]
-    assert "styles.css?v=76" in HTML
+    assert "styles.css?v=77" in HTML
     assert HTML.count('class="chapter-meta"') == 6
     assert ".bands > .band" in premium
     assert "counter-increment: chapter" in premium
@@ -160,7 +160,7 @@ def test_agentic_digital_twin_brand_and_frameworks_are_consistent() -> None:
     assert "recruiter-facing AI twin" not in public_copy
     assert "Ask his digital twin" not in public_copy
     assert "Prathamesh Kalamkar's digital twin" not in public_copy
-    assert "app.js?v=61" in HTML
+    assert "app.js?v=64" in HTML
     for framework in ("LangChain", "LangGraph"):
         assert HTML.count(framework) >= 4
         assert framework in PROFILE
@@ -188,8 +188,10 @@ def test_chat_cannot_leave_the_composer_busy_for_over_a_minute() -> None:
     assert 'el.composer.removeAttribute("aria-busy")' in APP
 
 
-def test_mobile_turns_align_to_their_start() -> None:
-    assert 'matchMedia("(max-width: 700px)").matches ? "start" : "nearest"' in APP
+def test_chat_turns_align_below_navigation_without_competing_scrolls() -> None:
+    assert "cancelAnimationFrame(turnScrollFrame)" in APP
+    assert 'div.scrollIntoView({ behavior: "instant", block: "start" })' in APP
+    assert "body.has-thread .turn { scroll-margin-top:" in CSS
 
 
 def test_owner_linkedin_profile_is_canonical_everywhere() -> None:

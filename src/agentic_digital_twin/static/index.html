@@ -46,9 +46,7 @@
 
     <!-- Version stamp: /static is cached immutably when the URL carries ?v=, so
          bumping the stamp is how a changed asset reaches a returning browser. -->
-    <link rel="stylesheet" href="/static/styles.css?v=76">
-    <link rel="preload" href="/static/instrument-serif.woff2" as="font" type="font/woff2" crossorigin>
-    <link rel="stylesheet" href="/static/observatory.css?v=1">
+    <link rel="stylesheet" href="/static/styles.css?v=77">
   </head>
   <body>
     <a class="skip-link" href="#composer-input">Skip to chat</a>
@@ -120,6 +118,7 @@
       </svg>
       <div class="haze"></div>
     </div>
+    </div>
 
     <!--
       The bar is a positioning shell and paints nothing. All of the material
@@ -133,18 +132,16 @@
                full-resolution JPEG (ten times the bytes) is kept only for the
                social card, where a 112px image would be too small. -->
           <img class="face" src="/static/avatar.webp?v=31" alt="" width="26" height="26">
-          <span class="brand-mark" aria-hidden="true">p<span>k</span></span>
           <span class="name">Prathamesh<em>.ai</em></span>
         </a>
-        <button class="q mobile-menu-toggle" id="menu-button" type="button" aria-expanded="false" aria-controls="portfolio-nav">Menu</button>
-        <nav class="bar-right" id="portfolio-nav" aria-label="Portfolio">
-          <a href="#work">Selected work</a>
-          <a href="#experience">My journey</a>
+        <nav class="bar-right">
+          <a href="#experience">Experience</a>
+          <a href="#work">Work</a>
           <a href="#faq">FAQ</a>
           <button class="q" id="bell" type="button">Activity<span class="dot" id="bell-dot" hidden></span></button>
           <button class="q" id="jd-button" type="button">Role fit</button>
           <button class="q" id="theme-button" type="button" aria-label="Theme">Theme</button>
-          <button class="q strong" id="contact-button" type="button">Let’s talk <span aria-hidden="true">↗</span></button>
+          <button class="q strong" id="contact-button" type="button">Contact</button>
         </nav>
         <div class="progress" id="progress" aria-hidden="true"></div>
       </div>
@@ -169,36 +166,10 @@
              not wrap the thread or the composer, or asking a question removes
              the chat from the page. -->
         <div id="intro">
-          <p class="hero-eyebrow reveal"><i></i>Dublin, Ireland <span class="eyebrow-divider">/</span> Open to opportunities</p>
-          <p class="hero-name reveal">Prathamesh Kalamkar</p>
-          <h1 class="reveal">Engineering<br>with <em>intention.</em></h1>
-          <p class="hero-lead reveal d1">Back-end engineer. Agent systems builder.<br>I turn complex ideas into reliable software.<br>Meet the work — and the twin that knows it.</p>
-          <div class="hero-actions reveal d1">
-            <a class="hero-primary" href="#work">Explore my work <span aria-hidden="true">↗</span></a>
-            <a class="hero-secondary" href="https://github.com/prathamesh-git9" target="_blank" rel="noopener noreferrer">GitHub <span aria-hidden="true">↗</span></a>
-          </div>
+          <p class="hero-eyebrow reveal"><i></i>Dublin &middot; open to back-end &amp; AI roles</p>
+          <h1 class="reveal">Ask his agentic digital twin what he&rsquo;s built.</h1>
+          <p class="hero-lead reveal d1">It answers hiring questions from his CV and his public code, and cites both &mdash; so you can check every claim.</p>
         </div>
-
-        <figure class="observatory" aria-label="An orbital sculpture connecting the CV, public code, and evidence behind the digital twin">
-          <div class="orbit-caption"><span class="orbit-cross">+</span> THE ENGINEERING OBSERVATORY <span>01 / 10</span></div>
-          <div class="orbit-stage">
-            <div class="orbit-halo"></div>
-            <div class="orbit-guide guide-one"></div><div class="orbit-guide guide-two"></div>
-            <div class="orbit-axis axis-x"></div><div class="orbit-axis axis-y"></div>
-            <div class="orbit-sculpture">
-              <div class="orbit-ring ring-one"></div>
-              <div class="orbit-ring ring-two"></div>
-              <div class="twin-core"><div class="core-grid"></div><span class="core-monogram">pk<span>.</span></span><span class="core-label">THE DIGITAL TWIN</span></div>
-              <div class="orbit-ring ring-three"></div>
-              <span class="orbit-satellite satellite-one"></span><span class="orbit-satellite satellite-two"></span>
-            </div>
-            <button class="orbit-node node-code" type="button" data-ask="What has he built on GitHub?"><span aria-hidden="true">↗</span><span>Public code<small>Explore the systems</small></span></button>
-            <button class="orbit-node node-evidence" type="button" data-ask="How does he keep every claim grounded in a source?"><span aria-hidden="true">◎</span><span>Real evidence<small>Every claim, a source</small></span></button>
-            <button class="orbit-node node-person" type="button" data-ask="Give me the 60-second overview."><img src="/static/avatar.webp?v=31" width="36" height="36" alt=""><span>The human behind it<small>Prathamesh Kalamkar</small></span></button>
-            <span class="orbit-coordinate">53°20′ N<br>06°15′ W</span>
-          </div>
-          <figcaption><span><i></i>Human experience. Connected intelligence.</span><span aria-hidden="true">↙ Try a node</span></figcaption>
-        </figure>
 
         <div class="thread" id="messages" role="log" aria-live="polite"></div>
 
@@ -223,8 +194,6 @@
         </section>
 
         <div class="dock reveal d2">
-          <div class="chat-heading"><span><i></i> MEET MY AGENTIC DIGITAL TWIN</span><span>CURIOUS? START HERE ↘</span></div>
-          <p class="chat-invitation">Ask his agentic digital twin what he&rsquo;s built.</p>
           <span class="clawd-float" role="img" aria-label="Clawd, the animated Claude Code mascot">
             <!-- Exact block geometry and four poses from the installed Claude Code
                  mascot, expanded into crisp vector pixels instead of redrawn. -->
@@ -246,21 +215,21 @@
             </button>
           </form>
           <div class="suggestions" id="starters"></div>
-          <p class="dock-note">Grounded in my CV &amp; public code. <span id="model-note"></span> · Offers and commitments? Talk to me directly.</p>
+          <p class="dock-note"><span id="model-note"></span> · Answers are evidence-backed. Contractual questions go to Prathamesh.</p>
         </div>
 
         <!-- Below the composer, not above it: the chat is what the visitor is
              meant to reach first, and these are the numbers that back it up. -->
         <div class="quickfacts reveal d2">
-          <span><b>3.5<span class="fact-plus">+</span></b><small>Years building back ends</small></span>
-          <span><b>10</b><small>Public repositories</small></span>
-          <span><b>MSc</b><small>Cybersecurity · First class</small></span>
-          <span><b>Dublin<span class="fact-plus">↗</span></b><small>Based in Ireland</small></span>
+          <span><b>3.5+</b> years back-end</span>
+          <span><b>10</b> systems shipped</span>
+          <span><b>MSc</b> Cybersecurity, 1:1</span>
+          <span><b>Dublin</b> open to roles</span>
         </div>
         <!-- The first screen is the twin and nothing else, so it has to say that
              there is more below it rather than leaving the visitor to guess. -->
         <a class="scroll-cue" href="#experience" aria-label="Skip to experience">
-          <span>A little more about the human</span>
+          <span>The rest of the CV</span>
           <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M8 3v10M4 9l4 4 4-4" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </a>
       </section>
@@ -268,18 +237,8 @@
       </div>
 
       <div class="bands">
-      <section class="band" id="work" data-system="repository mesh">
-        <div class="band-head reveal"><span class="kicker"><i>01</i>Open source</span><span class="system-chip">Built in the open</span><h2>Less hand-waving.<br><em>More source code.</em></h2><p class="chapter-meta"><span>10 public repositories</span><span>GitHub metadata</span><span>Evidence linked</span></p></div>
-        <div class="work-toolbar"><p>Small systems. Hard questions. Inspectable answers.</p><a href="https://github.com/prathamesh-git9" target="_blank" rel="noopener noreferrer">View GitHub profile ↗</a></div>
-        <div class="cards" id="work-cards"></div>
-        <div class="certs reveal">
-          <span class="kicker">Also completed</span>
-          <div class="certrow"><span>AWS</span><span>Node.js</span><span>Data Structures &amp; Algorithms</span><span>System Design</span></div>
-        </div>
-      </section>
-
       <section class="band" id="experience" data-system="service history">
-        <div class="band-head reveal"><span class="kicker"><i>02</i>Experience</span><span class="system-chip">Service history</span><h2>Three and a half years of shipping back-end systems.</h2><p class="chapter-meta"><span>4 roles</span><span>Production systems</span><span>Dublin</span></p></div>
+        <div class="band-head reveal"><span class="kicker"><i>01</i>Experience</span><span class="system-chip">Service history</span><h2>Three and a half years of shipping back-end systems.</h2><p class="chapter-meta"><span>4 roles</span><span>Production systems</span><span>Dublin</span></p></div>
         <ol class="timeline">
           <li class="reveal">
             <span class="when">Jan 2025 → Present</span>
@@ -312,7 +271,7 @@
       </section>
 
       <section class="band" id="skills" data-system="capability registry">
-        <div class="band-head reveal"><span class="kicker"><i>03</i>Capabilities</span><span class="system-chip">Capability registry</span><h2>What he reaches for, and how deep it goes.</h2><p class="chapter-meta"><span>6 domains</span><span>Production first</span><span>No overclaiming</span></p></div>
+        <div class="band-head reveal"><span class="kicker"><i>02</i>Capabilities</span><span class="system-chip">Capability registry</span><h2>What he reaches for, and how deep it goes.</h2><p class="chapter-meta"><span>6 domains</span><span>Production first</span><span>No overclaiming</span></p></div>
         <div class="skillgrid">
           <article class="skillcard reveal">
             <h3>Languages</h3>
@@ -377,7 +336,7 @@
       </section>
 
       <section class="band" id="projects" data-system="deployed workloads">
-        <div class="band-head reveal"><span class="kicker"><i>04</i>Selected projects</span><span class="system-chip">Deployed workloads</span><h2>Things he built to answer a question.</h2><p class="chapter-meta"><span>3 builds</span><span>2025&ndash;26</span><span>Inspectable systems</span></p></div>
+        <div class="band-head reveal"><span class="kicker"><i>03</i>Selected projects</span><span class="system-chip">Deployed workloads</span><h2>Things he built to answer a question.</h2><p class="chapter-meta"><span>3 builds</span><span>2025&ndash;26</span><span>Inspectable systems</span></p></div>
         <div class="projects">
           <article class="project reveal">
             <div class="project-year">2026</div>
@@ -412,7 +371,7 @@
         shows both rankings and their fusion, rather than describing them.
       -->
       <section class="band" id="ai-systems" data-system="retrieval pipeline">
-        <div class="band-head reveal"><span class="kicker"><i>05</i>AI systems</span><span class="system-chip">Retrieval pipeline</span><h2>The retrieval is running on this page.</h2><p class="chapter-meta"><span>BM25</span><span>Trigram cosine</span><span>RRF fusion</span></p></div>
+        <div class="band-head reveal"><span class="kicker"><i>04</i>AI systems</span><span class="system-chip">Retrieval pipeline</span><h2>The retrieval is running on this page.</h2><p class="chapter-meta"><span>BM25</span><span>Trigram cosine</span><span>RRF fusion</span></p></div>
 
         <div class="retrieval reveal">
           <p class="retrieval-lede">Answers here are not generated from a prompt and hoped for. A hybrid retriever scores every chunk of the CV corpus two ways: Okapi&nbsp;BM25 for term weighting, character-trigram cosine for the morphological variants BM25 misses. Reciprocal rank fusion then merges the two rankings by position, so an unbounded BM25 score cannot swamp a bounded cosine. Type anything and watch all three stages.</p>
@@ -487,6 +446,15 @@
         </div>
       </section>
 
+      <section class="band" id="work" data-system="repository mesh">
+        <div class="band-head reveal"><span class="kicker"><i>05</i>Open source</span><span class="system-chip">Repository mesh</span><h2>Ten systems, built around correctness.</h2><p class="chapter-meta"><span>Live GitHub data</span><span>Public code</span><span>Evidence linked</span></p></div>
+        <div class="cards" id="work-cards"></div>
+        <div class="certs reveal">
+          <span class="kicker">Also completed</span>
+          <div class="certrow"><span>AWS</span><span>Node.js</span><span>Data Structures &amp; Algorithms</span><span>System Design</span></div>
+        </div>
+      </section>
+
       <section class="band" id="faq" data-system="control plane">
         <div class="band-head reveal"><span class="kicker"><i>06</i>Questions</span><span class="system-chip">Control plane</span><h2>What people ask before they get in touch.</h2><p class="chapter-meta"><span>Accuracy</span><span>Boundaries</span><span>Architecture</span></p></div>
         <div class="faq reveal">
@@ -499,9 +467,8 @@
       <section class="band" id="cta" data-system="public endpoint">
         <div class="cta reveal">
           <span class="system-chip">Public endpoint</span>
-          <span class="cta-spark" aria-hidden="true">✳</span>
-          <h2>Great systems start<br>with <em>a conversation.</em></h2>
-          <p>Have a role, a challenging problem, or a question about my work? Meet my agentic digital twin, or get in touch with the human behind it.</p>
+          <h2>Still deciding?</h2>
+          <p>Ask the agentic digital twin anything. It answers from the CV and the code, and tells you plainly when something isn't evidenced. Or skip it and talk to Prathamesh directly.</p>
           <div class="cta-row">
             <button class="btn" id="cta-ask" type="button">Ask a question</button>
             <button class="btn ghost" id="cta-contact" type="button">Contact him</button>
@@ -565,7 +532,7 @@
 
     <!-- Defines the retrieval engine app.js reads. Deferred scripts run in order,
          so this is guaranteed to be in place before the application boots. -->
-    <script src="/static/twin-local.js?v=56" defer></script>
-    <script src="/static/app.js?v=61" defer></script>
+    <script src="/static/twin-local.js?v=57" defer></script>
+    <script src="/static/app.js?v=64" defer></script>
   </body>
 </html>

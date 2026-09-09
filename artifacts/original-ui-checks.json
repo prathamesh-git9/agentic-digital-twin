@@ -1,0 +1,34 @@
+[
+  {
+    "viewport": "desktop",
+    "width": 1440,
+    "height": 900,
+    "identical_initial_screenshot": true,
+    "chat_and_citations": "passed",
+    "javascript_errors": []
+  },
+  {
+    "viewport": "tablet",
+    "width": 768,
+    "height": 1024,
+    "identical_initial_screenshot": true,
+    "chat_and_citations": "passed",
+    "javascript_errors": []
+  },
+  {
+    "viewport": "mobile",
+    "width": 390,
+    "height": 844,
+    "identical_initial_screenshot": true,
+    "chat_and_citations": "passed",
+    "javascript_errors": []
+  },
+  {
+    "viewport": "small",
+    "width": 320,
+    "height": 740,
+    "identical_initial_screenshot": true,
+    "chat_and_citations": "passed",
+    "javascript_errors": []
+  }
+]

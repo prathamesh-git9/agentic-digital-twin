@@ -1,0 +1,28 @@
+{
+  "baseline": "d4d3abc",
+  "documents": 48,
+  "exact_ranking_and_answer_matches": 86,
+  "queries_per_batch": 1290,
+  "median_before_ms": 457.51,
+  "median_after_ms": 327.86,
+  "reduction_percent": 28.3,
+  "samples_ms": {
+    "before": [
+      452.4642000000001,
+      447.79230000000007,
+      450.3914,
+      486.2932000000005,
+      519.6885999999995,
+      462.5649000000003
+    ],
+    "after": [
+      328.73530000000005,
+      326.97739999999976,
+      333.21169999999984,
+      330.47350000000006,
+      326.9911000000002,
+      319.84369999999944
+    ]
+  },
+  "scope": "Local warmed retrieval benchmark; not an end-to-end page-load measurement."
+}

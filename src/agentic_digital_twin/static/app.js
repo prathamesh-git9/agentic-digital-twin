@@ -369,7 +369,9 @@
     return out.length ? `<div class="badges">${out.join("")}</div>` : "";
   }
 
-  function turn(role, text, cites, trace, meta = {}) {
+  let turnScrollFrame = 0;
+
+  function turn(role, text, cites, trace, meta = {}, follow = true) {
     const div = document.createElement("div");
     div.className = `turn ${role}`;
     // "CV › Experience › matriXploit Pvt. Ltd. › Software Engineer" is
@@ -418,14 +420,15 @@
     // On the body, not the hero: the deck and rails need to react too, and CSS
     // cannot reach a parent from the element that changed.
     document.body.classList.add("has-thread");
-    // "nearest" only scrolls when the turn is actually off-screen. Aligning to
-    // "end" threw the page down past the conversation into the sections below,
-    // so the answer landed above the fold and the chat looked like it had done
-    // nothing at all.
-    div.scrollIntoView({
-      behavior: "smooth",
-      block: matchMedia("(max-width: 700px)").matches ? "start" : "nearest",
-    });
+    // A local reply can replace its waiting turn before the next paint. Queue
+    // just the newest target, then align its beginning below the fixed header.
+    // Overlapping smooth scrolls used to leave desktop answers under the nav.
+    cancelAnimationFrame(turnScrollFrame);
+    if (follow) {
+      turnScrollFrame = requestAnimationFrame(() => {
+        if (div.isConnected) div.scrollIntoView({ behavior: "instant", block: "start" });
+      });
+    }
     return div;
   }
 
@@ -443,10 +446,22 @@
     // here bypasses that cache, so it has to be told, or the composer stays
     // tall after a multi-line question is sent.
     composerHeight = 0;
-    composerLength = 0;
+    composerValue = "";
     // A grounded answer takes several seconds. Silent dots are indistinguishable
     // from a broken page, so say what is happening and keep a running clock.
     const pending = turn("twin", "");
+    let followResponse = true;
+    const stopFollowing = () => {
+      followResponse = false;
+      cancelAnimationFrame(turnScrollFrame);
+    };
+    const readingKey = (event) => {
+      if (event.target.closest("input, textarea")) return;
+      if (["PageUp", "PageDown", "Home", "End", "ArrowUp", "ArrowDown", " "].includes(event.key)) stopFollowing();
+    };
+    addEventListener("wheel", stopFollowing, { passive: true });
+    addEventListener("touchmove", stopFollowing, { passive: true });
+    addEventListener("keydown", readingKey);
     const slot = pending.querySelector(".text");
     slot.innerHTML =
       '<span class="waiting"><span class="typing"><i></i><i></i><i></i></span>' +
@@ -495,17 +510,20 @@
       turn("twin", r.answer, r.sources, r.trace, {
         grounded: r.grounded, refusal: r.refusal, tailored_for: r.tailored_for,
         agent_run: r.agent_run,
-      });
+      }, followResponse);
       showBudget(r);
     } catch (e) {
       pending.remove();
       turn("twin", e.name === "AbortError"
         ? "That took too long and I stopped waiting for it. Ask again, or try a "
           + "narrower question."
-        : `Sorry, ${e.message}`);
+        : `Sorry, ${e.message}`, undefined, undefined, {}, followResponse);
     } finally {
       clearTimeout(deadline);
       clearInterval(ticker);
+      removeEventListener("wheel", stopFollowing);
+      removeEventListener("touchmove", stopFollowing);
+      removeEventListener("keydown", readingKey);
       state.pending = null;
       state.busy = false;
       el.send.disabled = false;
@@ -513,16 +531,21 @@
       el.starters.inert = false;
       // preventScroll matters: refocusing the composer otherwise drags the
       // viewport down to it, past the answer that just arrived.
-      el.input.focus({ preventScroll: true });
+      const active = document.activeElement;
+      if (followResponse && (active === document.body || active === el.input || el.starters.contains(active))) {
+        el.input.focus({ preventScroll: true });
+      }
     }
   }
 
   let composerHeight = 0;
-  let composerLength = 0;
+  let composerValue = "";
 
   el.composer.addEventListener("submit", (e) => { e.preventDefault(); ask(el.input.value); });
   el.input.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); ask(el.input.value); }
+    if (e.key === "Enter" && !e.shiftKey && !e.isComposing && e.keyCode !== 229) {
+      e.preventDefault(); ask(el.input.value);
+    }
   });
   /*
     Auto-growing the composer used to cost two layouts per keystroke: the height
@@ -531,25 +554,43 @@
     is the write-read-write pattern that forces synchronous layout, and it was
     57 layouts to type nineteen characters.
 
-    The `auto` reset exists only so the box can shrink; a textarea's
-    `scrollHeight` already reports the taller content when text is added. So it
-    is only paid when the text got shorter, which is the rare case, and the
-    write is skipped whenever the height is not actually changing.
+    Pure appends can use `scrollHeight` without a reset. Replacements, deletions,
+    and width changes reset to `auto` so fewer wrapped lines can shrink the box.
+    The write is skipped whenever the height is not actually changing.
   */
-  const growComposer = () => {
-    const length = el.input.value.length;
-    const shrank = length < composerLength;
-    composerLength = length;
-    if (shrank) el.input.style.height = "auto";
+  const growComposer = (remeasure = false) => {
+    const value = el.input.value;
+    // Equal-length replacements can remove line breaks. Length alone cannot
+    // tell whether the textarea can shrink; only pure appends keep that shortcut.
+    const reset = remeasure || !value.startsWith(composerValue);
+    composerValue = value;
+    if (reset) el.input.style.height = "auto";
     const wanted = Math.min(el.input.scrollHeight, 170);
     if (wanted !== composerHeight) {
       composerHeight = wanted;
       el.input.style.height = `${wanted}px`;
-    } else if (shrank) {
+    } else if (reset) {
       el.input.style.height = `${wanted}px`;
     }
   };
-  el.input.addEventListener("input", growComposer);
+  el.input.addEventListener("input", () => growComposer());
+  if ("ResizeObserver" in window) {
+    let composerWidth = 0;
+    const resizeComposer = new ResizeObserver(([entry]) => {
+      if (Math.abs(entry.contentRect.width - composerWidth) < 1) return;
+      composerWidth = entry.contentRect.width;
+      if (el.input.value) growComposer(true);
+    });
+    resizeComposer.observe(el.composer);
+    let dockHeight = 0;
+    const resizeDock = new ResizeObserver(([entry]) => {
+      const height = entry.borderBoxSize?.[0]?.blockSize || entry.target.getBoundingClientRect().height;
+      if (Math.abs(height - dockHeight) < 1) return;
+      dockHeight = height;
+      document.documentElement.style.setProperty("--chat-dock-height", `${Math.ceil(height)}px`);
+    });
+    resizeDock.observe(el.composer.parentElement);
+  }
 
   el.starters.innerHTML = STARTERS.map((s) => `<button type="button">${esc(s)}</button>`).join("");
   el.starters.addEventListener("click", (e) => {
@@ -921,27 +962,6 @@
 
   /* ---------- theme ---------- */
 
-  const menuButton = $("#menu-button");
-  const navIsland = $(".bar-island");
-  const setMenu = (open) => {
-    navIsland?.classList.toggle("nav-open", open);
-    menuButton?.setAttribute("aria-expanded", String(open));
-    if (menuButton) menuButton.textContent = open ? "Close" : "Menu";
-  };
-  menuButton?.addEventListener("click", () => setMenu(menuButton.getAttribute("aria-expanded") !== "true"));
-  $("#portfolio-nav")?.addEventListener("click", (event) => {
-    if (event.target.closest("a, button")) setMenu(false);
-  });
-  document.addEventListener("click", (event) => {
-    if (!navIsland?.contains(event.target)) setMenu(false);
-  });
-  document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && menuButton?.getAttribute("aria-expanded") === "true") {
-      setMenu(false);
-      menuButton.focus();
-    }
-  });
-
   const saved = localStorage.getItem("twin-theme");
   if (saved) document.documentElement.dataset.theme = saved;
   el.themeButton.addEventListener("click", () => {
@@ -972,16 +992,14 @@
     // cards were in flight; the cards themselves size the section now.
     host.style.minHeight = "";
     if (!repos.length) { host.closest(".band")?.remove(); return; }
-    host.innerHTML = repos.map((r, index) => `
+    host.innerHTML = repos.map((r) => `
       <article class="card">
-        <div class="repo-topline"><span class="repo-symbol" aria-hidden="true">${index === 0 ? "⌘" : "◇"}</span><span>REPOSITORY / ${String(index + 1).padStart(2, "0")}</span></div>
-        <h3><a href="${esc(r.url || r.html_url)}" target="_blank" rel="noopener noreferrer">${esc(r.name)}<span class="repo-arrow" aria-hidden="true">↗</span></a></h3>
+        <h3><a href="${esc(r.url || r.html_url)}" target="_blank" rel="noopener noreferrer">${esc(r.name)}</a></h3>
         <p>${esc(r.description || "")}</p>
         ${r.topics?.length
           ? `<div class="topics">${r.topics.slice(0, 5)
               .map((t) => `<span>${esc(t)}</span>`).join("")}</div>`
           : ""}
-        <div class="repo-footer"><span class="repo-language">${esc(r.language || "Public code")}</span><span>${Number.isInteger(r.stars) ? `${r.stars} ${r.stars === 1 ? "star" : "stars"}` : "Source available"}</span></div>
       </article>`).join("");
   }
 

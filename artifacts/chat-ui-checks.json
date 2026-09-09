@@ -1,0 +1,70 @@
+[
+  {
+    "viewport": "desktop",
+    "size": [
+      1440,
+      900
+    ],
+    "replacement_heights": [
+      170,
+      45
+    ],
+    "answer_below_header": true,
+    "ime_does_not_send": true,
+    "mobile_space_tracks_composer": true,
+    "delayed_reply_preserves_focus": true,
+    "chat_and_citations": true,
+    "javascript_errors": []
+  },
+  {
+    "viewport": "tablet",
+    "size": [
+      768,
+      1024
+    ],
+    "replacement_heights": [
+      170,
+      46
+    ],
+    "answer_below_header": true,
+    "ime_does_not_send": true,
+    "mobile_space_tracks_composer": true,
+    "delayed_reply_preserves_focus": true,
+    "chat_and_citations": true,
+    "javascript_errors": []
+  },
+  {
+    "viewport": "mobile",
+    "size": [
+      390,
+      844
+    ],
+    "replacement_heights": [
+      170,
+      46
+    ],
+    "answer_below_header": true,
+    "ime_does_not_send": true,
+    "mobile_space_tracks_composer": true,
+    "delayed_reply_preserves_focus": true,
+    "chat_and_citations": true,
+    "javascript_errors": []
+  },
+  {
+    "viewport": "small",
+    "size": [
+      320,
+      740
+    ],
+    "replacement_heights": [
+      170,
+      73
+    ],
+    "answer_below_header": true,
+    "ime_does_not_send": true,
+    "mobile_space_tracks_composer": true,
+    "delayed_reply_preserves_focus": true,
+    "chat_and_citations": true,
+    "javascript_errors": []
+  }
+]
