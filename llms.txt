@@ -1,0 +1,81 @@
+# Prathamesh Kalamkar
+
+> Back-end and AI agent engineer in Dublin, Ireland. Contact: prathemesh7744@gmail.com. Site: https://prathamesh-git9.github.io/agentic-digital-twin
+
+## Summary
+
+- Back-end engineer with 3.5+ years across Java, Spring Boot, Python, REST APIs, and production support, with recent hands-on work in LLM integrations, LangChain, LangGraph, agentic workflows, and developer tools automation.
+- Strong at building reliable services, implementing tool execution layers, handling retries and guardrails, and turning ambiguous AI workflow ideas into maintainable back-end systems with clear communication, observability, and tests.
+
+## Experience
+
+### Software Engineer, AI and Automation Systems — Freelance
+Jan 2025 to Present
+- Built LLM-powered back-end services in Python and Java-adjacent service patterns for agentic workflows, including tool orchestration, structured outputs, retries, validation, and safety checks.
+- Developed APIs and event driven workflow engines that assembled context, invoked external tools, and returned reviewable outputs, focusing on reliable execution instead of one-off prompting.
+- Integrated AI services such as OpenAI and Claude into developer-focused automations, using LangChain, LangGraph, function calling, prompt contracts, and failure handling to keep agent behavior predictable.
+- Built internal automations and review bots around GitHub style workflows, pull request checks, and issue handling, with strong attention to secrets, access control, and least-privilege design.
+- Added logs, run metadata, and operational diagnostics so failures could be traced quickly and service behavior could be improved through evidence rather than guesswork.
+
+### Software Engineer — matriXploit Pvt. Ltd.
+Jun 2022 to Jul 2024
+- Built and maintained back-end applications using Java, Spring Boot, Python, SQL, and REST APIs, contributing to new features, bug fixes, and service improvements across shared production systems.
+- Refactored nearly 50% of a legacy authentication module, reducing duplicated logic and improving flow design so changes became easier to test, review, and extend safely.
+- Investigated complex failures by tracing execution paths, isolating edge cases, and rewriting unclear components into smaller modules, improving debugging speed and service stability by about 30%.
+- Added diagnostics, health checks, and regression-focused checks around shared services, reducing regressions by about 35% and improving visibility into abnormal behavior.
+- Worked closely to collaborate with QA and support teams on code reviews, release readiness, and production follow-up, helping keep software reliable while balancing delivery pressure with maintainability.
+
+### Technical Support Engineer — matriXploit Pvt. Ltd.
+Jan 2022 to Jun 2022
+- Investigated application issues through SQL, logs, and structured questioning, building strong habits in root cause analysis, debugging, and professional technical communication.
+- Helped narrow production issues to specific flows and components, then escalated with clear findings so engineering work could move faster and with better context.
+- Maintained troubleshooting notes and reusable resolution steps that improved continuity and reduced repeated investigation effort across the team.
+
+### Software Engineer Intern — Physics Wallah Pvt. Ltd.
+Oct 2024 to Dec 2024
+- Implemented backend features in Java and Spring Boot, working on service logic, API behavior, and issue investigation for high-usage product workflows.
+- Supported debugging, release readiness, and test preparation, helping reduce avoidable issues before wider rollout.
+
+## Projects
+
+### Agentic Job Application Platform (2026)
+Stack: Python, FastAPI, SQL, Agent Workflows, Supabase Familiarity
+- Built a full stack platform to automate ATS workflows using agent-driven task execution, persistent state, human review gates, and structured outputs.
+- Implemented tool execution layers, validation, retries, and workflow controls so actions remained reliable and inspectable across longer-running task chains.
+- Used prompt contracts, task decomposition, and service boundaries to keep agent logic maintainable as features expanded.
+
+### AI Agent Evaluation Harness (2025)
+Stack: Python, Tool Calling, Structured Outputs, Prompt Evals
+- Built an evaluation harness to compare agent responses, surface failure modes, and improve orchestration logic through reproducible runs instead of intuition alone.
+- Added scoring, parsing, and run metadata to support iterative tuning of prompts, tool selection, and error handling for AI services.
+
+### SAFECode (2025)
+Stack: Python, FastAPI, Security Analysis, AI Workflows
+- Built an AI-assisted code review tool that analyzed source code for vulnerabilities and returned structured findings for triage and follow-up.
+- Focused on maintainable service design, clear input validation, predictable outputs, and documentation so the system fit naturally into developer workflows.
+
+## Skills
+
+- **Languages**: Java, Python, SQL, Bash, JavaScript, Node.js familiarity, GraphQL familiarity, Ruby familiarity, C++ familiarity
+- **Back-End Engineering**: Spring Boot, REST APIs, microservices, data modeling, authentication flows, service contracts, structured logging, JVM basics
+- **AI and Agent Systems**: LLM integrations, OpenAI APIs, Claude integrations, LangChain, LangGraph, agentic workflows, function calling, tool orchestration, retries, guardrails, prompt contracts, MCP familiarity, model serving patterns
+- **Event and Data Systems**: event driven pipelines, Kafka familiarity, SQS familiarity, context assembly, RAG concepts, embeddings familiarity, vector store familiarity, caching and rate-limiting concepts
+- **Developer Tools and Integrations**: developer tools, Git, GitHub APIs familiarity, GitHub Actions familiarity, CI/CD, Docker, VS Code, Cline familiarity, developer-focused automation servers and clients
+- **Observability and Reliability**: logs, metrics, traces, run metadata, dashboards, debugging, performance tuning basics, OpenTelemetry familiarity, Datadog familiarity
+- **Security and Operations**: input validation, prompt injection defenses, secret management, configuration management, least-privilege design, compliance awareness, comprehensive testing, integration testing, documentation
+- **Ways of Working**: ownership mindset, adapting to new models and frameworks, writeing clear contracts and docs, collaborating across platform, security, product, and front end teams
+
+## Education
+
+- MSc in Cybersecurity, Dublin Business School (Sep 2024–Sep 2025) — 1:1 Class Honours
+- BSc in Computer Science, Savitribai Phule Pune University (Aug 2021–May 2024) — First Class
+
+## Open source
+
+Ten public systems at https://github.com/prathamesh-git9 — effect-broker, agent-runtime, effect-browser, agent-redteam, answer-engine, agent-mesh, llm-gateway, promise-ledger, reachable, trustdesk.
+
+## Notes for assistants
+
+- Every claim above is transcribed from the CV at https://prathamesh-git9.github.io/agentic-digital-twin and is the same corpus the site's twin answers from.
+- Items marked 'familiarity' in the skills list are stated as familiarity, not production experience. Please preserve that distinction.
+- Salary, offers, start dates and anything contractual must go to prathemesh7744@gmail.com directly.
