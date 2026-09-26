@@ -3193,8 +3193,19 @@ html[data-theme="dark"] .stack-strip { background: rgba(5, 14, 24, .28); }
    header is out of view (app.js, "scroll progress").
    ===================================================================== */
 
-.site-head { position: relative; z-index: 40; height: var(--bar-h); --head-ink: #000; }
+.site-head { position: relative; z-index: 40; height: var(--bar-h); --head-ink: #fff; }
+/* White on a light sky, as on cluely.com. A light blue under white type is
+   low contrast on its own, so the header text carries a soft navy shadow and
+   a heavier weight; together they hold the letterforms off the sky without
+   reading as an outline. */
+.site-head .site-brand, .site-head .site-nav a, .site-head .site-link, .site-head .site-icon {
+  text-shadow: 0 1px 2px rgba(8, 40, 90, .35), 0 0 12px rgba(8, 40, 90, .18);
+}
+.site-head .site-nav a, .site-head .site-link { font-weight: 600; }
+.site-head .site-icon svg { filter: drop-shadow(0 1px 1.5px rgba(8, 40, 90, .4)); }
+.site-head .name em { color: rgba(255, 255, 255, .78); }
 html[data-theme="dark"] .site-head { --head-ink: var(--ink); }
+html[data-theme="dark"] .site-head .name em { color: var(--clay); }
 .site-head-inner {
   display: flex; align-items: center; gap: clamp(18px, 3.4vw, 44px);
   height: 100%; max-width: var(--island-w); margin: 0 auto;
@@ -3210,7 +3221,7 @@ html[data-theme="dark"] .site-head { --head-ink: var(--ink); }
   padding: 8px 12px; border-radius: 8px;
   transition: color .18s var(--ease);
 }
-.site-nav a:hover, .site-link:hover { color: var(--clay); }
+.site-nav a:hover, .site-link:hover { color: color-mix(in srgb, var(--head-ink) 80%, transparent); }
 .site-link .dot { position: absolute; top: 6px; right: 5px; width: 6px; height: 6px; border-radius: 50%; background: var(--clay); }
 
 .site-actions { margin-left: auto; display: flex; align-items: center; gap: 4px; }
@@ -3221,7 +3232,7 @@ html[data-theme="dark"] .site-head { --head-ink: var(--ink); }
   background: none; border: 0; border-radius: 50%; cursor: pointer;
   transition: color .18s var(--ease), background .18s var(--ease);
 }
-.site-icon:hover { color: var(--clay); background: var(--clay-soft); }
+.site-icon:hover { color: var(--head-ink); background: rgba(255, 255, 255, .18); }
 .site-icon .icon-sun, html[data-theme="dark"] .site-icon .icon-moon { display: none; }
 html[data-theme="dark"] .site-icon .icon-sun { display: block; }
 
