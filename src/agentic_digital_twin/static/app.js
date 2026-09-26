@@ -1003,7 +1003,7 @@
       </article>`).join("");
   }
 
-  // Ten repositories cost twenty upstream lookups. When the server had none
+  // Fifteen repositories cost thirty upstream lookups. When the server had none
   // cached, hold the request until the section is within a screen of the
   // viewport rather than spending it before the visitor has read the hero.
   function armWorkCards() {
@@ -1016,7 +1016,7 @@
       the header missed its own section. Holding the space the cards will occupy
       means the page cannot move under the scroll.
     */
-    host.style.minHeight = `${Math.ceil(10 / 3) * 214}px`;
+    host.style.minHeight = `${Math.ceil(15 / 3) * 214}px`;
     let started = false;
     const load = async () => {
       if (started) return;
@@ -1121,7 +1121,7 @@
 
   const QUALITY_METRICS = ["recall_at_k", "precision_at_k", "mrr", "ndcg_at_k", "map"];
 
-  // The agent systems among the ten allow-listed repositories. Everything shown
+  // The agent systems among the fifteen allow-listed repositories. Everything shown
   // about them -- description, language, topics, last commit -- comes from the
   // live GitHub payload, so this panel cannot describe a repository as something
   // it is not.
@@ -1139,7 +1139,7 @@
     if (!chosen.length) return;
 
     $("#agents-lede").textContent =
-      `${chosen.length} of the ten public systems are agent infrastructure: durable `
+      `${chosen.length} of the fifteen public systems are agent infrastructure: durable `
       + `execution, effect authorisation, adversarial testing, multi-agent transport, `
       + `retrieval and model routing. Descriptions and activity below are read live `
       + `from GitHub, not written here.`;
@@ -1240,7 +1240,9 @@
   /* ---------- scroll progress ---------- */
 
   const progress = $("#progress");
-  const bar = document.querySelector(".bar");
+  const head = document.querySelector(".site-head");
+  const floatCta = $("#float-contact");
+  floatCta?.addEventListener("click", openContact);
 
   /*
     `scrollHeight` is a layout-forcing read. Taken inside the scroll handler it
@@ -1253,8 +1255,10 @@
     cannot. Scrolling is not one of them.
   */
   let scrollable = 0;
+  let headHeight = 0;
   const remeasure = () => {
     scrollable = document.documentElement.scrollHeight - window.innerHeight;
+    headHeight = head ? head.offsetHeight : 0;
   };
 
   let lastRatio = -1;
@@ -1268,11 +1272,16 @@
         progress.style.transform = `scaleX(${ratio})`;
       }
     }
-    // Light glass is right over the sky at the top of the page and wrong
-    // everywhere else: at that fill, body copy and cards passing under the bar
-    // stayed legible through it and collided with the nav labels. Past the
-    // first scroll it takes the heavy fill.
-    bar?.classList.toggle("solid", window.scrollY > 8);
+    // The header scrolls away with the hero; the pinned contact button takes
+    // over only once it has fully gone, so the two are never on screen at once.
+    if (floatCta && head) {
+      const shown = window.scrollY > headHeight + 40;
+      if (shown !== floatCta.classList.contains("on")) {
+        floatCta.classList.toggle("on", shown);
+        floatCta.tabIndex = shown ? 0 : -1;
+        floatCta.setAttribute("aria-hidden", String(!shown));
+      }
+    }
   };
   let paintQueued = false;
   const queuePaint = () => {

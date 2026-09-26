@@ -55,7 +55,7 @@ def _range() -> str:
 def _section(marker: str) -> str:
     # Split on the marker before stripping comments: the marker is itself a
     # comment, so stripping first deletes it and the slice runs to end of file.
-    block = CSS.split(marker, maxsplit=1)[1].split("---------- bar")[0]
+    block = CSS.split(marker, maxsplit=1)[1].split("---------- header")[0]
     return re.sub(r"/\*.*?\*/", "", block, flags=re.S)
 
 
@@ -134,7 +134,7 @@ def test_the_background_cannot_cost_a_frame() -> None:
 
 def test_premium_depth_system_shapes_every_portfolio_section() -> None:
     premium = CSS.split("PREMIUM DEPTH SYSTEM", maxsplit=1)[1]
-    assert "styles.css?v=77" in HTML
+    assert "styles.css?v=78" in HTML
     assert HTML.count('class="chapter-meta"') == 6
     assert ".bands > .band" in premium
     assert "counter-increment: chapter" in premium
@@ -160,7 +160,7 @@ def test_agentic_digital_twin_brand_and_frameworks_are_consistent() -> None:
     assert "recruiter-facing AI twin" not in public_copy
     assert "Ask his digital twin" not in public_copy
     assert "Prathamesh Kalamkar's digital twin" not in public_copy
-    assert "app.js?v=64" in HTML
+    assert "app.js?v=65" in HTML
     for framework in ("LangChain", "LangGraph"):
         assert HTML.count(framework) >= 4
         assert framework in PROFILE
@@ -209,7 +209,7 @@ def test_clawd_and_cloud_architecture_are_contained_and_lightweight() -> None:
     clawd_start = HTML.index('class="clawd-float"')
     composer_start = HTML.index('<form id="composer">')
     assert dock_start < clawd_start < composer_start
-    header = HTML.split('<header class="bar">', maxsplit=1)[1].split(
+    header = HTML.split('<header class="site-head">', maxsplit=1)[1].split(
         "</header>", maxsplit=1
     )[0]
     assert "clawd-float" not in header
@@ -286,91 +286,64 @@ def test_mobile_starters_use_a_bounded_grid_instead_of_a_clipped_scroller() -> N
     assert "position: fixed" in repair_css
 
 
-def _blocks_whose_subject_is_the_bar() -> list[tuple[str, str]]:
-    """Every rule that paints `.bar` itself rather than something inside it.
-
-    The subject of a selector is its last compound: in `.bar.solid .bar-island`
-    the subject is the island and the bar is only context, so that rule is free
-    to paint. In `.bar`, `.bar.solid` or `html.reveals .bar:not(.solid)` the
-    subject is the bar, and those are the rules that can put the strip back.
-    """
-
+def _rules_for(selector: str) -> list[str]:
     stripped = re.sub(r"/\*.*?\*/", "", CSS, flags=re.S)
-    out: list[tuple[str, str]] = []
-    for selectors, body in re.findall(r"([^{}]+)\{([^{}]*)\}", stripped):
-        for selector in selectors.split(","):
-            subject = selector.strip().split()[-1] if selector.strip() else ""
-            if re.fullmatch(r"\.bar(\.[a-z-]+|:not\(\.[a-z-]+\))*", subject):
-                out.append((selector.strip(), body))
-    return out
+    return [
+        body
+        for selectors, body in re.findall(r"([^{}]+)\{([^{}]*)\}", stripped)
+        if selector in (part.strip() for part in selectors.split(","))
+    ]
 
 
-def test_the_header_is_a_capsule_and_never_a_band() -> None:
-    """The bar is a floating control, not a strip sealed to three window edges.
+def test_the_header_is_words_on_the_sky_not_a_surface() -> None:
+    """The header is a wordmark and navigation written onto the page, as on
+    cluely.com -- no strip, no capsule, no glass.
 
-    This has regressed once already. The first attempt at it made the header
-    transparent over the hero and let the full-width band return the moment
-    anything scrolled underneath, which left every screen after the first one
-    with the original problem: a near-opaque strip spanning the window. No blur
-    radius rescues that shape -- what reads as a band is the full-bleed edge,
-    not the alpha -- so the shape is what the test pins.
-
-    `.bar` is therefore allowed to be geometry and nothing else. All of the
-    material lives on `.bar-island`, which hugs its own contents and is centred
-    with air on every side.
+    It has been a full-width band and then a floating capsule; both put a
+    second surface over the hero that the eye has to read past. The test pins
+    the absence of material and that the header scrolls away (in flow, not
+    sticky or fixed), so neither shape can quietly come back.
     """
 
-    header = HTML.split('<header class="bar">', maxsplit=1)[1].split(
+    header = HTML.split('<header class="site-head">', maxsplit=1)[1].split(
         "</header>", maxsplit=1
     )[0]
-    # One capsule holding the whole header, wordmark and nav inside it.
-    assert header.count('class="bar-island"') == 1
-    island = header.split('class="bar-island"', maxsplit=1)[1]
-    assert 'class="bar-left"' in island and 'class="bar-right"' in island
+    for part in ('class="site-brand"', 'class="site-nav"', 'class="site-actions"'):
+        assert part in header
+    # Every control the old header carried is still here, by id, because
+    # app.js binds to all of them.
+    for control in ("bell", "bell-dot", "jd-button", "theme-button", "contact-button"):
+        assert f'id="{control}"' in header
+    assert "bar-island" not in HTML and ".bar-island" not in CSS
 
-    # It is a capsule, it hugs its contents, and it is centred.
-    geometry = next(
-        body
-        for selectors, body in re.findall(r"([^{}]+)\{([^{}]*)\}", CSS)
-        if selectors.strip() == ".bar-island" and "width: fit-content" in body
-    )
-    assert "border-radius: var(--r-pill)" in geometry
-    assert "margin: 0 auto" in geometry
-
-    # Both scroll states dress the capsule; neither dresses the bar.
-    assert ".bar.solid .bar-island" in CSS
-    assert "html.reveals .bar:not(.solid) .bar-island" in CSS
-
-    painted: list[str] = []
-    for selector, body in _blocks_whose_subject_is_the_bar():
-        for declaration in body.split(";"):
-            prop, _, value = declaration.partition(":")
-            prop, value = prop.strip(), value.strip()
-            paints = prop in ("background", "background-color", "border-bottom")
-            if paints and value not in ("none", "0"):
-                painted.append(f"{selector} {{ {prop}: {value} }}")
-            if prop.endswith("backdrop-filter") and value != "none":
-                painted.append(f"{selector} {{ {prop}: {value} }}")
-
-    assert not painted, (
-        "the header shell must paint nothing -- these put the full-width strip "
-        "back:\n" + "\n".join(painted)
-    )
+    for selector in (".site-head", ".site-head-inner"):
+        for body in _rules_for(selector):
+            for declaration in body.split(";"):
+                prop, _, value = declaration.partition(":")
+                prop, value = prop.strip(), value.strip()
+                assert prop not in ("background", "background-color", "box-shadow"), (
+                    f"{selector} must paint nothing: {prop}: {value}"
+                )
+                assert not prop.endswith("backdrop-filter"), selector
+                if prop == "position":
+                    assert value == "relative", f"{selector} must scroll away"
 
 
-def test_nothing_in_the_header_spans_the_window() -> None:
-    """The reading-progress line rides the capsule, not the top of the screen.
+def test_only_the_contact_button_follows_the_reader() -> None:
+    """Once the header has scrolled off, one pinned button replaces it, and
+    the reading-progress line rides that button rather than ruling a line
+    across the top of the window."""
 
-    It was a fixed 2px rule across the whole viewport, which was invisible next
-    to a full-width bar and became the only full-bleed element on the page once
-    the bar stopped being one -- reading as a stray artefact rather than as an
-    indicator.
-    """
-
-    island = HTML.split('class="bar-island"', maxsplit=1)[1].split("</header>")[0]
-    assert 'id="progress"' in island
-
-    progress = re.findall(r"\.progress\s*\{([^{}]*)\}", CSS)
-    assert progress, "the progress line needs a rule to be checked"
-    assert "position: absolute" in progress[-1]
-    assert "width: auto" in progress[-1]
+    button = HTML.split('id="float-contact"', maxsplit=1)[1].split("</button>")[0]
+    assert 'id="progress"' in button
+    # Duplicates #contact-button, so it is kept out of the tab order until shown.
+    after_id = HTML.split('id="float-contact"', maxsplit=1)[1]
+    opening_tag = after_id.split(">", maxsplit=1)[0]
+    assert 'tabindex="-1"' in opening_tag and 'aria-hidden="true"' in opening_tag
+    float_rules = _rules_for(".float-cta")
+    assert float_rules and "position: fixed" in float_rules[0]
+    assert "opacity: 0" in float_rules[0]
+    assert "pointer-events: none" in float_rules[0]
+    assert _rules_for(".float-cta.on")
+    assert 'classList.toggle("on", shown)' in APP
+    assert "floatCta?.addEventListener(\"click\", openContact)" in APP
