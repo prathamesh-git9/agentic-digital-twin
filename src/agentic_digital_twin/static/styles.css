@@ -38,10 +38,12 @@
      haze between ranges, so one value keeps them agreeing. */
   /* Sky overhead, and the warm band it thins into at the horizon. Cool ranges
      against a warm glow is what makes this read as light rather than shapes. */
-  --sky-high: #9ac9ef;
-  --dawn: #fbe6cd;
-  --dawn-hot: #ffdfae;
-  --sun-halo: rgba(255, 208, 146, .5);
+  --sky-crown: #62b6f5;
+  --sky-high: #93cffb;
+  --sky-fade: #cde8fd;
+  --dawn: #eef6fe;
+  --dawn-hot: #fff1da;
+  --sun-halo: rgba(255, 238, 212, .5);
   /* Back to front, near to far. Each range has a lit value (sun side) and a
      base value (shadow side); the gradient between them is the volume. */
   --ridge-1: #5878a8;
@@ -92,7 +94,9 @@ html[data-theme="dark"] {
   --sky-mid: #061523;
   --sky-low: #071120;
   --sun-core: #bcdcff;
+  --sky-crown: #0f2339;
   --sky-high: #10263f;
+  --sky-fade: #10263f;
   --dawn: #2a2b46;
   --dawn-hot: #7a5570;
   --sun-halo: rgba(214, 146, 168, .28);
@@ -198,11 +202,11 @@ html[data-theme="light"] .grain { opacity: .14; }
 .range-sky {
   position: absolute; inset: 0;
   background: linear-gradient(180deg,
-    color-mix(in srgb, var(--sky-high) 93%, #000) 0%,
-    var(--sky-high) 32%,
-    color-mix(in srgb, var(--sky-high) 92%, transparent) 56%,
-    color-mix(in srgb, var(--sky-high) 40%, transparent) 70%,
-    transparent 84%);
+    var(--sky-crown) 0%,
+    var(--sky-high) 34%,
+    color-mix(in srgb, var(--sky-fade) 92%, transparent) 58%,
+    color-mix(in srgb, var(--sky-fade) 45%, transparent) 72%,
+    transparent 86%);
 }
 
 /* The warm band the sun sits in. Sitting under the ridges in paint order, so
@@ -346,8 +350,6 @@ html.reveals .reveal.d2 { transition-delay: .18s; }
    edges and unreadable at length. */
 #intro, .dock-note { text-align: center; }
 .suggestions, .quickfacts { justify-content: center; }
-/* The pill is the one thing that must not stretch to the column. */
-.hero-eyebrow { align-self: center; }
 
 /*
   The hero is ink on a light sky. It was white on a deep one for a while, which
@@ -367,38 +369,6 @@ html.reveals .reveal.d2 { transition-delay: .18s; }
    second. A single paragraph gave them equal weight and neither landed. */
 .hero-lead { color: var(--ink-2); font-size: clamp(16px, 1.2vw, 19px); line-height: 1.4; font-weight: 500; letter-spacing: -.02em; margin: 20px auto 0; max-width: 560px; }
 
-/*
-  The availability line the identity rail used to carry.
-
-  It was a pill: a near-white lozenge with a white border and a hard green dot,
-  which on a blue sky is an opaque blob with an invisible outline — a UI chip
-  pasted onto a landscape, and it was doing that eighteen pixels above an 80px
-  serif headline it had no business competing with. It says the same thing the
-  quickfacts row says a screen-inch lower, so it does not need the weight.
-
-  No chrome, and the site's own kicker language instead: the small mono
-  capitals that label every section below. The dot keeps a soft halo so it
-  still reads as a status light rather than a bullet.
-*/
-.hero-eyebrow {
-  display: inline-flex; align-items: center; gap: 9px;
-  font: 400 11px/1 var(--mono); letter-spacing: .15em; text-transform: uppercase;
-  /* Tracked capitals are wide; as a shrink-to-fit flex item it broke "ROLES"
-     onto a line of its own. */
-  white-space: nowrap;
-  /* Full ink, not the muted tone: at 11px this counts as small text and needs
-     4.5:1, and --ink-2 on the sky measured 4.30. Tracking and size keep it
-     quiet without the colour having to. */
-  color: var(--ink);
-  background: none; border: 0; padding: 0;
-  margin-bottom: 26px;
-  -webkit-backdrop-filter: none; backdrop-filter: none;
-}
-.hero-eyebrow i {
-  width: 6px; height: 6px; border-radius: 50%; flex: none;
-  background: var(--ok);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 22%, transparent);
-}
 .hero-sub { color: var(--ink-2); font-size: clamp(14.5px, 1vw, 17px); margin-top: 10px; max-width: 56ch; line-height: 1.6; }
 
 .thread { display: flex; flex-direction: column; gap: 28px; padding: 34px 0 8px; }
@@ -3231,15 +3201,6 @@ html[data-theme="dark"] .stack-strip { background: rgba(5, 14, 24, .28); }
 }
 
 .site-brand { display: inline-flex; align-items: center; gap: 9px; color: var(--ink); text-decoration: none; border-radius: 8px; }
-/* A ring rather than an initial: it reads as a mark at 22px, where two
-   letters at this size turn into a smudge. */
-.site-mark {
-  position: relative; width: 22px; height: 22px; border-radius: 50%; flex: none;
-  background: linear-gradient(145deg, var(--clay-lit), var(--clay-2));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .45), 0 4px 10px -4px rgba(11, 95, 196, .7);
-}
-.site-mark i { position: absolute; inset: 6px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, .92); }
-
 .site-nav { display: flex; align-items: center; gap: 2px; }
 .site-nav a, .site-link {
   position: relative; font: inherit; font-size: 14px; font-weight: 500; letter-spacing: -.005em;
@@ -3334,7 +3295,6 @@ html[data-theme="dark"] .glow-btn { box-shadow: inset 0 1px 0 rgba(255, 255, 255
 }
 @media (forced-colors: active) {
   .glow-btn { border: 1px solid ButtonText; background: ButtonFace; color: ButtonText; }
-  .site-mark { background: CanvasText; }
 }
 
 /* Chat behavior repairs retain the original landing-page material and geometry.
