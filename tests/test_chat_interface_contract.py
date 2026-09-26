@@ -134,7 +134,7 @@ def test_the_background_cannot_cost_a_frame() -> None:
 
 def test_premium_depth_system_shapes_every_portfolio_section() -> None:
     premium = CSS.split("PREMIUM DEPTH SYSTEM", maxsplit=1)[1]
-    assert "styles.css?v=79" in HTML
+    assert "styles.css?v=80" in HTML
     assert HTML.count('class="chapter-meta"') == 6
     assert ".bands > .band" in premium
     assert "counter-increment: chapter" in premium

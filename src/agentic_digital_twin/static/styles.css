@@ -3193,34 +3193,35 @@ html[data-theme="dark"] .stack-strip { background: rgba(5, 14, 24, .28); }
    header is out of view (app.js, "scroll progress").
    ===================================================================== */
 
-.site-head { position: relative; z-index: 40; height: var(--bar-h); }
+.site-head { position: relative; z-index: 40; height: var(--bar-h); --head-ink: #000; }
+html[data-theme="dark"] .site-head { --head-ink: var(--ink); }
 .site-head-inner {
   display: flex; align-items: center; gap: clamp(18px, 3.4vw, 44px);
   height: 100%; max-width: var(--island-w); margin: 0 auto;
   padding: 0 clamp(16px, 3vw, 28px);
 }
 
-.site-brand { display: inline-flex; align-items: center; gap: 9px; color: var(--ink); text-decoration: none; border-radius: 8px; }
+.site-brand { display: inline-flex; align-items: center; gap: 9px; color: var(--head-ink); text-decoration: none; border-radius: 8px; }
 .site-nav { display: flex; align-items: center; gap: 2px; }
 .site-nav a, .site-link {
   position: relative; font: inherit; font-size: 14px; font-weight: 500; letter-spacing: -.005em;
-  color: color-mix(in srgb, var(--ink) 78%, transparent);
+  color: var(--head-ink);
   background: none; border: 0; cursor: pointer; text-decoration: none;
   padding: 8px 12px; border-radius: 8px;
   transition: color .18s var(--ease);
 }
-.site-nav a:hover, .site-link:hover { color: var(--ink); }
+.site-nav a:hover, .site-link:hover { color: var(--clay); }
 .site-link .dot { position: absolute; top: 6px; right: 5px; width: 6px; height: 6px; border-radius: 50%; background: var(--clay); }
 
 .site-actions { margin-left: auto; display: flex; align-items: center; gap: 4px; }
 
 .site-icon {
   display: inline-grid; place-items: center; width: 34px; height: 34px; margin-right: 6px;
-  color: color-mix(in srgb, var(--ink) 78%, transparent);
+  color: var(--head-ink);
   background: none; border: 0; border-radius: 50%; cursor: pointer;
   transition: color .18s var(--ease), background .18s var(--ease);
 }
-.site-icon:hover { color: var(--ink); background: var(--clay-soft); }
+.site-icon:hover { color: var(--clay); background: var(--clay-soft); }
 .site-icon .icon-sun, html[data-theme="dark"] .site-icon .icon-moon { display: none; }
 html[data-theme="dark"] .site-icon .icon-sun { display: block; }
 
