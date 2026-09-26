@@ -4,7 +4,7 @@
 
 This is Prathamesh Kalamkar's recruiter-facing **agentic digital twin**: a bounded agent that
 turns a hiring goal into a plan, chooses relevant public tools, retrieves evidence from his CV
-and ten allow-listed GitHub repositories, and verifies every claim before answering. Its central
+and fifteen allow-listed GitHub repositories, and verifies every claim before answering. Its central
 engineering decision is an **authority gate**, not a clever prompt. A background search can
 find possible visitor profiles, but the context assembler has no code path that can include a
 candidate until the visitor explicitly confirms it. Outreach is a separate, auditable effect

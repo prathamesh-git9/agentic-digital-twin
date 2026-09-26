@@ -105,7 +105,7 @@ page exposes no requisition has `requisition_id:null`; referral copy is omitted 
 |---|---|---|
 | `GET` | `/api/health` | Status, version, active answer provider/model, `authority-gated` grounding label, `tool_calling`, and the active `tools[]` names. |
 | `GET` | `/api/contact` | Public email/location and, only with `TWIN_SHOW_PHONE=true`, phone. |
-| `GET` | `/api/github` | Live metadata for the ten allow-listed repositories. |
+| `GET` | `/api/github` | Live metadata for the fifteen allow-listed repositories. |
 | `GET` | `/`, `/embed` | Current frontend page. |
 | `GET` | `/widget.js`, `/favicon.ico`, `/static/*` | Widget and static assets. |
 
@@ -245,7 +245,7 @@ parameter.
 |---|---|---|
 | `web_search` | `{"query":"..."}` | Up to five live results through the configured DuckDuckGo, Tavily, Serper, or Brave `SearchProvider`; title, snippet, label, and public URL have `external` authority. |
 | `fetch_page` | `{"url":"https://..."}` | Scrapling/trafilatura main-content extraction after public-URL, host policy, robots.txt, redirect, response-size, and timeout checks. Returns title, up to 8,000 text characters, links, and an attributed `external` page source. |
-| `search_github` | `{"query":"..."}` | Matches from the ten allow-listed repositories across metadata/topics, recent commits, and public READMEs. Authenticated server configuration can additionally use GitHub code search; no token enters the tool call. Each hit includes `repository`, `path`, `permalink`, `kind`, and excerpt with `github` authority. |
+| `search_github` | `{"query":"..."}` | Matches from the fifteen allow-listed repositories across metadata/topics, recent commits, and public READMEs. Authenticated server configuration can additionally use GitHub code search; no token enters the tool call. Each hit includes `repository`, `path`, `permalink`, `kind`, and excerpt with `github` authority. |
 | `repo_detail` | `{"name":"effect-broker"}` | One allow-listed name only. Returns description, topics, languages, latest CI conclusion, open issues, last commit, and repository URL with `github` authority. |
 | `company_research` | `{"name":"Acme"}` | Reuses the attributed `CompanyDossier` pipeline for domain/site, careers, engineering blog, GitHub organisation, stack signals, news, funding, and feeds. Facts have `external` authority. |
 | `open_roles` | `{"company":"Acme"}` | Reuses company research plus Greenhouse, Lever, Ashby, Workable, SmartRecruiters, Recruitee, and public-careers fallback discovery. Returns attributable ranked `RoleMatch` objects with `external` authority. |

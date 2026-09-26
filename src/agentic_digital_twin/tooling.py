@@ -82,6 +82,11 @@ class URLArgs(_Args):
 
 class RepoArgs(_Args):
     name: Literal[
+        "driftgate",
+        "feather-dictation",
+        "security-oracle-discrimination",
+        "mcp-servers",
+        "secure-instruction-placement",
         "effect-broker",
         "agent-runtime",
         "effect-browser",
@@ -348,7 +353,7 @@ class ToolRegistry:
             specs.append(
                 ToolSpec(
                     "search_github",
-                    "Search Prathamesh's ten allow-listed public repositories.",
+                    "Search Prathamesh's fifteen allow-listed public repositories.",
                     QueryArgs,
                     timeout,
                     self._search_github,

@@ -268,7 +268,7 @@ class GroundingVerifier:
     def _source_supports(cls, claim: str, evidence: EvidenceItem) -> bool:
         # Public web/company/role material can establish facts about those external
         # subjects, but never facts spoken as or about Prathamesh. Only profile.yaml
-        # and the ten allow-listed GitHub repositories have that authority.
+        # and the fifteen allow-listed GitHub repositories have that authority.
         if evidence.authority == "external" and OWNER_REFERENCE_RE.search(claim):
             return False
         return cls._supported(claim, evidence.text)

@@ -90,6 +90,50 @@ experience:
         Supported debugging, release readiness, and test preparation, helping reduce
         avoidable issues before wider rollout.
 projects:
+  - name: driftgate
+    year: 2026
+    technologies: [Python, BM25, Dense Retrieval, RRF, HTTP, MCP]
+    bullets:
+      - >-
+        Built a RAG back end that indexes a corpus with lexical and dense retrieval,
+        answers with citations or an explicit refusal, and fails CI when retrieval
+        quality regresses against a committed baseline.
+      - >-
+        Shipped a deterministic offline default that needs no API key or network calls,
+        with evaluation across 24 judged queries and a gate that exits non-zero when a
+        fixture regression drops nDCG@10 from 0.762 to 0.538.
+      - >-
+        Exposed corpus search and answering through HTTP and MCP while retaining both
+        channel scores after fusion so retrieval changes remain inspectable.
+  - name: Feather Dictation
+    year: 2026
+    technologies: [.NET 8, WinForms, Win32, Groq, Whisper Large v3]
+    bullets:
+      - >-
+        Built a native Windows tray utility that opens the microphone only while Space
+        is held and types each transcribed phrase into the focused field as the user
+        pauses.
+      - >-
+        Used remote Whisper Large v3 recognition through Groq with bounded phrase
+        streaming; already inserted text is never rewritten or backspaced, and native
+        Unicode input leaves the clipboard untouched.
+      - >-
+        Kept normal-use audio and transcripts in memory rather than writing files, and
+        encrypted the API key for the current Windows user with DPAPI.
+  - name: Security Oracle Discrimination Audit
+    year: 2026
+    technologies: [Python, AST, Regular Expressions, Bandit, Semgrep]
+    bullets:
+      - >-
+        Built a controlled study of six security oracles against 96 Python
+        implementations whose secure or vulnerable labels were established by executing
+        exploit witnesses rather than inspecting surface cues.
+      - >-
+        Extended the audit to 140 real CVE fixes across 65 projects, comparing each
+        affected Python file immediately before and at the maintainer's fix.
+      - >-
+        Found five vulnerable variants that all six oracles missed and published the raw
+        per-variant records alongside the full report.
   - name: Agentic Job Application Platform
     year: 2026
     technologies: [Python, FastAPI, SQL, Agent Workflows, Supabase Familiarity]

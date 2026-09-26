@@ -100,7 +100,7 @@ def _repo_snapshot(offline: bool) -> list[dict[str, Any]]:
     """Live repository metadata, or an honest placeholder when unreachable."""
     if not offline:
         try:
-            # Twenty unauthenticated calls sit close to GitHub's 60/hour ceiling,
+            # Thirty unauthenticated calls use half of GitHub's 60/hour ceiling,
             # so an unauthenticated build silently ships placeholder cards.
             service = GitHubService(
                 token=os.environ.get("GITHUB_TOKEN", "")
@@ -201,7 +201,7 @@ def _llms_txt(corpus: ProfileCorpus, data: dict[str, Any]) -> str:
         "",
         "## Open source",
         "",
-        f"Ten public systems at https://github.com/{OWNER} — "
+        f"Fifteen public systems at https://github.com/{OWNER} — "
         + ", ".join(REPOSITORIES)
         + ".",
         "",

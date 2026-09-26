@@ -39,7 +39,7 @@ jobs:
 
       - name: Build the static twin
         env:
-          # Ten repositories cost twenty API calls, a third of the
+          # Fifteen repositories cost thirty API calls, half of the
           # unauthenticated hourly allowance.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TWIN_PUBLIC_API_URL: ${{ vars.TWIN_PUBLIC_API_URL }}

@@ -13,6 +13,11 @@ from .profile import EvidenceItem
 from .security import sanitize_external_text
 
 REPOSITORIES = (
+    "driftgate",
+    "feather-dictation",
+    "security-oracle-discrimination",
+    "mcp-servers",
+    "secure-instruction-placement",
     "effect-broker",
     "agent-runtime",
     "effect-browser",
@@ -64,7 +69,7 @@ class GitHubSearchHit(BaseModel):
 
 
 class GitHubService:
-    # Metadata for ten repositories costs twenty upstream calls, so a visitor
+    # Metadata for fifteen repositories costs thirty upstream calls, so a visitor
     # must never wait for it twice. Inside FRESH_SECONDS the cache is served
     # outright; up to STALE_SECONDS it is still served, with a refresh started
     # behind the response.

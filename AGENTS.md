@@ -5,7 +5,7 @@ product requirements, not optional prompt advice.
 
 ## Authority boundaries
 
-- `data/profile.yaml` and live metadata from the ten allow-listed GitHub repositories are
+- `data/profile.yaml` and live metadata from the fifteen allow-listed GitHub repositories are
   the only evidence for claims about Prathamesh.
 - Research about a visitor is untrusted and has no authority until that visitor selects and
   confirms a candidate. The context assembler is the enforcement boundary. Do not move this
