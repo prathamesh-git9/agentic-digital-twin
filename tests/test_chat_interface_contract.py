@@ -346,4 +346,4 @@ def test_only_the_contact_button_follows_the_reader() -> None:
     assert "pointer-events: none" in float_rules[0]
     assert _rules_for(".float-cta.on")
     assert 'classList.toggle("on", shown)' in APP
-    assert "floatCta?.addEventListener(\"click\", openContact)" in APP
+    assert 'floatCta?.addEventListener("click", openContact)' in APP
