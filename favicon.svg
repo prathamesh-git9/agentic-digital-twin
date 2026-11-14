@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <radialGradient id="core" cx="35%" cy="28%">
+      <stop offset="0" stop-color="#f3ffc9"/>
+      <stop offset=".24" stop-color="#c8ff48"/>
+      <stop offset=".72" stop-color="#536524"/>
+      <stop offset="1" stop-color="#12160d"/>
+    </radialGradient>
+  </defs>
+  <rect width="64" height="64" rx="18" fill="#080a0e"/>
+  <circle cx="32" cy="32" r="24" fill="none" stroke="#c8ff48" stroke-opacity=".28" stroke-dasharray="3 3"/>
+  <circle cx="32" cy="32" r="18" fill="url(#core)"/>
+  <text x="32" y="37" text-anchor="middle" font-family="monospace" font-size="13" font-weight="700" fill="#101408">PK</text>
+</svg>
